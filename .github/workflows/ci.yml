@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    name: Typecheck & build
+    runs-on: ubuntu-latest
+
+    env:
+      # Build-time placeholders. The Firebase web config is public by design and
+      # these are never used against a real project — CI only compiles, it never
+      # signs in or reads data. Without them the client module fails to
+      # initialise during prerender.
+      NEXT_PUBLIC_FIREBASE_API_KEY: ci-placeholder
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ci-placeholder.firebaseapp.com
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ci-placeholder
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ci-placeholder.appspot.com
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+      NEXT_PUBLIC_FIREBASE_APP_ID: "1:000000000000:web:0000000000000000000000"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # main once shipped 16 files of committed conflict markers, which broke
+      # the build for everyone. This is the cheapest possible guard against a
+      # repeat. Only the <<< and >>> markers are matched — a bare ======= is
+      # ordinary Markdown.
+      - name: Reject committed conflict markers
+        run: |
+          if git grep -nE '^(<<<<<<<|>>>>>>>)' -- '*.ts' '*.tsx' '*.css' '*.json'; then
+            echo "::error::Unresolved merge conflict markers are committed. Resolve them before pushing."
+            exit 1
+          fi
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npx next build
+
+  lint:
+    name: Lint (non-blocking)
+    runs-on: ubuntu-latest
+    # The tool pages carry a backlog of pre-existing lint errors. Making this
+    # blocking today would mean every PR is red on arrival and the signal gets
+    # ignored, so it reports without gating. Flip this off once the backlog is
+    # cleared.
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx eslint .

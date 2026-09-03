@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    // TypeScript 7 removed node10 resolution, which is what this was set to, so
+    // `npm run build` failed outright. node16 replaces it but then rejects
+    // @google/genai — an ESM package that this CommonJS build would `require`.
+    // The compiled output would not have run either way.
+    //
+    // tsx already runs the service in development and handles that interop, so
+    // it runs it in production too and tsc is only a typechecker now.
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "rootDir": "./src",
+
+    "strict": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+
+    "resolveJsonModule": true,
+
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "types": ["node"]
+  },
+
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

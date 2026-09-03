@@ -1,0 +1,355 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Enables `dark:` variants whenever the `.dark` class is present on <html> (next-themes) */
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 16px;
+
+  --background: #FFFFFF;
+  --background-secondary: #FFF7ED;
+  --foreground: #111111;
+
+  --card: #FFFFFF;
+  --card-foreground: #111111;
+  --card-border: #FED7AA;
+
+  --popover: #FFFFFF;
+  --popover-foreground: #111111;
+
+  --primary: #F97316;
+  --primary-hover: #EA580C;
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #FFEDD5;
+  --secondary-foreground: #9A3412;
+
+  --muted: #F4F5F7;
+  --muted-foreground: #6B7280;
+
+  --accent: #FFEDD5;
+  --accent-foreground: #C2410C;
+
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+
+  --border: #FED7AA;
+  --input: #FED7AA;
+  --ring: #F97316;
+}
+
+.dark {
+  --background: #000000;
+  --background-secondary: #0F0A06;
+  --foreground: #FFFFFF;
+
+  --card: #0D0D0D;
+  --card-foreground: #FFFFFF;
+  --card-border: #7C2D12;
+
+  --popover: #0D0D0D;
+  --popover-foreground: #FFFFFF;
+
+  --primary: #FB923C;
+  --primary-hover: #F97316;
+  --primary-foreground: #000000;
+
+  --secondary: #271307;
+  --secondary-foreground: #FED7AA;
+
+  --muted: #17110D;
+  --muted-foreground: #D6BCA8;
+
+  --accent: #2A160A;
+  --accent-foreground: #FDBA74;
+
+  --destructive: #F0716F;
+  --destructive-foreground: #1A0505;
+
+  --border: #7C2D12;
+  --input: #7C2D12;
+  --ring: #FB923C;
+}
+/* Maps the CSS variables above to Tailwind utilities: bg-primary, text-foreground,
+   border-border, bg-card, bg-secondary, bg-muted, bg-destructive, etc. */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  /* `fg` is registered as a real colour token, not just the hand-written
+   * .text-fg class below, so Tailwind can generate its variants. Without this
+   * `hover:text-fg` — used on the nav links and 17 other places — compiled to
+   * nothing at all and those elements had no hover state whatsoever. */
+  --color-fg: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 8px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Legacy utility classes kept for backward-compatibility with existing components.
+ *
+ * These MUST stay inside @layer utilities. Unlayered rules beat every layered
+ * rule in the cascade no matter the specificity, so while these sat outside a
+ * layer they silently overrode Tailwind's variants — `text-muted
+ * hover:text-primary` never changed colour on hover, in the footer and in
+ * ~39 other files. Inside the layer, specificity decides again and
+ * `.hover\:text-primary:hover` (0-2-0) beats `.text-muted` (0-1-0).
+ *
+ * They stay last in source order so they still win over Tailwind's own
+ * same-named utilities, e.g. `.text-muted`, which resolves to --color-muted
+ * (a near-white surface colour) rather than the text colour meant here. */
+@layer utilities {
+  .text-fg {
+    color: var(--foreground);
+  }
+
+  .text-muted {
+    color: var(--muted-foreground);
+  }
+
+  .bg-card {
+    background-color: var(--card);
+  }
+
+  .border-card {
+    border-color: var(--card-border);
+  }
+
+  .bg-primary-tint {
+    background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+  }
+
+  .site-icon-shell {
+    position: relative;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--primary) 18%, transparent);
+    border-radius: 0.8rem;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--primary) 18%, transparent),
+      color-mix(in srgb, var(--primary) 8%, transparent),
+      transparent
+    );
+    box-shadow: 0 10px 18px -14px rgba(17, 17, 17, 0.45);
+    transition: transform 0.3s ease, border-color 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+
+  .site-icon-shell::before {
+    position: absolute;
+    inset: 1px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 0.7rem;
+    content: "";
+    pointer-events: none;
+  }
+
+  .site-icon-shell::after {
+    position: absolute;
+    top: -25%;
+    left: -18%;
+    width: 40%;
+    height: 160%;
+    background: linear-gradient(
+      120deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.35) 45%,
+      transparent 100%
+    );
+    content: "";
+    opacity: 0.7;
+    pointer-events: none;
+    transform: rotate(18deg);
+  }
+
+  .site-icon-shell:hover {
+    border-color: color-mix(in srgb, var(--primary) 35%, transparent);
+    box-shadow: 0 16px 24px -14px
+      color-mix(in srgb, var(--primary) 45%, transparent);
+    transform: scale(1.03);
+  }
+
+  .site-icon-shell svg {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* For the mobile filter rows that scroll sideways: the bar itself would sit
+     on top of the pills and read as a broken layout on a phone. */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+/* Tool cards fading in as the grid renders. This was a framer-motion
+   initial/animate per card; as a keyframe it runs on the compositor instead of
+   the main thread, which the profile showed was the expensive part. */
+@keyframes tool-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-tool-in {
+  opacity: 0;
+  animation: tool-in 0.35s ease-out forwards;
+}
+
+/* Hero entrance and the floating cards beside it.
+   These were framer-motion initial/animate. The headline sat at opacity 0
+   until framer had loaded and hydrated, which is why the landing page's LCP
+   was 5 seconds against a 2.6 second first paint — the largest element was
+   deliberately invisible while waiting for JavaScript. As CSS they start with
+   the first frame the browser paints. */
+@keyframes hero-in-left {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes hero-in-right {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Three separate drifts rather than one shared keyframe. The cards each had
+   their own distance and direction before — one rising 6px, one sinking 8px,
+   one rising 8px — and collapsing them into a single -6px made the group move
+   as one flat sheet. Different directions are what stop them reading as a
+   single block, so they are worth the extra keyframes. */
+@keyframes float-a {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+@keyframes float-b {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(8px); }
+}
+
+@keyframes float-c {
+  0%, 100% { transform: translateY(-8px); }
+  50%      { transform: translateY(0); }
+}
+
+/* The blobs behind the hero were fixed circles, which left the whole
+   background dead once the entrance finished. Drifting them slowly gives the
+   section something that is always moving without anything to look at
+   directly. Long and low-amplitude on purpose: noticeable as life, not as
+   animation. Transform and opacity only, so it stays on the compositor. */
+@keyframes drift-a {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 1; }
+  50%      { transform: translate(30px, 20px) scale(1.12); opacity: 0.75; }
+}
+
+@keyframes drift-b {
+  0%, 100% { transform: translate(0, 0) scale(1.08); opacity: 0.85; }
+  50%      { transform: translate(-28px, -22px) scale(1); opacity: 1; }
+}
+
+/* A highlight sweeping across the progress bar, so the upload card reads as
+   in-progress rather than frozen mid-upload. */
+@keyframes shimmer {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(300%); }
+}
+
+@keyframes icon-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 4%, transparent),
+      0 8px 20px color-mix(in srgb, var(--primary) 12%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--primary) 8%, transparent),
+      0 10px 28px color-mix(in srgb, var(--primary) 24%, transparent);
+  }
+}
+
+.animate-hero-left  { animation: hero-in-left 0.6s ease-out both; }
+.animate-hero-right { animation: hero-in-right 0.7s ease-out both; }
+
+.animate-float-a { animation: float-a 5s ease-in-out infinite; }
+.animate-float-b { animation: float-b 6s ease-in-out infinite; }
+.animate-float-c { animation: float-c 7s ease-in-out infinite; }
+
+.animate-drift-a { animation: drift-a 18s ease-in-out infinite; }
+.animate-drift-b { animation: drift-b 22s ease-in-out infinite; }
+
+.animate-shimmer { animation: shimmer 2.2s ease-in-out infinite; }
+.animate-icon-pulse { animation: icon-pulse 2.8s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* Scroll reveals: show the content outright rather than fading it in. The
+     component used to check matchMedia in an effect, which meant setting state
+     during mount and reading the preference only once. Here it re-evaluates by
+     itself, and !important is needed to beat the utility classes. */
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .animate-hero-left,
+  .animate-hero-right,
+  .animate-float-a,
+  .animate-float-b,
+  .animate-float-c,
+  .animate-drift-a,
+  .animate-drift-b,
+  .animate-shimmer,
+  .animate-icon-pulse { animation: none; }
+}
+
+/* Mobile navigation panel. Was AnimatePresence with an exit animation; without
+   framer there is no exit, so it only animates in — which is what you notice. */
+@keyframes menu-in {
+  from { opacity: 0; transform: translateY(-15px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-menu-in { animation: menu-in 0.2s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-menu-in { animation: none; }
+}

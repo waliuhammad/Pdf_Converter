@@ -1,0 +1,66 @@
+# The whole product on one VPS: website + AI service + ChromaDB + Caddy.
+# Only Caddy is reachable from the internet; everything else talks over the
+# compose-internal network by service name, mirroring Railway's private
+# networking (web -> ai-service:8001 -> chroma:8000).
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - web
+
+  web:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_FIREBASE_API_KEY: ${NEXT_PUBLIC_FIREBASE_API_KEY}
+        NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}
+        NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${NEXT_PUBLIC_FIREBASE_PROJECT_ID}
+        NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}
+        NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}
+        NEXT_PUBLIC_FIREBASE_APP_ID: ${NEXT_PUBLIC_FIREBASE_APP_ID}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+    restart: unless-stopped
+    environment:
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}
+      FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL}
+      FIREBASE_PRIVATE_KEY: ${FIREBASE_PRIVATE_KEY}
+      AI_SERVICE_URL: http://ai-service:8001
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+    expose:
+      - "3000"
+    depends_on:
+      - ai-service
+
+  ai-service:
+    build: ./ai-service
+    restart: unless-stopped
+    environment:
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      CHROMA_HOST: chroma
+      CHROMA_PORT: "8000"
+      PORT: "8001"
+    expose:
+      - "8001"
+    depends_on:
+      - chroma
+
+  chroma:
+    build: ./chroma
+    restart: unless-stopped
+    volumes:
+      - chroma-data:/data
+    expose:
+      - "8000"
+
+volumes:
+  chroma-data:
+  caddy-data:
+  caddy-config:

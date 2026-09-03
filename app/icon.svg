@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="PDF_AI">
+  <!--
+    The same mark the navbar draws: the brand orange in a rounded square with a
+    document glyph on it. Replaces the framework's default favicon, which was
+    still what the tab showed.
+
+    SVG rather than a bitmap so it stays sharp on every screen, and the strokes
+    are deliberately heavy — at 16px a hairline outline turns to mush.
+  -->
+  <rect width="64" height="64" rx="15" fill="#F97316"/>
+  <g transform="translate(13 13) scale(1.583)"
+     fill="none" stroke="#ffffff" stroke-width="2.1"
+     stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+    <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+    <path d="M16 13H8"/>
+    <path d="M16 17H8"/>
+    <path d="M10 9H8"/>
+  </g>
+</svg>

@@ -1,0 +1,35 @@
+{
+  "name": "ai-service",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "tsx src/server.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@google/genai": "^2.15.0",
+    "@langchain/textsplitters": "^1.0.1",
+    "@types/express": "^5.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^4.21.2",
+    "helmet": "^8.3.0",
+    "morgan": "^1.11.0",
+    "multer": "^2.2.0",
+    "pdfjs-dist": "^3.11.174",
+    "tsx": "^4.23.4"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/morgan": "^1.9.10",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^26.1.2",
+    "typescript": "^7.0.2"
+  }
+}

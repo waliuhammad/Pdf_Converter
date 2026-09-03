@@ -1,0 +1,5 @@
+# Replace with the client's real domain before deploying. Caddy obtains and
+# renews the HTTPS certificate for it automatically — no certbot, no cron.
+yourdomain.com {
+    reverse_proxy web:3000
+}
