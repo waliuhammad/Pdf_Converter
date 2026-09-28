@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Star, Users } from "lucide-react";
+import { Check } from "lucide-react";
 import { Reveal } from "@/components/reveal";
 import { useState } from "react";
 import { PLANS, type BillingCycle } from "@/lib/plans";
@@ -23,26 +23,6 @@ export default function Pricing({ heading = "h2" }: { heading?: "h1" | "h2" }) {
 
                 {/* Heading */}
                 <div className="text-center mb-6 sm:mb-10">
-                    <div
-                        className="
-                            inline-flex
-                            items-center
-                            gap-2
-                            rounded-full
-                            bg-card
-                            border
-                            border-border
-                            px-4.5
-                            py-2
-                            text-xs
-                            md:text-sm
-                            text-fg
-                            mb-5
-                        "
-                    >
-                        <Star size={15} fill="currentColor" className="text-yellow-400" />
-                        Rated 4.9/5 by 50,000+ users
-                    </div>
 
                     <Heading className="text-2xl sm:text-3xl md:text-4xl font-bold text-fg">
                         Simple pricing that scales with you
@@ -262,70 +242,6 @@ export default function Pricing({ heading = "h2" }: { heading?: "h1" | "h2" }) {
                             </Reveal>
                         </div>
                     ))}
-                </div>
-
-                {/* Reviews */}
-                <div
-                    className="
-                        mt-8
-                        md:mt-14
-                        mx-auto
-                        flex
-                        w-full
-                        max-w-xs
-                        flex-col
-                        items-center
-                        gap-3
-                        rounded-2xl
-                        bg-[var(--background-secondary)]
-                        px-5
-                        py-4
-                        text-xs
-                        text-muted
-                        md:w-auto
-                        md:max-w-none
-                        md:flex-row
-                        md:justify-center
-                        md:gap-7
-                        md:rounded-none
-                        md:bg-transparent
-                        md:px-0
-                        md:py-0
-                        md:text-sm
-                    "
-                >
-                    <div className="
-                        flex
-                        items-center
-                        gap-2
-                    ">
-                        <Users size={16} className="shrink-0 md:size-[18px]" />
-                        Trusted by 50,000+ creators
-                    </div>
-
-                    <span className="h-px w-10 bg-[var(--card-border)] md:hidden" />
-
-                    <div className="
-                        flex
-                        items-center
-                        gap-2
-                        text-yellow-400
-                    ">
-                        <div className="flex items-center gap-0.5 md:gap-2">
-                            {[1, 2, 3, 4, 5].map(star => (
-                                <Star
-                                    key={star}
-                                    size={15}
-                                    fill="currentColor"
-                                    className="md:size-[17px]"
-                                />
-                            ))}
-                        </div>
-
-                        <span className="text-muted ml-1 md:ml-1.5">
-                            4.9/5 average rating
-                        </span>
-                    </div>
                 </div>
 
             </div>
