@@ -40,35 +40,38 @@
 }
 
 .dark {
-  --background: #000000;
-  --background-secondary: #0F0A06;
-  --foreground: #FFFFFF;
+  /* Midnight slate: a soft blue-black base instead of pure #000, layered
+     surfaces so cards read as raised, thin neutral borders, and the same
+     orange brand colour as the accent. */
+  --background: #0B0D12;
+  --background-secondary: #11141B;
+  --foreground: #F1F3F7;
 
-  --card: #0D0D0D;
-  --card-foreground: #FFFFFF;
-  --card-border: #7C2D12;
+  --card: #151922;
+  --card-foreground: #F1F3F7;
+  --card-border: #262C38;
 
-  --popover: #0D0D0D;
-  --popover-foreground: #FFFFFF;
+  --popover: #151922;
+  --popover-foreground: #F1F3F7;
 
   --primary: #FB923C;
   --primary-hover: #F97316;
-  --primary-foreground: #000000;
+  --primary-foreground: #1A0E05;
 
-  --secondary: #271307;
-  --secondary-foreground: #FED7AA;
+  --secondary: #1C2130;
+  --secondary-foreground: #E4E7EE;
 
-  --muted: #17110D;
-  --muted-foreground: #D6BCA8;
+  --muted: #1A1F2B;
+  --muted-foreground: #9AA3B2;
 
-  --accent: #2A160A;
+  --accent: #2A1D14;
   --accent-foreground: #FDBA74;
 
-  --destructive: #F0716F;
+  --destructive: #F87171;
   --destructive-foreground: #1A0505;
 
-  --border: #7C2D12;
-  --input: #7C2D12;
+  --border: #262C38;
+  --input: #2A303C;
   --ring: #FB923C;
 }
 /* Maps the CSS variables above to Tailwind utilities: bg-primary, text-foreground,
