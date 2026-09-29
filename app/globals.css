@@ -1,79 +1,85 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Enables `dark:` variants whenever the `.dark` class is present on <html> (next-themes) */
-@custom-variant dark (&:is(.dark *));
+/* Light mode only. The dark theme is removed, and the `dark:` variant is
+   pointed at a class that is never applied. Tailwind's default `dark:` variant
+   follows the visitor's system setting, so without this override, anyone with
+   a dark-mode device would still trigger every `dark:` class left in the
+   components. */
+@custom-variant dark (&:where(.dark-mode-disabled, .dark-mode-disabled *));
 
-/* Ocean Teal theme. Light: white and pale mint with a deep teal brand colour
-   (teal-700 keeps white button text above AA contrast). Dark: navy-green
-   surfaces with a bright aqua accent. */
+/* Navy theme, light only. White surfaces, deep navy (#1E3A8A) brand colour
+   with white button text (about 10:1 contrast). Corners are square (2px)
+   across the whole app. */
 :root {
-  --radius: 16px;
+  color-scheme: light;
+
+  --radius: 2px;
 
   --background: #FFFFFF;
-  --background-secondary: #F0FDFA;
-  --foreground: #0F1A1C;
+  --background-secondary: #F1F4FA;
+  --foreground: #0B1730;
 
-  --card: #FFFFFF;
-  --card-foreground: #0F1A1C;
-  --card-border: #CDE8E4;
+  --card: #F7F9FC;
+  --card-foreground: #0B1730;
+  --card-border: #E1E6F0;
 
   --popover: #FFFFFF;
-  --popover-foreground: #0F1A1C;
+  --popover-foreground: #0B1730;
 
-  --primary: #0F766E;
-  --primary-hover: #115E59;
+  --primary: #1E3A8A;
+  --primary-hover: #172E6E;
   --primary-foreground: #FFFFFF;
 
-  --secondary: #CCFBF1;
-  --secondary-foreground: #115E59;
+  --secondary: #EAF0FB;
+  --secondary-foreground: #1E3A8A;
 
-  --muted: #F1F5F5;
-  --muted-foreground: #52646A;
+  --muted: #F1F4FA;
+  --muted-foreground: #5F6B85;
 
-  --accent: #CCFBF1;
-  --accent-foreground: #0F766E;
+  --accent: #EAF0FB;
+  --accent-foreground: #1E3A8A;
 
-  --destructive: #EF4444;
+  --destructive: #DC2626;
   --destructive-foreground: #FFFFFF;
 
-  --border: #CDE8E4;
-  --input: #CDE8E4;
-  --ring: #0D9488;
+  --border: #E1E6F0;
+  --input: #D3DAE8;
+  --ring: #1E3A8A;
+
+  /* The five accent colours. Each has a strong colour for icons, text and
+     dots, and a soft tint for the tile or badge behind it. Use them as small
+     accents only, never as page backgrounds or main buttons. */
+  --blue: #1D4ED8;
+  --blue-tint: #EAF1FE;
+  --amber: #92400E;
+  --amber-tint: #FEF3DC;
+  --green: #15803D;
+  --green-tint: #E8F6EE;
+  --red: #B91C1C;
+  --red-tint: #FDECEC;
+  --navy: #1E3A8A;
+  --navy-tint: #EAF0FB;
+
+  /* Tool categories, pointing at the colours above:
+     Convert = blue, Edit = amber, Organize = green, Security = red,
+     AI Tools = navy. */
+  --convert: var(--blue);
+  --convert-tint: var(--blue-tint);
+  --edit: var(--amber);
+  --edit-tint: var(--amber-tint);
+  --organize: var(--green);
+  --organize-tint: var(--green-tint);
+  --security: var(--red);
+  --security-tint: var(--red-tint);
+  --ai: var(--navy);
+  --ai-tint: var(--navy-tint);
 }
 
-.dark {
-  --background: #0A1214;
-  --background-secondary: #0F1A1D;
-  --foreground: #EAF4F3;
-
-  --card: #131F22;
-  --card-foreground: #EAF4F3;
-  --card-border: #22343A;
-
-  --popover: #131F22;
-  --popover-foreground: #EAF4F3;
-
-  --primary: #2DD4BF;
-  --primary-hover: #14B8A6;
-  --primary-foreground: #042F2E;
-
-  --secondary: #16272B;
-  --secondary-foreground: #D5EEEB;
-
-  --muted: #172428;
-  --muted-foreground: #93A9AD;
-
-  --accent: #0F2E2C;
-  --accent-foreground: #5EEAD4;
-
-  --destructive: #F87171;
-  --destructive-foreground: #1A0505;
-
-  --border: #22343A;
-  --input: #2A3F45;
-  --ring: #2DD4BF;
+html {
+  color-scheme: light;
 }
+
 /* Maps the CSS variables above to Tailwind utilities: bg-primary, text-foreground,
    border-border, bg-card, bg-secondary, bg-muted, bg-destructive, etc. */
 @theme inline {
@@ -108,17 +114,48 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  --radius-sm: calc(var(--radius) - 8px);
-  --radius-md: calc(var(--radius) - 4px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  /* Colour names, e.g. `bg-blue-tint text-blue`. */
+  --color-blue: var(--blue);
+  --color-blue-tint: var(--blue-tint);
+  --color-amber: var(--amber);
+  --color-amber-tint: var(--amber-tint);
+  --color-green: var(--green);
+  --color-green-tint: var(--green-tint);
+  --color-red: var(--red);
+  --color-red-tint: var(--red-tint);
+  --color-navy: var(--navy);
+  --color-navy-tint: var(--navy-tint);
+
+  /* Category names, e.g. `bg-convert-tint text-convert`. */
+  --color-convert: var(--convert);
+  --color-convert-tint: var(--convert-tint);
+  --color-edit: var(--edit);
+  --color-edit-tint: var(--edit-tint);
+  --color-organize: var(--organize);
+  --color-organize-tint: var(--organize-tint);
+  --color-security: var(--security);
+  --color-security-tint: var(--security-tint);
+  --color-ai: var(--ai);
+  --color-ai-tint: var(--ai-tint);
+
+  /* Square corners everywhere. Every Tailwind radius step is overridden, so
+   * existing rounded-md / rounded-lg / rounded-xl / rounded-2xl / rounded-3xl
+   * classes in components all come out sharp without editing each file.
+   * `rounded-full` is untouched, so avatars, dots and pills stay round. */
+  --radius-xs: 2px;
+  --radius-sm: 2px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-xl: 4px;
+  --radius-2xl: 4px;
+  --radius-3xl: 4px;
+  --radius-4xl: 4px;
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
   font-family: 'Inter', sans-serif;
-  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Legacy utility classes kept for backward-compatibility with existing components.
@@ -165,14 +202,14 @@ body {
     aspect-ratio: 1;
     overflow: hidden;
     border: 1px solid color-mix(in srgb, var(--primary) 18%, transparent);
-    border-radius: 0.8rem;
+    border-radius: 2px;
     background: linear-gradient(
       135deg,
       color-mix(in srgb, var(--primary) 18%, transparent),
       color-mix(in srgb, var(--primary) 8%, transparent),
       transparent
     );
-    box-shadow: 0 10px 18px -14px rgba(17, 17, 17, 0.45);
+    box-shadow: 0 10px 18px -14px rgba(11, 23, 48, 0.45);
     transition: transform 0.3s ease, border-color 0.3s ease,
       box-shadow 0.3s ease;
   }
@@ -181,7 +218,7 @@ body {
     position: absolute;
     inset: 1px;
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 0.7rem;
+    border-radius: 1px;
     content: "";
     pointer-events: none;
   }

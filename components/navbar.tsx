@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { isToolPath } from "@/lib/tool-paths";
 import { useState, useEffect } from "react";
 import { Menu, X, FileText } from "lucide-react";
-import { ThemeToggle } from "./theme-toggle";
 
 /** Root-relative, not bare hashes. This navbar renders on the content pages
  *  (/terms, /privacy, /about, …) as well as the landing page, and a bare
@@ -196,8 +195,6 @@ export function Navbar() {
 
         {/* Desktop Actions */}
         <div className="hidden items-center gap-4 lg:flex">
-          <ThemeToggle />
-
           <Link
             href="/login"
             className="px-1 py-2 text-base font-semibold text-fg transition hover:text-primary"
@@ -213,12 +210,8 @@ export function Navbar() {
           </Link>
         </div>
 
-        {/* Mobile actions. The theme toggle sits in the bar itself, beside the
-            menu button, so switching theme on a phone no longer means opening
-            the menu first. */}
+        {/* Mobile menu button */}
         <div className="flex items-center gap-1 lg:hidden">
-          <ThemeToggle />
-
           <button
             onClick={() => setOpen(!open)}
             aria-label={open ? "Close menu" : "Open menu"}
@@ -260,8 +253,6 @@ export function Navbar() {
                 );
               })}
 
-              {/* The Appearance row lived here; the toggle is now in the header
-                  bar above, visible without opening the menu. */}
               <div className="mt-4 flex flex-col gap-3">
                 <Link
                   href="/login"

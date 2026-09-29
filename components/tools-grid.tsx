@@ -31,32 +31,32 @@ export function ToolsGrid() {
     return (
         <section
             id="tools"
-            className="bg-white px-8 py-13 text-neutral-900 dark:bg-neutral-950 dark:text-white md:px-12 md:py-15"
+            className="bg-background px-8 py-13 text-foreground md:px-12 md:py-15"
         >
             <div className="mx-auto max-w-7xl">
                 <div className="grid gap-8 md:grid-cols-2 md:items-end md:gap-11">
                     <Reveal>
                         <div className="max-w-2xl">
-                            <span className="inline-block rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-600 dark:bg-orange-950 dark:text-orange-400">
+                            <span className="inline-block rounded-sm bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
                                 PDF toolkit
                             </span>
 
-                            <h1 className="mt-4 text-[2.15rem] font-medium leading-snug text-neutral-900 dark:text-white sm:text-[2.75rem]">
+                            <h1 className="mt-4 text-[2.15rem] font-medium leading-snug text-foreground sm:text-[2.75rem]">
                                 All your PDF tools, one place
                             </h1>
 
-                            <p className="mt-4 max-w-xl text-base leading-relaxed text-neutral-600 dark:text-neutral-400 sm:text-lg">
+                            <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
                                 Convert, edit, compress and organize your files in seconds.
                             </p>
-                            <p className="mt-3 max-w-xl text-base leading-relaxed text-neutral-600 dark:text-neutral-400 sm:text-lg">
+                            <p className="mt-3 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
                                 Powered by AI to save you the busywork.
                             </p>
 
                             <Link
                                 href="/register"
-                                className="group relative mt-4 inline-flex overflow-hidden rounded-lg border border-transparent bg-orange-400 px-5 py-2.5 text-base font-medium text-neutral-900 transition-all duration-300 hover:border-orange-500 hover:bg-orange-300 hover:shadow-[0_0_0_3px_rgba(249,115,22,0.16),0_10px_24px_-12px_rgba(249,115,22,0.8)] dark:hover:border-orange-300 dark:hover:shadow-[0_0_0_3px_rgba(251,146,60,0.2),0_10px_24px_-12px_rgba(249,115,22,0.8)]"
+                                className="group relative mt-4 inline-flex overflow-hidden rounded-lg border border-transparent bg-primary px-5 py-2.5 text-base font-medium text-primary-foreground transition-all duration-300 hover:border-ring hover:bg-primary/90 hover:shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_20%,transparent),0_10px_24px_-12px_var(--primary)]"
                             >
-                                <span className="pointer-events-none absolute inset-0 -translate-x-full skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 group-hover:translate-x-full dark:via-white/30" />
+                                <span className="pointer-events-none absolute inset-0 -translate-x-full skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-700 group-hover:translate-x-full dark:via-white/30" />
                                 <span className="relative z-10">Get started free</span>
                             </Link>
                         </div>
