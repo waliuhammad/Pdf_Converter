@@ -4,75 +4,75 @@
 /* Enables `dark:` variants whenever the `.dark` class is present on <html> (next-themes) */
 @custom-variant dark (&:is(.dark *));
 
+/* Ocean Teal theme. Light: white and pale mint with a deep teal brand colour
+   (teal-700 keeps white button text above AA contrast). Dark: navy-green
+   surfaces with a bright aqua accent. */
 :root {
   --radius: 16px;
 
   --background: #FFFFFF;
-  --background-secondary: #FFF7ED;
-  --foreground: #111111;
+  --background-secondary: #F0FDFA;
+  --foreground: #0F1A1C;
 
   --card: #FFFFFF;
-  --card-foreground: #111111;
-  --card-border: #FED7AA;
+  --card-foreground: #0F1A1C;
+  --card-border: #CDE8E4;
 
   --popover: #FFFFFF;
-  --popover-foreground: #111111;
+  --popover-foreground: #0F1A1C;
 
-  --primary: #F97316;
-  --primary-hover: #EA580C;
+  --primary: #0F766E;
+  --primary-hover: #115E59;
   --primary-foreground: #FFFFFF;
 
-  --secondary: #FFEDD5;
-  --secondary-foreground: #9A3412;
+  --secondary: #CCFBF1;
+  --secondary-foreground: #115E59;
 
-  --muted: #F4F5F7;
-  --muted-foreground: #6B7280;
+  --muted: #F1F5F5;
+  --muted-foreground: #52646A;
 
-  --accent: #FFEDD5;
-  --accent-foreground: #C2410C;
+  --accent: #CCFBF1;
+  --accent-foreground: #0F766E;
 
   --destructive: #EF4444;
   --destructive-foreground: #FFFFFF;
 
-  --border: #FED7AA;
-  --input: #FED7AA;
-  --ring: #F97316;
+  --border: #CDE8E4;
+  --input: #CDE8E4;
+  --ring: #0D9488;
 }
 
 .dark {
-  /* Midnight slate: a soft blue-black base instead of pure #000, layered
-     surfaces so cards read as raised, thin neutral borders, and the same
-     orange brand colour as the accent. */
-  --background: #0B0D12;
-  --background-secondary: #11141B;
-  --foreground: #F1F3F7;
+  --background: #0A1214;
+  --background-secondary: #0F1A1D;
+  --foreground: #EAF4F3;
 
-  --card: #151922;
-  --card-foreground: #F1F3F7;
-  --card-border: #262C38;
+  --card: #131F22;
+  --card-foreground: #EAF4F3;
+  --card-border: #22343A;
 
-  --popover: #151922;
-  --popover-foreground: #F1F3F7;
+  --popover: #131F22;
+  --popover-foreground: #EAF4F3;
 
-  --primary: #FB923C;
-  --primary-hover: #F97316;
-  --primary-foreground: #1A0E05;
+  --primary: #2DD4BF;
+  --primary-hover: #14B8A6;
+  --primary-foreground: #042F2E;
 
-  --secondary: #1C2130;
-  --secondary-foreground: #E4E7EE;
+  --secondary: #16272B;
+  --secondary-foreground: #D5EEEB;
 
-  --muted: #1A1F2B;
-  --muted-foreground: #9AA3B2;
+  --muted: #172428;
+  --muted-foreground: #93A9AD;
 
-  --accent: #2A1D14;
-  --accent-foreground: #FDBA74;
+  --accent: #0F2E2C;
+  --accent-foreground: #5EEAD4;
 
   --destructive: #F87171;
   --destructive-foreground: #1A0505;
 
-  --border: #262C38;
-  --input: #2A303C;
-  --ring: #FB923C;
+  --border: #22343A;
+  --input: #2A3F45;
+  --ring: #2DD4BF;
 }
 /* Maps the CSS variables above to Tailwind utilities: bg-primary, text-foreground,
    border-border, bg-card, bg-secondary, bg-muted, bg-destructive, etc. */
