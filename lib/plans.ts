@@ -7,8 +7,8 @@
  * website only ever shows them.
  *
  * The yearly column shows the per-month equivalent of the yearly charge, so
- * the two columns compare like for like: Pro bills $124.99/year, shown as
- * $10.42/month.
+ * the two columns compare like for like: Pro bills $119.88/year, shown as
+ * $9.99/month.
  */
 
 export type PlanId = "free" | "pro" | "business";
@@ -47,48 +47,60 @@ export const PLANS: Plan[] = [
         yearly: "$0",
         monthlyPrice: 0,
         yearlyPrice: 0,
-        description: "Perfect for trying basic PDF tools.",
+        description: "Get started with everyday PDF tasks at no cost.",
         features: [
-            "Basic PDF conversions",
-            "Merge & split PDFs",
-            "Limited daily usage",
-            "Standard processing speed",
+            "Up to 10 tasks every day",
+            "Essential PDF tools included",
+            "1 OCR scan daily",
+            "1 AI document summary daily",
+            "Smooth, quick processing",
+            "Help through community forums",
         ],
     },
     {
         id: "pro",
         name: "Pro",
         monthly: "$12.99",
-        // The per-month equivalent of the $124.99 yearly charge, so the two
-        // columns compare like for like.
-        yearly: "$10.42",
+        // Per-month equivalent of the $119.88 yearly charge.
+        yearly: "$9.99",
         monthlyPrice: 12.99,
-        yearlyPrice: 124.99,
-        description: "Advanced tools for professionals.",
+        yearlyPrice: 119.88,
+        description: "More power and higher limits for individual professionals.",
         popular: true,
         features: [
-            "Unlimited PDF tools",
-            "AI PDF Summary",
-            "OCR processing",
-            "Fast conversions",
-            "No advertisements",
+            "Up to 50 tasks every day",
+            "30 advanced PDF tasks daily",
+            "5 OCR scans daily",
+            "5 AI document summaries daily",
+            "5 AI writing & grammar checks daily",
+            "5 AI translations daily",
+            "Quicker turnaround on every task",
+            "No ads, no distractions",
+            "Priority help from our support team",
         ],
     },
     {
         id: "business",
         name: "Business",
         monthly: "$38.99",
-        // Per-month equivalent of the $374.99 yearly charge.
-        yearly: "$31.25",
+        // Per-month equivalent of the $371.88 yearly charge.
+        yearly: "$30.99",
         monthlyPrice: 38.99,
-        yearlyPrice: 374.99,
-        description: "Powerful PDF workflow for teams.",
+        yearlyPrice: 371.88,
+        description: "Built for teams that handle documents together.",
         features: [
-            "Everything in Pro",
-            "Team collaboration",
-            "Priority processing",
-            "Advanced security",
-            "Dedicated support",
+            "Up to 100 tasks every day",
+            "60 advanced PDF tasks daily",
+            "10 OCR scans daily",
+            "10 AI document summaries daily",
+            "10 AI writing & grammar checks daily",
+            "10 AI translations daily",
+            "Share and work on files as a team",
+            "Add up to 5 team members",
+            "Your tasks go to the front of the queue",
+            "Enhanced protection for your files",
+            "No ads, no distractions",
+            "Priority help from our support team",
         ],
     },
 ];
