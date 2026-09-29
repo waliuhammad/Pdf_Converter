@@ -24,7 +24,25 @@ const firebaseConfig = {
 let app: FirebaseApp | null = null;
 let authInstance: Auth | null = null;
 
+/**
+ * False when .env.local has no Firebase web config. The PDF tools do not need
+ * accounts, so callers that merely want to know who is signed in (useAuth)
+ * treat this as "signed out" rather than letting getAuth() throw
+ * auth/invalid-api-key into the error boundary on every page.
+ */
+export const isFirebaseConfigured = Boolean(
+    firebaseConfig.apiKey && firebaseConfig.projectId
+);
+
 function getFirebaseApp(): FirebaseApp {
+    if (!isFirebaseConfigured) {
+        throw Object.assign(
+            new Error(
+                "Accounts are not configured: set the NEXT_PUBLIC_FIREBASE_* variables in .env.local and restart the dev server."
+            ),
+            { code: "app/firebase-not-configured" }
+        );
+    }
     // getApps() covers hot reload, where the app already exists.
     if (!app) app = getApps().length ? getApp() : initializeApp(firebaseConfig);
     return app;

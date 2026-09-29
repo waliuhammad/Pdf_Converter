@@ -35,6 +35,9 @@ export function isUserCancelled(error: unknown): boolean {
 export function signInErrorMessage(error: unknown): string {
     const code = codeOf(error);
 
+    if (code === "app/firebase-not-configured") {
+        return "Accounts aren't set up on this server yet.";
+    }
     if (code === "auth/too-many-requests") {
         return "Too many attempts. Please wait a few minutes and try again.";
     }
@@ -64,6 +67,9 @@ export function signInErrorMessage(error: unknown): string {
 export function signUpErrorMessage(error: unknown): string {
     const code = codeOf(error);
 
+    if (code === "app/firebase-not-configured") {
+        return "Accounts aren't set up on this server yet.";
+    }
     if (code === "auth/email-already-in-use") {
         return "An account with this email already exists. Try signing in instead.";
     }
