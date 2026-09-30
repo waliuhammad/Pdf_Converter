@@ -206,7 +206,7 @@ export default function PayoneerSettingsPage() {
                 <button
                     type="submit"
                     disabled={saving}
-                    className="rounded-xl bg-[var(--primary)] px-4 py-2.5 text-white transition hover:opacity-90 disabled:opacity-60 focus-visible:outline focus-visible:outline-2"
+                    className="rounded-xl bg-[var(--primary)] px-4 py-2.5 text-primary-foreground transition hover:opacity-90 disabled:opacity-60 focus-visible:outline focus-visible:outline-2"
                 >
                     {saving ? "Saving..." : "Save settings"}
                 </button>

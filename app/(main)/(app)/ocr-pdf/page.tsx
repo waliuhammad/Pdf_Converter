@@ -75,7 +75,7 @@ export default function OcrPdfPage() {
     return (
         <div className="max-w-3xl mx-auto py-8 px-4">
             <div className="text-center mb-10">
-                <div className="w-14 h-14 mx-auto rounded-2xl bg-purple-900/30 flex items-center justify-center mb-4 border border-purple-500/20">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center mb-4 border border-primary/20">
                     <ScanText className="text-[var(--primary)]" size={26} />
                 </div>
                 <h1 className="text-2xl font-bold text-fg">OCR PDF Scanner</h1>
@@ -97,7 +97,7 @@ export default function OcrPdfPage() {
             ) : (
                 <>
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-card border border-card">
-                        <div className="w-9 h-9 rounded-lg bg-purple-900/30 flex items-center justify-center shrink-0">
+                        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                             <FileText size={16} className="text-[var(--primary)]" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -124,7 +124,7 @@ export default function OcrPdfPage() {
                                     {copied ? "Copied" : "Copy"}
                                 </button>
                             </div>
-                            <div className="max-h-64 overflow-y-auto rounded-lg bg-black/20 p-4 border border-white/5">
+                            <div className="max-h-64 overflow-y-auto rounded-lg bg-muted p-4 border border-border">
                                 <pre className="text-xs text-fg whitespace-pre-wrap font-mono leading-relaxed">
                                     {extractedText}
                                 </pre>
@@ -137,7 +137,7 @@ export default function OcrPdfPage() {
                             <button
                                 onClick={handleOcrScan}
                                 disabled={processing}
-                                className="px-8 py-3 rounded-full bg-[var(--primary)] text-white font-medium hover:opacity-90 transition-colors disabled:opacity-60 shadow-lg shadow-purple-900/20"
+                                className="px-8 py-3 rounded-full bg-[var(--primary)] text-primary-foreground font-medium hover:opacity-90 transition-colors disabled:opacity-60 shadow-lg shadow-primary/20"
                             >
                                 {processing ? "Scanning Document..." : "Run OCR Extraction"}
                             </button>
@@ -145,7 +145,7 @@ export default function OcrPdfPage() {
                             <button
                                 onClick={handleOcrScan}
                                 disabled={processing}
-                                className="px-8 py-3 rounded-full bg-[var(--background-secondary)] text-fg font-medium hover:opacity-80 transition-colors disabled:opacity-60 border border-white/10"
+                                className="px-8 py-3 rounded-full bg-[var(--background-secondary)] text-fg font-medium hover:opacity-80 transition-colors disabled:opacity-60 border border-border"
                             >
                                 {processing ? "Rescanning..." : "Scan Again"}
                             </button>

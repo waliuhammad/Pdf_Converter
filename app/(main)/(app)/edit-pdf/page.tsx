@@ -440,7 +440,7 @@ export default function EditPdfPage() {
           // Both sides lowered: a colour arriving from the native picker or from
           // a saved annotation can be upper case, and only one side was.
           className={`w-6 h-6 rounded-full border-2 transition-transform ${current.toLowerCase() === hex.toLowerCase()
-            ? "border-slate-900 dark:border-white scale-110"
+            ? "border-foreground scale-110"
             : "border-transparent"
             }`}
           style={{ backgroundColor: hex }}
@@ -456,8 +456,8 @@ export default function EditPdfPage() {
         <div className="max-w-4xl mx-auto">
           {/* Header Section — plain text, no card */}
           <div className="text-center mb-6 sm:mb-8">
-            <div className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-slate-900/10 dark:bg-slate-800 border border-slate-900/20 dark:border-slate-700 text-fg text-xs font-semibold mb-3 sm:mb-4 shadow-sm">
-              <Sparkles size={13} className="text-slate-900 dark:text-slate-400" />
+            <div className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-muted border border-border text-fg text-xs font-semibold mb-3 sm:mb-4 shadow-sm">
+              <Sparkles size={13} className="text-foreground" />
               DOCUMENT CONVERSION SUITE
             </div>
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-fg tracking-tight mb-1.5 sm:mb-2">Pro Interactive PDF Editor</h1>
@@ -551,7 +551,7 @@ export default function EditPdfPage() {
                       }
                     }}
                     placeholder="Write text here..."
-                    className="w-full p-2.5 rounded-xl border border-card bg-card text-fg text-sm focus:outline-none focus:border-slate-400 dark:focus:border-slate-600 transition-colors"
+                    className="w-full p-2.5 rounded-xl border border-card bg-card text-fg text-sm focus:outline-none focus:border-ring transition-colors"
                   />
                 </div>
 
@@ -571,7 +571,7 @@ export default function EditPdfPage() {
                           setReplaceWidth(val);
                           updateSelectedAnnotation("width", val);
                         }}
-                        className="w-full p-2 rounded-xl border border-card bg-card text-fg text-xs focus:outline-none focus:border-slate-400 dark:focus:border-slate-600"
+                        className="w-full p-2 rounded-xl border border-card bg-card text-fg text-xs focus:outline-none focus:border-ring"
                       />
                     </div>
                     <div>
@@ -588,7 +588,7 @@ export default function EditPdfPage() {
                           setReplaceHeight(val);
                           updateSelectedAnnotation("height", val);
                         }}
-                        className="w-full p-2 rounded-xl border border-card bg-card text-fg text-xs focus:outline-none focus:border-slate-400 dark:focus:border-slate-600"
+                        className="w-full p-2 rounded-xl border border-card bg-card text-fg text-xs focus:outline-none focus:border-ring"
                       />
                     </div>
                   </div>
@@ -837,7 +837,7 @@ export default function EditPdfPage() {
                             width: `${ann.width}px`,
                             height: `${ann.height}px`,
                           }}
-                          className={`flex items-center bg-white px-1 select-none cursor-move group touch-none ${isSelected ? "ring-2 ring-slate-900 dark:ring-slate-400 shadow-md" : "border border-dashed border-slate-400/60"
+                          className={`flex items-center bg-white px-1 select-none cursor-move group touch-none ${isSelected ? "ring-2 ring-ring shadow-md" : "border border-dashed border-muted-foreground/60"
                             }`}
                         >
                           <span
@@ -866,7 +866,7 @@ export default function EditPdfPage() {
                             left: `${ann.x}px`,
                             top: `${ann.y}px`,
                           }}
-                          className={`px-1.5 py-0.5 select-none cursor-move rounded touch-none ${isSelected ? "ring-2 ring-slate-900 dark:ring-slate-400 bg-slate-200/40 dark:bg-slate-800/40 shadow-md" : "hover:bg-slate-200/20 dark:hover:bg-slate-800/20 border border-transparent hover:border-slate-300 dark:hover:border-slate-700"
+                          className={`px-1.5 py-0.5 select-none cursor-move rounded touch-none ${isSelected ? "ring-2 ring-ring bg-primary/10 shadow-md" : "hover:bg-primary/5 border border-transparent hover:border-primary/30"
                             }`}
                         >
                           <span

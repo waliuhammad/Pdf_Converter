@@ -167,7 +167,7 @@ export function UploadModal({ onClose, onUploadComplete }: UploadModalProps) {
                     <button
                         onClick={handleFinish}
                         disabled={!allDone}
-                        className="px-5 py-2.5 rounded-full bg-[var(--primary)] text-white text-sm font-medium hover:bg-[var(--primary-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:bg-[var(--primary-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {files.length === 0 ? "Select files first" : allDone ? "Done" : "Uploading..."}
                     </button>

@@ -128,7 +128,7 @@ export default function Pricing({ heading = "h2" }: { heading?: "h1" | "h2" }) {
                                     shadow-sm transition-all duration-200
                                     hover:-translate-y-1.5 hover:scale-[1.01] hover:shadow-xl
                                     ${plan.popular
-                                        ? "border-2 border-primary shadow-lg shadow-orange-500/10"
+                                        ? "border-2 border-primary shadow-lg shadow-primary/10"
                                         : "border border-card hover:border-primary/40"
                                     }
                                 `}>
@@ -141,7 +141,7 @@ export default function Pricing({ heading = "h2" }: { heading?: "h1" | "h2" }) {
                                                 left-1/2
                                                 -translate-x-1/2
                                                 bg-primary
-                                                text-white
+                                                text-primary-foreground
                                                 px-4
                                                 py-1
                                                 rounded-full

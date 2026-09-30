@@ -47,17 +47,14 @@ export default function ToolCard({
                 overflow-hidden
                 rounded-2xl
                 border
-                border-neutral-200
-                bg-white
+                border-border
+                bg-card
                 p-5
                 text-center
                 transition-all
                 duration-200
-                hover:border-neutral-400
+                hover:border-foreground/30
                 hover:shadow-xl
-                dark:border-neutral-800
-                dark:bg-neutral-900
-                dark:hover:border-neutral-600
                 sm:min-h-[82px]
                 sm:flex-row
                 sm:items-center
@@ -80,9 +77,9 @@ export default function ToolCard({
                     items-center
                     justify-center
                     rounded-xl
-                    bg-orange-100
+                    bg-accent
                     ring-1
-                    ring-orange-200
+                    ring-primary/20
                     shadow-[0_0_0_4px_color-mix(in_srgb,var(--primary)_4%,transparent),0_8px_20px_color-mix(in_srgb,var(--primary)_12%,transparent)]
                     motion-safe:animate-icon-pulse
                     transition-all
@@ -93,8 +90,6 @@ export default function ToolCard({
                     sm:h-10
                     sm:w-10
                     sm:rounded-2xl
-                    dark:bg-orange-950
-                    dark:ring-orange-900
                 `}
             >
                 <span className="pointer-events-none absolute inset-0 -translate-x-full rotate-12 bg-gradient-to-r from-transparent via-white/70 to-transparent opacity-0 transition-opacity duration-300 group-hover/icon:animate-shimmer group-hover/icon:opacity-100 dark:via-white/25" />
@@ -107,11 +102,11 @@ export default function ToolCard({
             {/* min-w-0 lets a long name like "PDF to PowerPoint" wrap inside the
                 column instead of forcing the card wider than its grid track. */}
             <div className="w-full min-w-0 sm:flex-1">
-                <h3 className="text-[10px] font-semibold leading-tight text-neutral-900 transition-colors duration-300 [overflow-wrap:anywhere] group-hover:text-primary dark:text-white sm:text-sm sm:leading-snug">
+                <h3 className="text-[10px] font-semibold leading-tight text-foreground transition-colors duration-300 [overflow-wrap:anywhere] group-hover:text-primary sm:text-sm sm:leading-snug">
                     {shownName}
                 </h3>
 
-                <p className="mt-1 hidden text-[9px] leading-tight text-neutral-500 line-clamp-3 dark:text-neutral-400 sm:mt-1 sm:block sm:text-xs sm:leading-5 sm:line-clamp-2">
+                <p className="mt-1 hidden text-[9px] leading-tight text-muted-foreground line-clamp-3 sm:mt-1 sm:block sm:text-xs sm:leading-5 sm:line-clamp-2">
                     {shownDescription}
                 </p>
             </div>
@@ -126,16 +121,14 @@ export default function ToolCard({
                         right-3
                         top-3
                         rounded-full
-                        bg-orange-100
+                        bg-accent
                         px-2
                         py-0.5
                         text-[10px]
                         font-semibold
                         uppercase
                         tracking-wide
-                        text-orange-600
-                        dark:bg-orange-950
-                        dark:text-orange-400
+                        text-accent-foreground
                     "
                 >
                     {comingSoon ? badgeLabel("Soon") : badgeLabel(badge!)}

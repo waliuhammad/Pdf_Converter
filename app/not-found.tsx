@@ -18,7 +18,7 @@ export default function NotFound() {
             </p>
             <Link
                 href="/tools"
-                className="px-5 py-2.5 rounded-xl bg-[var(--primary)] text-white font-semibold text-sm hover:bg-[var(--primary-hover)] transition-colors shadow-sm"
+                className="px-5 py-2.5 rounded-xl bg-[var(--primary)] text-primary-foreground font-semibold text-sm hover:bg-[var(--primary-hover)] transition-colors shadow-sm"
             >
                 Browse all tools
             </Link>

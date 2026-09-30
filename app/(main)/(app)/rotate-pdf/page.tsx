@@ -272,8 +272,8 @@ export default function RotatePdfPage(): JSX.Element {
                 type="button"
                 onClick={() => setMode("all")}
                 className={`w-full px-4 py-3 sm:py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${mode === "all"
-                  ? "bg-slate-900 text-white dark:bg-white dark:text-zinc-900 shadow-lg"
-                  : "bg-card border border-card text-muted hover:text-slate-900 dark:hover:text-white"
+                  ? "bg-primary text-primary-foreground shadow-lg"
+                  : "bg-card border border-card text-muted hover:text-foreground"
                   }`}
               >
                 <Layers className="w-4 h-4 shrink-0" />
@@ -283,8 +283,8 @@ export default function RotatePdfPage(): JSX.Element {
                 type="button"
                 onClick={() => setMode("custom")}
                 className={`w-full px-4 py-3 sm:py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${mode === "custom"
-                  ? "bg-slate-900 text-white dark:bg-white dark:text-zinc-900 shadow-lg"
-                  : "bg-card border border-card text-muted hover:text-slate-900 dark:hover:text-white"
+                  ? "bg-primary text-primary-foreground shadow-lg"
+                  : "bg-card border border-card text-muted hover:text-foreground"
                   }`}
               >
                 <FileText className="w-4 h-4 shrink-0" />
@@ -305,7 +305,7 @@ export default function RotatePdfPage(): JSX.Element {
                   placeholder="e.g. 1"
                   value={pageNumber}
                   onChange={(e) => setPageNumber(e.target.value)}
-                  className="w-full bg-card border border-card rounded-xl px-3 py-3 sm:py-2.5 text-base sm:text-sm text-fg placeholder-slate-400 focus:outline-none focus:border-slate-900 dark:focus:border-white transition"
+                  className="w-full bg-card border border-card rounded-xl px-3 py-3 sm:py-2.5 text-base sm:text-sm text-fg placeholder:text-muted-foreground focus:outline-none focus:border-primary transition"
                 />
                 <p className="text-[11px] text-muted mt-1.5">Enter the exact page number you wish to rotate.</p>
               </div>
@@ -315,7 +315,7 @@ export default function RotatePdfPage(): JSX.Element {
               <button
                 type="button"
                 onClick={handleRotatePreview}
-                className="w-full sm:flex-1 flex items-center justify-center gap-2 py-3.5 sm:py-3 px-4 rounded-xl bg-[var(--background-secondary)] hover:bg-slate-100 dark:hover:bg-slate-800 border border-card text-[13px] sm:text-sm font-bold text-fg transition shadow-sm"
+                className="w-full sm:flex-1 flex items-center justify-center gap-2 py-3.5 sm:py-3 px-4 rounded-xl bg-[var(--background-secondary)] hover:bg-muted border border-card text-[13px] sm:text-sm font-bold text-fg transition shadow-sm"
               >
                 <RotateCw className="w-4 h-4 shrink-0" />
                 <span>Rotate ({rotation}°)</span>
@@ -323,7 +323,7 @@ export default function RotatePdfPage(): JSX.Element {
               <button
                 type="button"
                 onClick={() => setRotation(90)}
-                className="w-full sm:w-auto py-3 px-4 rounded-xl border border-card text-muted hover:text-slate-900 dark:hover:text-white font-bold text-xs transition-colors"
+                className="w-full sm:w-auto py-3 px-4 rounded-xl border border-card text-muted hover:text-foreground font-bold text-xs transition-colors"
               >
                 Reset
               </button>
@@ -360,7 +360,7 @@ export default function RotatePdfPage(): JSX.Element {
                           {currentDegrees}°
                         </span>
                       </div>
-                      <div className="w-full h-56 sm:h-80 flex items-center justify-center overflow-hidden bg-slate-100 dark:bg-black/60 rounded-lg p-2">
+                      <div className="w-full h-56 sm:h-80 flex items-center justify-center overflow-hidden bg-muted rounded-lg p-2">
                         <canvas
                           ref={(el) => {
                             canvasRefs.current[pageNum] = el;

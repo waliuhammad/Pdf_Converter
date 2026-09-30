@@ -190,7 +190,7 @@ export default function ExcelToPdf(): JSX.Element {
     : [];
 
   return (
-    <div className="w-full text-fg antialiased selection:bg-slate-900 dark:selection:bg-slate-700 selection:text-white px-4 sm:px-6 py-6 sm:py-10">
+    <div className="w-full text-fg antialiased selection:bg-primary selection:text-primary-foreground px-4 sm:px-6 py-6 sm:py-10">
 
       <div className="w-full max-w-4xl mx-auto space-y-5 md:space-y-8">
 
@@ -265,7 +265,7 @@ export default function ExcelToPdf(): JSX.Element {
               <div className="space-y-2">
 
                 <span className="text-[11px] text-muted font-bold uppercase tracking-wider flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-slate-900 dark:text-slate-400 shrink-0" />
+                  <Layers className="w-3.5 h-3.5 text-primary shrink-0" />
                   Select Active Worksheet Preview
                 </span>
 
@@ -276,8 +276,8 @@ export default function ExcelToPdf(): JSX.Element {
                       onClick={() => setSelectedSheetIndex(idx)}
                       className={`py-2 px-4 rounded-xl text-xs font-semibold tracking-wide transition shrink-0 cursor-pointer border ${
                         selectedSheetIndex === idx
-                          ? "bg-slate-900 border-slate-900 text-white shadow-sm dark:bg-slate-900 dark:border-slate-700"
-                          : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-[var(--background-secondary)] dark:border-slate-700/60 dark:text-slate-400 dark:hover:bg-slate-800"
+                          ? "bg-primary border-primary text-primary-foreground shadow-sm"
+                          : "bg-muted border-border text-muted-foreground hover:bg-[var(--background-secondary)]"
                       }`}
                     >
                       {s.name}
@@ -314,7 +314,7 @@ export default function ExcelToPdf(): JSX.Element {
                         )
                       )
                     }
-                    className="w-full bg-card border border-card rounded-xl px-3 py-2 text-xs text-fg mt-1 focus:outline-none focus:border-slate-900 dark:focus:border-slate-500"
+                    className="w-full bg-card border border-card rounded-xl px-3 py-2 text-xs text-fg mt-1 focus:outline-none focus:border-primary"
                   />
                 </div>
 
@@ -335,7 +335,7 @@ export default function ExcelToPdf(): JSX.Element {
                         )
                       )
                     }
-                    className="w-full bg-card border border-card rounded-xl px-3 py-2 text-xs text-fg mt-1 focus:outline-none focus:border-slate-900 dark:focus:border-slate-500"
+                    className="w-full bg-card border border-card rounded-xl px-3 py-2 text-xs text-fg mt-1 focus:outline-none focus:border-primary"
                   />
                 </div>
 
@@ -356,7 +356,7 @@ export default function ExcelToPdf(): JSX.Element {
                         )
                       )
                     }
-                    className="w-full bg-card border border-card rounded-xl px-3 py-2 text-xs text-fg mt-1 focus:outline-none focus:border-slate-900 dark:focus:border-slate-500"
+                    className="w-full bg-card border border-card rounded-xl px-3 py-2 text-xs text-fg mt-1 focus:outline-none focus:border-primary"
                   />
                 </div>
 
@@ -377,7 +377,7 @@ export default function ExcelToPdf(): JSX.Element {
                         )
                       )
                     }
-                    className="w-full bg-card border border-card rounded-xl px-3 py-2 text-xs text-fg mt-1 focus:outline-none focus:border-slate-900 dark:focus:border-slate-500"
+                    className="w-full bg-card border border-card rounded-xl px-3 py-2 text-xs text-fg mt-1 focus:outline-none focus:border-primary"
                   />
                 </div>
 
@@ -393,7 +393,7 @@ export default function ExcelToPdf(): JSX.Element {
                   {previewSlicedData[0]?.length || 0} cols)
                 </span>
 
-                <div className="max-h-[240px] overflow-auto rounded-xl border border-card bg-white dark:bg-black/30">
+                <div className="max-h-[240px] overflow-auto rounded-xl border border-card bg-background">
 
                   <table className="w-full min-w-max text-left text-xs text-muted border-collapse">
 
@@ -403,7 +403,7 @@ export default function ExcelToPdf(): JSX.Element {
                         .map((row, rIdx) => (
                           <tr
                             key={rIdx}
-                            className="border-b border-card hover:bg-slate-100 dark:hover:bg-slate-800/30"
+                            className="border-b border-card hover:bg-muted"
                           >
                             {row.map((cell, cIdx) => (
                               <td
@@ -424,7 +424,7 @@ export default function ExcelToPdf(): JSX.Element {
                 </div>
 
                 {previewSlicedData.length > 10 && (
-                  <span className="text-[11px] text-slate-500 text-center block">
+                  <span className="text-[11px] text-muted-foreground text-center block">
                     Showing first 10 preview rows of your selected range...
                   </span>
                 )}

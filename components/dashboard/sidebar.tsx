@@ -99,7 +99,7 @@ export function Sidebar() {
                                 onClick={() => isMobile && setOpen(false)}
                                 title={collapsed && !isMobile ? t(item.key) : undefined}
                                 className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-base font-medium transition-all ${active
-                                    ? "bg-[var(--primary)] text-white shadow-md"
+                                    ? "bg-primary text-primary-foreground shadow-md"
                                     : "text-fg hover:bg-[var(--background-secondary)] hover:text-fg"
                                     } ${collapsed && !isMobile ? "justify-center px-2" : ""}`}
                             >
@@ -121,7 +121,7 @@ export function Sidebar() {
                     <Link
                         href="/pricing"
                         onClick={() => isMobile && setOpen(false)}
-                        className="block text-center text-xs font-medium py-1.5 rounded-lg bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)] transition-colors shadow-sm"
+                        className="block text-center text-xs font-medium py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-[var(--primary-hover)] transition-colors shadow-sm"
                     >
                         {t("nav.upgradeCta")}
                     </Link>

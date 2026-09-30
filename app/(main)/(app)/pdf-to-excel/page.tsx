@@ -78,14 +78,14 @@ export default function PdfToExcel(): JSX.Element {
   };
 
   return (
-    <div className="w-full text-fg antialiased selection:bg-slate-900 dark:selection:bg-blue-500 selection:text-white px-4 sm:px-6 py-6 sm:py-10">
+    <div className="w-full text-fg antialiased selection:bg-primary selection:text-primary-foreground px-4 sm:px-6 py-6 sm:py-10">
       <div className="w-full max-w-4xl mx-auto space-y-5 md:space-y-8">
 
         <div className="text-center space-y-1.5 md:space-y-2">
           <div className="flex justify-center mb-1 md:mb-0">
-            <div className="w-11 h-11 flex items-center justify-center rounded-2xl bg-card border border-card shadow-sm md:w-auto md:h-auto md:inline-flex md:px-3 md:py-1 md:rounded-full md:gap-1.5 md:shadow-none md:bg-slate-100 dark:md:bg-blue-500/10 md:border-slate-200 dark:md:border-blue-500/20">
-              <Sparkles className="w-5 h-5 md:w-3.5 md:h-3.5 text-fg md:text-slate-700 dark:md:text-blue-400" />
-              <span className="hidden md:inline text-slate-700 dark:text-blue-400 text-xs font-semibold tracking-wide uppercase">
+            <div className="w-11 h-11 flex items-center justify-center rounded-2xl bg-card border border-card shadow-sm md:w-auto md:h-auto md:inline-flex md:px-3 md:py-1 md:rounded-full md:gap-1.5 md:shadow-none md:bg-primary/10 md:border-primary/20">
+              <Sparkles className="w-5 h-5 md:w-3.5 md:h-3.5 text-fg md:text-primary" />
+              <span className="hidden md:inline text-primary text-xs font-semibold tracking-wide uppercase">
                 Document Conversion Suite
               </span>
             </div>
@@ -112,7 +112,7 @@ export default function PdfToExcel(): JSX.Element {
           <div className="space-y-4 md:space-y-6">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-[var(--background-secondary)] border border-card p-3 md:p-4 rounded-2xl">
               <div className="flex items-center space-x-3 min-w-0">
-                <div className="w-10 h-10 shrink-0 rounded-xl bg-slate-100 dark:bg-blue-500/10 border border-slate-200 dark:border-blue-500/20 flex items-center justify-center text-slate-700 dark:text-blue-400">
+                <div className="w-10 h-10 shrink-0 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
                   <FileText className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
@@ -142,11 +142,11 @@ export default function PdfToExcel(): JSX.Element {
                     <FileSpreadsheet className="w-3.5 h-3.5 text-muted" /> Extracted Rows Preview ({extractedRows.length} rows)
                   </span>
                 </div>
-                <div className="max-h-[260px] overflow-auto rounded-xl border border-card bg-white dark:bg-black/30">
+                <div className="max-h-[260px] overflow-auto rounded-xl border border-card bg-background">
                   <table className="w-full min-w-max text-left text-xs text-muted border-collapse">
                     <tbody>
                       {extractedRows.slice(0, 10).map((row, rIdx) => (
-                        <tr key={rIdx} className="border-b border-slate-100 dark:border-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/30">
+                        <tr key={rIdx} className="border-b border-border hover:bg-muted">
                           {row.map((cell, cIdx) => (
                             <td key={cIdx} className="p-2.5 truncate max-w-[150px]">
                               {cell !== null && cell !== undefined ? String(cell) : ""}
@@ -171,7 +171,7 @@ export default function PdfToExcel(): JSX.Element {
         {extractedRows && !loading && (
           <button
             onClick={handleDownloadExcel}
-            className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] active:bg-[var(--primary-hover)] text-[var(--primary-foreground)] font-semibold py-3.5 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg shadow-slate-900/10 border border-[var(--primary)] cursor-pointer"
+            className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] active:bg-[var(--primary-hover)] text-[var(--primary-foreground)] font-semibold py-3.5 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg shadow-primary/10 border border-[var(--primary)] cursor-pointer"
           >
             <Download className="w-5 h-5" />
             <span>Download Extracted Excel (.xlsx)</span>

@@ -391,9 +391,9 @@ export default function PdfToImageConverter() {
         {/* Header Badge & Title */}
         <div className="text-center space-y-1.5 sm:space-y-3">
           <div className="flex justify-center mb-1 sm:mb-0">
-            <div className="w-11 h-11 flex items-center justify-center rounded-2xl bg-[var(--background-secondary)] border border-card shadow-sm sm:w-auto sm:h-auto sm:inline-flex sm:gap-1.5 sm:px-3.5 sm:py-1.5 sm:rounded-full sm:shadow-sm sm:bg-purple-50 dark:sm:bg-slate-800 sm:border-purple-200 dark:sm:border-slate-700">
-              <FileCheck className="w-5 h-5 text-fg sm:w-4 sm:h-4 sm:text-purple-900 dark:sm:text-purple-300" />
-              <span className="hidden sm:inline text-purple-900 dark:text-purple-300 text-xs font-semibold tracking-wide uppercase">
+            <div className="w-11 h-11 flex items-center justify-center rounded-2xl bg-[var(--background-secondary)] border border-card shadow-sm sm:w-auto sm:h-auto sm:inline-flex sm:gap-1.5 sm:px-3.5 sm:py-1.5 sm:rounded-full sm:shadow-sm sm:bg-primary/10 sm:border-primary/20">
+              <FileCheck className="w-5 h-5 text-fg sm:w-4 sm:h-4 sm:text-primary" />
+              <span className="hidden sm:inline text-primary text-xs font-semibold tracking-wide uppercase">
                 Professional PDF Toolkit
               </span>
             </div>
@@ -435,7 +435,7 @@ export default function PdfToImageConverter() {
           ) : (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 rounded-xl bg-[var(--background-secondary)] border border-card shadow-sm">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 shrink-0 rounded-lg bg-purple-100 dark:bg-slate-800 text-purple-900 dark:text-purple-300 flex items-center justify-center border border-purple-200 dark:border-slate-700">
+                <div className="w-10 h-10 shrink-0 rounded-lg bg-primary/10 text-primary flex items-center justify-center border border-primary/20">
                   <FileText className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
@@ -447,7 +447,7 @@ export default function PdfToImageConverter() {
               </div>
               <button
                 onClick={handleRemoveFile}
-                className="self-end sm:self-auto shrink-0 p-2 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                className="self-end sm:self-auto shrink-0 p-2 text-muted-foreground hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                 title="Remove file"
               >
                 <Trash2 className="w-5 h-5" />
@@ -467,7 +467,7 @@ export default function PdfToImageConverter() {
                   onClick={() => setMode("whole")}
                   className={`flex items-center justify-center gap-2 py-2.5 px-3 sm:py-3 sm:px-4 rounded-xl border text-xs sm:text-sm font-semibold transition-all ${mode === "whole"
                     ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)] shadow-md"
-                    : "border-card bg-[var(--background-secondary)] text-muted hover:bg-slate-100 dark:hover:bg-slate-800"
+                    : "border-card bg-[var(--background-secondary)] text-muted hover:bg-muted"
                     }`}
                 >
                   <Layers className="w-4 h-4" /> Whole Document
@@ -476,8 +476,8 @@ export default function PdfToImageConverter() {
                   type="button"
                   onClick={() => setMode("custom")}
                   className={`flex items-center justify-center gap-2 py-2.5 px-3 sm:py-3 sm:px-4 rounded-xl border text-xs sm:text-sm font-semibold transition-all ${mode === "custom"
-                    ? "border-slate-900 dark:border-slate-700 bg-slate-900 dark:bg-slate-800 text-white shadow-md"
-                    : "border-card bg-[var(--background-secondary)] text-muted hover:bg-slate-100 dark:hover:bg-slate-800"
+                    ? "border-primary bg-primary text-primary-foreground shadow-md"
+                    : "border-card bg-[var(--background-secondary)] text-muted hover:bg-muted"
                     }`}
                 >
                   <FileText className="w-4 h-4" /> Specific Page
@@ -495,7 +495,7 @@ export default function PdfToImageConverter() {
                     max={numPages}
                     value={pageNumber}
                     onChange={(e) => setPageNumber(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border border-card focus:ring-2 focus:ring-purple-900 dark:focus:ring-purple-400 focus:outline-none text-fg bg-card"
+                    className="w-full px-4 py-2.5 rounded-lg border border-card focus:ring-2 focus:ring-ring focus:outline-none text-fg bg-card"
                   />
                 </div>
               )}

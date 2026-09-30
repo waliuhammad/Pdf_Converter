@@ -29,7 +29,7 @@ export function SidebarUser({ compact }: { compact: boolean }) {
             className={`flex items-center gap-2.5 px-2 py-2 mb-2 rounded-xl bg-[var(--background-secondary)] border border-card ${compact ? "justify-center px-0" : ""
                 }`}
         >
-            <div className="w-8 h-8 rounded-full bg-[var(--primary)] text-white flex items-center justify-center text-sm font-semibold shrink-0">
+            <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold shrink-0">
                 {initial}
             </div>
             {!compact && (

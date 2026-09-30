@@ -306,7 +306,7 @@ export default function SplitPdfPage() {
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-fg tracking-tight px-2">
           Split PDF Pages
         </h1>
-        <p className="text-slate-600 dark:text-[#9ca3af] text-[13px] sm:text-sm mt-1.5 max-w-xs sm:max-w-lg mx-auto leading-relaxed">
+        <p className="text-muted-foreground text-[13px] sm:text-sm mt-1.5 max-w-xs sm:max-w-lg mx-auto leading-relaxed">
           Separate one PDF into multiple files, extract page ranges, or split documents easily.
         </p>
       </div>
@@ -327,7 +327,7 @@ export default function SplitPdfPage() {
               </div>
               <div className="min-w-0">
                 <p className="text-fg text-[13px] sm:text-sm font-bold truncate">{fileDetails.name}</p>
-                <p className="text-[11px] sm:text-xs text-slate-600 dark:text-[#9ca3af] mt-0.5 truncate">
+                <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 truncate">
                   Size: <strong className="text-fg">{fileDetails.size}</strong> • Pages:{" "}
                   <strong className="text-fg">{pageCount}</strong>
                 </p>
@@ -349,7 +349,7 @@ export default function SplitPdfPage() {
                 <span className="text-[11px] sm:text-xs font-extrabold text-fg uppercase tracking-wider">
                   Page Preview
                 </span>
-                <span className="text-[10px] sm:text-xs text-slate-500 dark:text-[#9ca3af]">
+                <span className="text-[10px] sm:text-xs text-muted-foreground">
                   Scroll • Tap to select
                 </span>
               </div>
@@ -377,27 +377,27 @@ export default function SplitPdfPage() {
                           key={page}
                           onClick={() => !done && handlePageClick(page)}
                           className={`cursor-pointer w-full max-w-[260px] sm:max-w-[340px] h-[240px] sm:h-[300px] rounded-2xl border p-0.5 flex flex-col items-center justify-between transition-all select-none shrink-0 ${isEdge
-                            ? "border-slate-900 dark:border-white bg-card shadow-md"
+                            ? "border-primary bg-card shadow-md"
                             : inRange
-                              ? "border-slate-400 dark:border-[#4a5568] bg-card/30"
-                              : "border-card bg-card hover:border-slate-300 dark:hover:border-[#333a4a]"
+                              ? "border-primary/40 bg-card/30"
+                              : "border-card bg-card hover:border-foreground/20"
                             }`}
                         >
                           <div className="w-full flex items-center justify-between gap-1 px-2 pt-1 mb-0.5 shrink-0">
                             <span
                               className={`text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-md truncate ${isEdge
-                                ? "bg-slate-900 text-white dark:bg-white dark:text-zinc-900"
-                                : "bg-card text-slate-700 dark:text-[#d1d5db]"
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-card text-foreground/80"
                                 }`}
                             >
                               Page {page} of {pageCount}
                             </span>
-                            <span className="text-[10px] font-medium text-slate-500 dark:text-[#9ca3af] shrink-0">
+                            <span className="text-[10px] font-medium text-muted-foreground shrink-0">
                               {isEdge ? "Edge" : inRange ? "Selected" : "Tap"}
                             </span>
                           </div>
 
-                          <div className="flex-1 w-full flex items-center justify-center bg-slate-100 dark:bg-[var(--background)] rounded-xl overflow-hidden border border-card p-0 m-0">
+                          <div className="flex-1 w-full flex items-center justify-center bg-muted rounded-xl overflow-hidden border border-card p-0 m-0">
                             {thumbnails[idx] ? (
                               <img
                                 src={thumbnails[idx]}
@@ -405,7 +405,7 @@ export default function SplitPdfPage() {
                                 className="object-cover h-full w-full rounded m-0 p-0 block"
                               />
                             ) : (
-                              <Loader2 className="animate-spin text-slate-400 dark:text-[#9ca3af]" size={20} />
+                              <Loader2 className="animate-spin text-muted-foreground" size={20} />
                             )}
                           </div>
                         </div>
@@ -416,7 +416,7 @@ export default function SplitPdfPage() {
                   <div
                     ref={trackRef}
                     onClick={handleTrackClick}
-                    className="relative w-1.5 sm:w-2 bg-slate-200 dark:bg-[var(--card)] rounded-full cursor-pointer my-1 shrink-0"
+                    className="relative w-1.5 sm:w-2 bg-muted rounded-full cursor-pointer my-1 shrink-0"
                   >
                     <div
                       onPointerDown={handleThumbPointerDown}
@@ -426,19 +426,19 @@ export default function SplitPdfPage() {
                         touchAction: "none",
                       }}
                       className={`absolute top-0 left-0 w-full rounded-full cursor-grab active:cursor-grabbing transition-colors ${isDraggingThumb
-                        ? "bg-slate-900 dark:bg-white"
-                        : "bg-slate-400 dark:bg-[#4a5568] hover:bg-slate-500 dark:hover:bg-[#718096]"
+                        ? "bg-primary"
+                        : "bg-foreground/30 hover:bg-foreground/45"
                         }`}
                     />
                   </div>
                 </div>
               ) : (
-                <div className="h-[300px] sm:h-[360px] flex items-center justify-center text-slate-500 dark:text-[#9ca3af] my-2">
+                <div className="h-[300px] sm:h-[360px] flex items-center justify-center text-muted-foreground my-2">
                   <Loader2 className="animate-spin" size={24} />
                 </div>
               )}
 
-              <div className="pt-2 px-4 border-t border-card flex items-center justify-between text-[11px] sm:text-xs text-slate-500 dark:text-[#9ca3af]">
+              <div className="pt-2 px-4 border-t border-card flex items-center justify-between text-[11px] sm:text-xs text-muted-foreground">
                 <span>Total pages: {pageCount}</span>
                 <span>Ready to split</span>
               </div>
@@ -462,7 +462,7 @@ export default function SplitPdfPage() {
                         onClick={() => handleModeChange("range")}
                         className={`w-full px-4 py-3 sm:py-2.5 rounded-xl text-xs font-bold transition-all ${splitMode === "range"
                           ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-lg"
-                          : "bg-card border border-card text-slate-600 dark:text-[#9ca3af] hover:text-slate-900 dark:hover:text-white"
+                          : "bg-card border border-card text-muted-foreground hover:text-foreground"
                           }`}
                       >
                         Extract Page Range
@@ -472,7 +472,7 @@ export default function SplitPdfPage() {
                         onClick={() => handleModeChange("every")}
                         className={`w-full px-4 py-3 sm:py-2.5 rounded-xl text-xs font-bold transition-all ${splitMode === "every"
                           ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-lg"
-                          : "bg-card border border-card text-slate-600 dark:text-[#9ca3af] hover:text-slate-900 dark:hover:text-white"
+                          : "bg-card border border-card text-muted-foreground hover:text-foreground"
                           }`}
                       >
                         Split Every N Pages
@@ -482,7 +482,7 @@ export default function SplitPdfPage() {
                     {splitMode === "range" ? (
                       <div className="grid grid-cols-2 gap-3 pt-1">
                         <div>
-                          <label className="text-[10px] sm:text-xs uppercase tracking-wider font-semibold text-slate-500 dark:text-[#9ca3af] block mb-1">
+                          <label className="text-[10px] sm:text-xs uppercase tracking-wider font-semibold text-muted-foreground block mb-1">
                             From Page
                           </label>
                           <input
@@ -497,11 +497,11 @@ export default function SplitPdfPage() {
                               setDone(false);
                               setErrorMessage(null);
                             }}
-                            className="w-full bg-card border border-card rounded-xl px-3 py-2.5 sm:py-2 text-fg text-base sm:text-sm focus:outline-none focus:border-slate-900 dark:focus:border-white"
+                            className="w-full bg-card border border-card rounded-xl px-3 py-2.5 sm:py-2 text-fg text-base sm:text-sm focus:outline-none focus:border-primary"
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] sm:text-xs uppercase tracking-wider font-semibold text-slate-500 dark:text-[#9ca3af] block mb-1">
+                          <label className="text-[10px] sm:text-xs uppercase tracking-wider font-semibold text-muted-foreground block mb-1">
                             To Page
                           </label>
                           <input
@@ -516,13 +516,13 @@ export default function SplitPdfPage() {
                               setDone(false);
                               setErrorMessage(null);
                             }}
-                            className="w-full bg-card border border-card rounded-xl px-3 py-2.5 sm:py-2 text-fg text-base sm:text-sm focus:outline-none focus:border-slate-900 dark:focus:border-white"
+                            className="w-full bg-card border border-card rounded-xl px-3 py-2.5 sm:py-2 text-fg text-base sm:text-sm focus:outline-none focus:border-primary"
                           />
                         </div>
                       </div>
                     ) : (
                       <div className="pt-1">
-                        <label className="text-[10px] sm:text-xs uppercase tracking-wider font-semibold text-slate-500 dark:text-[#9ca3af] block mb-1">
+                        <label className="text-[10px] sm:text-xs uppercase tracking-wider font-semibold text-muted-foreground block mb-1">
                           Pages per File
                         </label>
                         <input
@@ -536,7 +536,7 @@ export default function SplitPdfPage() {
                             setDone(false);
                             setErrorMessage(null);
                           }}
-                          className="w-full bg-card border border-card rounded-xl px-3 py-2.5 sm:py-2 text-fg text-base sm:text-sm focus:outline-none focus:border-slate-900 dark:focus:border-white"
+                          className="w-full bg-card border border-card rounded-xl px-3 py-2.5 sm:py-2 text-fg text-base sm:text-sm focus:outline-none focus:border-primary"
                         />
                       </div>
                     )}
@@ -555,7 +555,7 @@ export default function SplitPdfPage() {
                       <button
                         type="button"
                         onClick={resetAll}
-                        className="w-full sm:w-auto py-3 px-4 rounded-2xl border border-card text-slate-600 dark:text-[#9ca3af] hover:text-slate-900 dark:hover:text-white font-bold text-xs transition-colors"
+                        className="w-full sm:w-auto py-3 px-4 rounded-2xl border border-card text-muted-foreground hover:text-foreground font-bold text-xs transition-colors"
                       >
                         Clear All
                       </button>
@@ -583,7 +583,7 @@ export default function SplitPdfPage() {
                           onClick={() => setDownloadChoice("split")}
                           className={`w-full px-4 py-3 sm:py-2.5 rounded-xl text-xs font-bold transition-all text-left flex items-center justify-between gap-2 ${downloadChoice === "split"
                             ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-lg"
-                            : "bg-card border border-card text-slate-600 dark:text-[#9ca3af] hover:text-slate-900 dark:hover:text-white"
+                            : "bg-card border border-card text-muted-foreground hover:text-foreground"
                             }`}
                         >
                           <span>Split Part</span>
@@ -596,7 +596,7 @@ export default function SplitPdfPage() {
                           onClick={() => setDownloadChoice("remaining")}
                           className={`w-full px-4 py-3 sm:py-2.5 rounded-xl text-xs font-bold transition-all text-left flex items-center justify-between gap-2 ${downloadChoice === "remaining"
                             ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-lg"
-                            : "bg-card border border-card text-slate-600 dark:text-[#9ca3af] hover:text-slate-900 dark:hover:text-white"
+                            : "bg-card border border-card text-muted-foreground hover:text-foreground"
                             }`}
                         >
                           <span>Remaining Part</span>
@@ -606,7 +606,7 @@ export default function SplitPdfPage() {
                           onClick={() => setDownloadChoice("both")}
                           className={`w-full px-4 py-3 sm:py-2.5 rounded-xl text-xs font-bold transition-all text-left flex items-center justify-between gap-2 ${downloadChoice === "both"
                             ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-lg"
-                            : "bg-card border border-card text-slate-600 dark:text-[#9ca3af] hover:text-slate-900 dark:hover:text-white"
+                            : "bg-card border border-card text-muted-foreground hover:text-foreground"
                             }`}
                         >
                           <span>Both (Split &amp; Remaining)</span>
@@ -618,7 +618,7 @@ export default function SplitPdfPage() {
                         <button
                           type="button"
                           onClick={() => setDone(false)}
-                          className="w-full sm:w-auto py-3 px-4 rounded-2xl border border-card text-slate-600 dark:text-[#9ca3af] hover:text-slate-900 dark:hover:text-white font-bold text-xs transition-colors"
+                          className="w-full sm:w-auto py-3 px-4 rounded-2xl border border-card text-muted-foreground hover:text-foreground font-bold text-xs transition-colors"
                         >
                           Back
                         </button>

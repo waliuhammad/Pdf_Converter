@@ -57,15 +57,15 @@ export default function LanguageSelect({ value, onChange, className = "" }: Lang
             <button
                 type="button"
                 onClick={() => setOpen((o) => !o)}
-                className="flex items-center gap-2 bg-black/20 border border-white/10 rounded-lg text-sm text-fg px-3 py-1.5 focus:outline-none focus:border-[var(--primary)] hover:border-[var(--primary)]/50 transition-colors"
+                className="flex items-center gap-2 bg-muted border border-border rounded-lg text-sm text-fg px-3 py-1.5 focus:outline-none focus:border-[var(--primary)] hover:border-[var(--primary)]/50 transition-colors"
             >
                 <span>{value}</span>
                 <ChevronDown size={14} className={`text-muted transition-transform ${open ? "rotate-180" : ""}`} />
             </button>
 
             {open && (
-                <div className="absolute right-0 z-50 mt-2 w-64 rounded-xl border border-white/10 bg-card shadow-xl shadow-black/30 overflow-hidden">
-                    <div className="flex items-center gap-2 px-3 py-2 border-b border-white/10">
+                <div className="absolute right-0 z-50 mt-2 w-64 rounded-xl border border-border bg-popover shadow-xl shadow-foreground/10 overflow-hidden">
+                    <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
                         <Search size={14} className="text-muted shrink-0" />
                         <input
                             ref={searchRef}
@@ -85,7 +85,7 @@ export default function LanguageSelect({ value, onChange, className = "" }: Lang
                                     key={lang.code}
                                     type="button"
                                     onClick={() => handleSelect(lang.name)}
-                                    className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-white/5 transition-colors ${
+                                    className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-muted transition-colors ${
                                         lang.name === value ? "text-[var(--primary)]" : "text-fg"
                                     }`}
                                 >

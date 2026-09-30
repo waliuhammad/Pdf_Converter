@@ -43,7 +43,7 @@ export default function DevPlanSwitcher() {
                 <div className="mb-2 w-[240px] overflow-hidden rounded-2xl border border-border bg-background p-2 shadow-2xl">
                     <div className="border-b border-border px-3 py-2">
                         <div className="flex items-center gap-2">
-                            <FlaskConical className="h-4 w-4 text-violet-500" />
+                            <FlaskConical className="h-4 w-4 text-primary" />
 
                             <span className="text-sm font-semibold">
                                 Test Subscription
@@ -80,7 +80,7 @@ export default function DevPlanSwitcher() {
                                     </div>
 
                                     {selected && (
-                                        <Check className="h-4 w-4 text-violet-500" />
+                                        <Check className="h-4 w-4 text-primary" />
                                     )}
                                 </button>
                             );
@@ -92,13 +92,13 @@ export default function DevPlanSwitcher() {
             <button
                 type="button"
                 onClick={() => setOpen((value) => !value)}
-                className="flex items-center gap-2 rounded-full border border-violet-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-900 shadow-lg transition-all hover:shadow-xl dark:border-violet-800 dark:bg-gray-950 dark:text-white"
+                className="flex items-center gap-2 rounded-full border border-primary/30 bg-popover px-4 py-2.5 text-sm font-medium text-popover-foreground shadow-lg transition-all hover:shadow-xl"
             >
-                <FlaskConical className="h-4 w-4 text-violet-500" />
+                <FlaskConical className="h-4 w-4 text-primary" />
 
                 <span>
                     Test:{" "}
-                    <strong className="text-violet-500">
+                    <strong className="text-primary">
                         {currentPlan.name}
                     </strong>
                 </span>

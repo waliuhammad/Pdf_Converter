@@ -37,7 +37,7 @@ export default function Error({
             <div className="flex items-center gap-3 mt-4">
                 <button
                     onClick={() => unstable_retry()}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--primary)] text-white font-semibold text-sm hover:bg-[var(--primary-hover)] transition-colors shadow-sm"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--primary)] text-primary-foreground font-semibold text-sm hover:bg-[var(--primary-hover)] transition-colors shadow-sm"
                 >
                     <RotateCw className="w-4 h-4" />
                     Try again

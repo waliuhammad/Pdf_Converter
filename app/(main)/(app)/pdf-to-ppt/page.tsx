@@ -90,7 +90,7 @@ export default function PdfToPpt(): JSX.Element {
   };
 
   return (
-    <div className="min-h-screen w-full bg-white dark:bg-slate-950 text-fg flex flex-col antialiased selection:bg-blue-500 selection:text-white">
+    <div className="min-h-screen w-full bg-background text-fg flex flex-col antialiased selection:bg-primary selection:text-primary-foreground">
       {/* Top nav bar */}
       <header className="w-full flex items-center justify-between px-4 sm:px-6 py-4 border-b border-card">
         <span className="text-base sm:text-lg font-bold tracking-tight text-fg">PDFAI</span>
@@ -131,7 +131,7 @@ export default function PdfToPpt(): JSX.Element {
             <div className="space-y-4 sm:space-y-5">
               <div className="flex items-center justify-between gap-3 bg-[var(--background-secondary)] border border-card p-3 sm:p-4 rounded-2xl">
                 <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
                     <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                   <div className="min-w-0">
@@ -158,7 +158,7 @@ export default function PdfToPpt(): JSX.Element {
 
               {success && (
                 <div className="bg-[var(--background-secondary)] border border-card rounded-2xl p-5 sm:p-6 text-center space-y-2.5 sm:space-y-3">
-                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-slate-900/10 dark:bg-slate-800 border border-slate-900/20 dark:border-slate-700 flex items-center justify-center text-fg mx-auto">
+                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-muted border border-border flex items-center justify-center text-fg mx-auto">
                     <FileStack className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
                   <h3 className="text-sm font-semibold text-fg">Presentation Ready!</h3>

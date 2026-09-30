@@ -99,7 +99,7 @@ export function BillingTab() {
             {isFree ? (
                 <Link
                     href="/pricing"
-                    className="inline-block px-5 py-2.5 rounded-full bg-[var(--primary)] text-white text-sm font-medium hover:bg-[var(--primary-hover)] transition-colors"
+                    className="inline-block px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:bg-[var(--primary-hover)] transition-colors"
                 >
                     Upgrade Plan
                 </Link>
@@ -107,7 +107,7 @@ export function BillingTab() {
                 <button
                     onClick={openPortal}
                     disabled={opening}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--primary)] text-white text-sm font-medium hover:bg-[var(--primary-hover)] transition-colors disabled:opacity-60"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:bg-[var(--primary-hover)] transition-colors disabled:opacity-60"
                 >
                     {opening && <Loader2 size={15} className="animate-spin" />}
                     Manage subscription

@@ -314,15 +314,15 @@ export default function MergePdfPage() {
   const isListVisible = !isCollapsible || isFileListExpanded;
 
   return (
-    <div className="max-w-7xl mx-auto w-full px-4 py-8 text-[#222430] dark:text-white bg-white dark:bg-transparent transition-colors">
+    <div className="max-w-7xl mx-auto w-full px-4 py-8 text-foreground bg-background transition-colors">
       <div className="text-center mb-8">
         <div
-          className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center mb-3 shadow-inner bg-[var(--background-secondary)] border border-[#222430]/20 dark:border-white/20 text-[#222430] dark:text-white"
+          className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center mb-3 shadow-inner bg-[var(--background-secondary)] border border-foreground/20 text-foreground"
         >
           <Layers size={28} />
         </div>
-        <h1 className="text-2xl lg:text-3xl font-extrabold tracking-tight text-[#222430] dark:text-white">Merge, Rotate & Reorder PDF Pages</h1>
-        <p className="text-[#222430]/70 dark:text-white/80 text-sm mt-1.5 max-w-lg mx-auto">
+        <h1 className="text-2xl lg:text-3xl font-extrabold tracking-tight text-foreground">Merge, Rotate & Reorder PDF Pages</h1>
+        <p className="text-foreground/70 text-sm mt-1.5 max-w-lg mx-auto">
           Visually inspect layout structure, preview clear pages in large format with native scrolling, rotate pages in both directions, and sequence your final PDF output.
         </p>
       </div>
@@ -347,17 +347,17 @@ export default function MergePdfPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Sidebar Card */}
           <div
-            className={`lg:col-span-5 border border-[#222430]/15 dark:border-white/20 rounded-3xl p-4 shadow-sm flex flex-col bg-[var(--background-secondary)] text-[#222430] dark:text-white transition-all duration-200 ${isCollapsible ? "max-h-[600px]" : "h-auto"
+            className={`lg:col-span-5 border border-foreground/15 rounded-3xl p-4 shadow-sm flex flex-col bg-[var(--background-secondary)] text-foreground transition-all duration-200 ${isCollapsible ? "max-h-[600px]" : "h-auto"
               }`}
           >
             <div
-              className={`flex items-center justify-between border-[#222430]/10 dark:border-white/20 ${isListVisible ? "pb-3 mb-3 border-b" : "pb-1"
+              className={`flex items-center justify-between border-foreground/10 ${isListVisible ? "pb-3 mb-3 border-b" : "pb-1"
                 } ${isCollapsible ? "cursor-pointer select-none" : ""}`}
               onClick={() => {
                 if (isCollapsible) setIsFileListExpanded((prev) => !prev);
               }}
             >
-              <span className="text-xs font-bold uppercase tracking-wider text-[#222430]/70 dark:text-white flex items-center gap-1.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-foreground/70 flex items-center gap-1.5">
                 Source Files ({sourceFiles.length})
                 {isCollapsible && (
                   isFileListExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />
@@ -369,7 +369,7 @@ export default function MergePdfPage() {
                   e.stopPropagation();
                   fileInputRef.current?.click();
                 }}
-                className="p-1 rounded-lg border border-[#222430]/10 dark:border-white/20 bg-[#222430]/5 dark:bg-[var(--background-secondary)] text-[#222430] dark:text-white hover:bg-[#222430]/10 dark:hover:bg-white dark:hover:text-[#222430] transition-colors"
+                className="p-1 rounded-lg border border-foreground/10 bg-muted text-foreground hover:bg-foreground/10 transition-colors"
                 title="Add More PDFs"
               >
                 <Plus size={16} />
@@ -394,9 +394,9 @@ export default function MergePdfPage() {
                       onDrop={(e) => handleDrop(e, sf.fileIndex)}
                       onDragEnd={handleDragEnd}
                       onClick={() => jumpToFile(sf.fileIndex)}
-                      className={`py-4 px-3 rounded-2xl border border-[#222430]/20 dark:border-white/30 cursor-pointer transition-all flex items-center gap-2 relative group text-[#222430] dark:text-white overflow-hidden w-full box-border shadow-sm ${isSelected ? "ring-2 ring-[#222430] dark:ring-white bg-[#222430]/5 dark:bg-[var(--background-secondary)]" : "bg-[var(--background-secondary)] hover:bg-[#222430]/5 dark:hover:bg-white/5"
+                      className={`py-4 px-3 rounded-2xl border border-foreground/20 cursor-pointer transition-all flex items-center gap-2 relative group text-foreground overflow-hidden w-full box-border shadow-sm ${isSelected ? "ring-2 ring-primary bg-primary/5" : "bg-[var(--background-secondary)] hover:bg-foreground/5"
                         } ${isBeingDragged ? "opacity-40 border-dashed" : ""
-                        } ${isDragOver ? "border-t-2 border-t-[#222430] dark:border-t-white scale-[1.02]" : ""
+                        } ${isDragOver ? "border-t-2 border-t-primary scale-[1.02]" : ""
                         }`}
                     >
                       {/* Reorder controls: arrows work everywhere including touch
@@ -409,7 +409,7 @@ export default function MergePdfPage() {
                             e.stopPropagation();
                             moveFile(sf.fileIndex, "up");
                           }}
-                          className="p-1 rounded-md text-[#222430]/60 dark:text-white/60 hover:text-[#222430] dark:hover:text-white disabled:opacity-20 transition-colors"
+                          className="p-1 rounded-md text-foreground/60 hover:text-foreground disabled:opacity-20 transition-colors"
                           title="Move up"
                         >
                           <ChevronUp size={16} />
@@ -421,7 +421,7 @@ export default function MergePdfPage() {
                             e.stopPropagation();
                             moveFile(sf.fileIndex, "down");
                           }}
-                          className="p-1 rounded-md text-[#222430]/60 dark:text-white/60 hover:text-[#222430] dark:hover:text-white disabled:opacity-20 transition-colors"
+                          className="p-1 rounded-md text-foreground/60 hover:text-foreground disabled:opacity-20 transition-colors"
                           title="Move down"
                         >
                           <ChevronDown size={16} />
@@ -429,19 +429,19 @@ export default function MergePdfPage() {
                       </div>
 
                       <div
-                        className="cursor-grab active:cursor-grabbing p-1 shrink-0 text-[#222430]/50 dark:text-white/50 hover:text-[#222430] dark:hover:text-white transition-colors hidden sm:block"
+                        className="cursor-grab active:cursor-grabbing p-1 shrink-0 text-foreground/50 hover:text-foreground transition-colors hidden sm:block"
                         title="Drag up or down to reorder"
                       >
                         <GripVertical size={16} />
                       </div>
 
-                      <div className="w-9 h-9 rounded-xl border border-[#222430]/20 dark:border-white/30 bg-[#222430]/5 dark:bg-white/5 flex items-center justify-center shrink-0 text-[#222430] dark:text-white">
+                      <div className="w-9 h-9 rounded-xl border border-foreground/20 bg-foreground/5 flex items-center justify-center shrink-0 text-foreground">
                         <FileText size={18} />
                       </div>
 
                       <div className="min-w-0 flex-1 overflow-hidden pr-1">
-                        <p className="text-xs font-bold truncate text-[#222430] dark:text-white w-full tracking-tight">{sf.name}</p>
-                        <p className="text-[11px] mt-0.5 text-[#222430]/60 dark:text-white/70 font-medium">{sf.size} • {sf.pageCount} {sf.pageCount === 1 ? "page" : "pages"}</p>
+                        <p className="text-xs font-bold truncate text-foreground w-full tracking-tight">{sf.name}</p>
+                        <p className="text-[11px] mt-0.5 text-foreground/60 font-medium">{sf.size} • {sf.pageCount} {sf.pageCount === 1 ? "page" : "pages"}</p>
                       </div>
 
                       <button
@@ -450,7 +450,7 @@ export default function MergePdfPage() {
                           e.stopPropagation();
                           removeFile(sf.fileIndex);
                         }}
-                        className="p-2 rounded-xl border border-[#222430]/15 dark:border-white/20 bg-[var(--background-secondary)] transition-all shrink-0 text-[#222430]/70 dark:text-white/70 hover:text-red-600 dark:hover:text-red-400 hover:border-red-500/50 hover:bg-red-500/10 shadow-sm"
+                        className="p-2 rounded-xl border border-foreground/15 bg-[var(--background-secondary)] transition-all shrink-0 text-foreground/70 hover:text-red-600 dark:hover:text-red-400 hover:border-red-500/50 hover:bg-red-500/10 shadow-sm"
                         title="Delete File"
                       >
                         <Trash2 size={16} />
@@ -466,29 +466,29 @@ export default function MergePdfPage() {
           <div className="lg:col-span-7 space-y-6">
             {pagesList.length > 0 && (
               <div
-                className="border border-[#222430]/15 dark:border-white/20 rounded-3xl p-6 shadow-md space-y-6 bg-[var(--background-secondary)] text-[#222430] dark:text-white transition-colors"
+                className="border border-foreground/15 rounded-3xl p-6 shadow-md space-y-6 bg-[var(--background-secondary)] text-foreground transition-colors"
               >
-                <div className="flex items-center justify-between pb-3 border-b border-[#222430]/10 dark:border-white/20">
+                <div className="flex items-center justify-between pb-3 border-b border-foreground/10">
                   <div className="flex items-center gap-2">
-                    <Eye size={18} className="text-[#222430] dark:text-white" />
-                    <span className="text-sm font-extrabold text-[#222430] dark:text-white">Page Viewer</span>
+                    <Eye size={18} className="text-foreground" />
+                    <span className="text-sm font-extrabold text-foreground">Page Viewer</span>
                   </div>
                   <div
-                    className="px-3 py-1 rounded-full font-bold text-xs border border-[#222430]/10 dark:border-white/20 bg-[#222430]/5 dark:bg-[var(--background-secondary)] text-[#222430] dark:text-white"
+                    className="px-3 py-1 rounded-full font-bold text-xs border border-foreground/10 bg-muted text-foreground"
                   >
                     Sequence Position #{activePreviewIndex + 1} of {pagesList.length}
                   </div>
                 </div>
 
                 <div
-                  className="flex flex-col items-center justify-center p-6 rounded-2xl border border-[#222430]/10 dark:border-white/20 bg-[#222430]/5 dark:bg-[var(--background-secondary)] relative min-h-[440px]"
+                  className="flex flex-col items-center justify-center p-6 rounded-2xl border border-foreground/10 bg-muted relative min-h-[440px]"
                 >
                   <div className="w-full flex flex-col items-center">
                     <div
                       style={{
                         transform: `rotate(${activePage ? activePage.rotation : 0}deg)`
                       }}
-                      className="w-full max-w-sm h-[360px] rounded-2xl shadow-xl border border-[#222430]/10 dark:border-white/20 bg-[var(--background-secondary)] overflow-auto relative flex flex-col items-center transition-transform duration-300 pointer-events-auto p-2"
+                      className="w-full max-w-sm h-[360px] rounded-2xl shadow-xl border border-foreground/10 bg-[var(--background-secondary)] overflow-auto relative flex flex-col items-center transition-transform duration-300 pointer-events-auto p-2"
                     >
                       {activePreviewUrl ? (
                         <div className="w-full h-full flex flex-col items-center">
@@ -505,11 +505,11 @@ export default function MergePdfPage() {
                           </object>
                         </div>
                       ) : (
-                        <Loader2 className="animate-spin text-[#222430] dark:text-white m-auto" size={28} />
+                        <Loader2 className="animate-spin text-foreground m-auto" size={28} />
                       )}
 
                       <div
-                        className="absolute top-3 right-3 border border-[#222430]/10 dark:border-white/20 bg-[var(--background-secondary)] text-[#222430] dark:text-white text-[11px] font-semibold px-2.5 py-1 rounded-lg flex items-center gap-1 pointer-events-none shadow-sm z-10"
+                        className="absolute top-3 right-3 border border-foreground/10 bg-[var(--background-secondary)] text-foreground text-[11px] font-semibold px-2.5 py-1 rounded-lg flex items-center gap-1 pointer-events-none shadow-sm z-10"
                       >
                         <Maximize2 size={12} /> Scrollable View
                       </div>
@@ -517,15 +517,15 @@ export default function MergePdfPage() {
 
                     {activePage && (
                       <div className="mt-4 text-center space-y-1">
-                        <p className="text-sm font-bold max-w-xs text-[#222430] dark:text-white">
+                        <p className="text-sm font-bold max-w-xs text-foreground">
                           <span className="hidden sm:inline">Source File: </span>
-                          <span className="inline-block text-[#222430]/70 dark:text-white/80 break-all max-w-[220px] sm:max-w-none sm:truncate">
+                          <span className="inline-block text-foreground/70 break-all max-w-[220px] sm:max-w-none sm:truncate">
                             {activePage.fileName}
                           </span>
                         </p>
-                        <p className="text-xs text-[#222430]/60 dark:text-white/80">
-                          Original Document Page: <strong className="text-[#222430] dark:text-white">{activePage.localPageIndex + 1}</strong>
-                          {activePage.rotation !== 0 && <span className="ml-2 text-[#222430] dark:text-white font-semibold">({activePage.rotation}° Rotated)</span>}
+                        <p className="text-xs text-foreground/60">
+                          Original Document Page: <strong className="text-foreground">{activePage.localPageIndex + 1}</strong>
+                          {activePage.rotation !== 0 && <span className="ml-2 text-foreground font-semibold">({activePage.rotation}° Rotated)</span>}
                         </p>
                       </div>
                     )}
@@ -536,7 +536,7 @@ export default function MergePdfPage() {
                       type="button"
                       disabled={activePreviewIndex === 0}
                       onClick={() => setActivePreviewIndex((prev) => Math.max(0, prev - 1))}
-                      className="w-10 h-10 rounded-full border border-[#222430]/15 dark:border-white/25 shadow-lg flex items-center justify-center bg-[var(--background-secondary)] text-[#222430] dark:text-white disabled:opacity-20 pointer-events-auto hover:bg-[#222430] hover:text-white dark:hover:bg-white dark:hover:text-[#222430] transition-all active:scale-95"
+                      className="w-10 h-10 rounded-full border border-foreground/15 shadow-lg flex items-center justify-center bg-[var(--background-secondary)] text-foreground disabled:opacity-20 pointer-events-auto hover:bg-primary hover:text-primary-foreground transition-all active:scale-95"
                       title="Previous Page"
                     >
                       <ChevronLeft size={20} />
@@ -545,7 +545,7 @@ export default function MergePdfPage() {
                       type="button"
                       disabled={activePreviewIndex === pagesList.length - 1}
                       onClick={() => setActivePreviewIndex((prev) => Math.min(pagesList.length - 1, prev + 1))}
-                      className="w-10 h-10 rounded-full border border-[#222430]/15 dark:border-white/25 shadow-lg flex items-center justify-center bg-[var(--background-secondary)] text-[#222430] dark:text-white disabled:opacity-20 pointer-events-auto hover:bg-[#222430] hover:text-white dark:hover:bg-white dark:hover:text-[#222430] transition-all active:scale-95"
+                      className="w-10 h-10 rounded-full border border-foreground/15 shadow-lg flex items-center justify-center bg-[var(--background-secondary)] text-foreground disabled:opacity-20 pointer-events-auto hover:bg-primary hover:text-primary-foreground transition-all active:scale-95"
                       title="Next Page"
                     >
                       <ChevronRight size={20} />
@@ -555,16 +555,16 @@ export default function MergePdfPage() {
 
                 {activePage && (
                   <div
-                    className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-3 sm:gap-4 p-4 rounded-2xl border border-[#222430]/10 dark:border-white/20 bg-[#222430]/5 dark:bg-[var(--background-secondary)] shadow-inner text-[#222430] dark:text-white"
+                    className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-3 sm:gap-4 p-4 rounded-2xl border border-foreground/10 bg-muted shadow-inner text-foreground"
                   >
-                    <div className="text-xs font-medium text-[#222430] dark:text-white">
+                    <div className="text-xs font-medium text-foreground">
                       Rotate view or remove page:
                     </div>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => rotatePage(activePreviewIndex, "ccw")}
-                        className="py-2.5 px-3 rounded-xl border border-[#222430]/10 dark:border-white/20 bg-[var(--background-secondary)] text-[#222430] dark:text-white text-xs font-bold flex items-center gap-1 hover:bg-[#222430] hover:text-white dark:hover:bg-white dark:hover:text-[#222430] transition-all shadow-sm"
+                        className="py-2.5 px-3 rounded-xl border border-foreground/10 bg-[var(--background-secondary)] text-foreground text-xs font-bold flex items-center gap-1 hover:bg-primary hover:text-primary-foreground transition-all shadow-sm"
                         title="Rotate -90°"
                       >
                         <RotateCcw size={14} /> -90°
@@ -572,7 +572,7 @@ export default function MergePdfPage() {
                       <button
                         type="button"
                         onClick={() => rotatePage(activePreviewIndex, "cw")}
-                        className="py-2.5 px-3 rounded-xl border border-[#222430]/10 dark:border-white/20 bg-[var(--background-secondary)] text-[#222430] dark:text-white text-xs font-bold flex items-center gap-1 hover:bg-[#222430] hover:text-white dark:hover:bg-white dark:hover:text-[#222430] transition-all shadow-sm"
+                        className="py-2.5 px-3 rounded-xl border border-foreground/10 bg-[var(--background-secondary)] text-foreground text-xs font-bold flex items-center gap-1 hover:bg-primary hover:text-primary-foreground transition-all shadow-sm"
                         title="Rotate +90°"
                       >
                         <RotateCw size={14} /> +90°
@@ -580,7 +580,7 @@ export default function MergePdfPage() {
                       <button
                         type="button"
                         onClick={() => removePage(activePage.id)}
-                        className="p-2.5 rounded-xl border border-[#222430]/10 dark:border-white/20 bg-[var(--background-secondary)] text-[#222430] dark:text-white hover:bg-[#222430] hover:text-white dark:hover:bg-white dark:hover:text-[#222430] transition-colors ml-1"
+                        className="p-2.5 rounded-xl border border-foreground/10 bg-[var(--background-secondary)] text-foreground hover:bg-primary hover:text-primary-foreground transition-colors ml-1"
                         title="Remove Page"
                       >
                         <Trash2 size={16} />
@@ -592,19 +592,19 @@ export default function MergePdfPage() {
             )}
 
             <div
-              className="p-5 rounded-2xl border border-[#222430]/15 dark:border-white/20 bg-[var(--background-secondary)] text-[#222430] dark:text-white grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 shadow-sm transition-colors"
+              className="p-5 rounded-2xl border border-foreground/15 bg-[var(--background-secondary)] text-foreground grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 shadow-sm transition-colors"
             >
               <div className="flex sm:flex-col items-center justify-between gap-2 sm:text-center">
-                <p className="text-[#222430]/60 dark:text-white/80 text-xs font-semibold">Total Final Pages</p>
-                <p className="text-base font-extrabold sm:mt-1 text-[#222430] dark:text-white">{pagesList.length} {pagesList.length === 1 ? "Page" : "Pages"}</p>
+                <p className="text-foreground/60 text-xs font-semibold">Total Final Pages</p>
+                <p className="text-base font-extrabold sm:mt-1 text-foreground">{pagesList.length} {pagesList.length === 1 ? "Page" : "Pages"}</p>
               </div>
               <div className="flex sm:flex-col items-center justify-between gap-2 sm:text-center">
-                <p className="text-[#222430]/60 dark:text-white/80 text-xs font-semibold">Original Combined Size</p>
-                <p className="text-base font-extrabold sm:mt-1 text-[#222430] dark:text-white">{formatSize(totalOriginalSize)}</p>
+                <p className="text-foreground/60 text-xs font-semibold">Original Combined Size</p>
+                <p className="text-base font-extrabold sm:mt-1 text-foreground">{formatSize(totalOriginalSize)}</p>
               </div>
               <div className="flex sm:flex-col items-center justify-between gap-2 sm:text-center">
-                <p className="text-[#222430]/60 dark:text-white/80 text-xs font-semibold">Estimated Output Size</p>
-                <p className="text-[#222430] dark:text-white text-base font-extrabold sm:mt-1">{estimatedFinalSize}</p>
+                <p className="text-foreground/60 text-xs font-semibold">Estimated Output Size</p>
+                <p className="text-foreground text-base font-extrabold sm:mt-1">{estimatedFinalSize}</p>
               </div>
             </div>
 
@@ -630,7 +630,7 @@ export default function MergePdfPage() {
               <button
                 type="button"
                 onClick={clearAll}
-                className="py-3 px-5 sm:px-6 rounded-xl border border-[#222430]/15 dark:border-white/20 bg-[var(--background-secondary)] text-[#222430] dark:text-white hover:bg-[#222430] hover:text-white dark:hover:bg-white dark:hover:text-[#222430] font-semibold text-sm transition-colors shadow-sm"
+                className="py-3 px-5 sm:px-6 rounded-xl border border-foreground/15 bg-[var(--background-secondary)] text-foreground hover:bg-primary hover:text-primary-foreground font-semibold text-sm transition-colors shadow-sm"
               >
                 Clear All
               </button>

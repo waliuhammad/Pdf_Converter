@@ -231,7 +231,7 @@ export function CTA() {
                                     text-fg
                                     transition
                                     hover:bg-primary
-                                    hover:!text-white
+                                    hover:!text-primary-foreground
                                     hover:border-primary
                                 "
                             >

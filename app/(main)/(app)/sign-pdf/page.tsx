@@ -347,7 +347,7 @@ export default function SignPdfPage() {
           {/* File summary */}
           <div className="bg-card border border-card rounded-2xl p-4 sm:p-5 shadow-sm flex items-center justify-between gap-3 sm:gap-4">
             <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-slate-900/5 dark:bg-slate-800 border border-slate-900/10 dark:border-slate-700 flex items-center justify-center text-fg shrink-0">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-muted border border-border flex items-center justify-center text-fg shrink-0">
                 <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <div className="min-w-0">
@@ -394,7 +394,7 @@ export default function SignPdfPage() {
                   </button>
                 </div>
               </div>
-              <div className="flex justify-center bg-slate-200/50 dark:bg-black/40 rounded-xl p-2 overflow-hidden border border-card">
+              <div className="flex justify-center bg-muted rounded-xl p-2 overflow-hidden border border-card">
                 <canvas
                   ref={previewCanvasRef}
                   className="rounded shadow max-h-52 sm:max-h-72 max-w-full object-contain"
@@ -405,7 +405,7 @@ export default function SignPdfPage() {
 
           {/* Signature configuration */}
           <div className="bg-[var(--background-secondary)] p-3.5 sm:p-5 rounded-2xl border border-card space-y-4">
-            <div className="flex gap-2 bg-slate-200/60 dark:bg-slate-900/60 p-1 rounded-xl border border-card">
+            <div className="flex gap-2 bg-muted p-1 rounded-xl border border-card">
               <button
                 type="button"
                 onClick={() => setMode("type")}
@@ -436,7 +436,7 @@ export default function SignPdfPage() {
                   value={signatureText}
                   onChange={(e) => setSignatureText(e.target.value)}
                   placeholder="e.g. Maniha Iman"
-                  className="w-full px-3.5 py-3 sm:py-2.5 rounded-xl border border-card bg-card text-base sm:text-sm text-fg focus:outline-none focus:border-slate-900 dark:focus:border-slate-100"
+                  className="w-full px-3.5 py-3 sm:py-2.5 rounded-xl border border-card bg-card text-base sm:text-sm text-fg focus:outline-none focus:border-ring"
                 />
 
                 {/* Typography and ink for the typed signature. Draw mode has
@@ -448,7 +448,7 @@ export default function SignPdfPage() {
                     <select
                       value={fontFamily}
                       onChange={(e) => setFontFamily(e.target.value as FontChoice)}
-                      className="w-full px-3 py-3 sm:py-2 rounded-xl border border-card bg-card text-base sm:text-sm text-fg focus:outline-none focus:border-slate-900 dark:focus:border-slate-100"
+                      className="w-full px-3 py-3 sm:py-2 rounded-xl border border-card bg-card text-base sm:text-sm text-fg focus:outline-none focus:border-ring"
                     >
                       {FONT_OPTIONS.map((f) => (
                         <option key={f.id} value={f.id}>
@@ -466,7 +466,7 @@ export default function SignPdfPage() {
                       max={48}
                       value={fontSize}
                       onChange={(e) => setFontSize(Number(e.target.value))}
-                      className="w-full h-6 accent-slate-900 dark:accent-white"
+                      className="w-full h-6 accent-primary"
                     />
                   </div>
 
@@ -481,7 +481,7 @@ export default function SignPdfPage() {
                           title={col}
                           aria-label={`Ink colour ${col}`}
                           className={`w-7 h-7 sm:w-6 sm:h-6 rounded-full border-2 transition-transform shrink-0 ${penColor.toLowerCase() === col.toLowerCase()
-                            ? "border-slate-900 dark:border-white scale-110"
+                            ? "border-foreground scale-110"
                             : "border-transparent"
                             }`}
                           style={{ backgroundColor: col }}
@@ -512,7 +512,7 @@ export default function SignPdfPage() {
                           type="button"
                           onClick={() => setPenColor(col)}
                           aria-label={`Ink colour ${col}`}
-                          className={`w-5 h-5 sm:w-4 sm:h-4 rounded-full border shrink-0 ${penColor === col ? "border-slate-900 dark:border-white scale-110" : "border-transparent"
+                          className={`w-5 h-5 sm:w-4 sm:h-4 rounded-full border shrink-0 ${penColor === col ? "border-foreground scale-110" : "border-transparent"
                             }`}
                           style={{ backgroundColor: col }}
                         />

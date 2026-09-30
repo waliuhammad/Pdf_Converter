@@ -76,7 +76,7 @@ export function ToolsHub() {
                         <button
                             key={option}
                             onClick={() => setCategory(option)}
-                            className={`px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors ${category === option ? "bg-[var(--primary)] text-white" : "text-muted hover:text-fg"
+                            className={`px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors ${category === option ? "bg-primary text-primary-foreground" : "text-muted hover:text-fg"
                                 }`}
                         >
                             {categoryLabel(option)}

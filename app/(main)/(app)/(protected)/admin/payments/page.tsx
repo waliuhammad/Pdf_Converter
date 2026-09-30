@@ -176,7 +176,7 @@ export default function AdminPaymentsPage() {
                             <div className="flex shrink-0 gap-2">
                                 <button
                                     onClick={() => setConfirming(p.id)}
-                                    className="rounded-xl bg-[var(--primary)] px-3 py-2 text-sm text-white transition hover:opacity-90"
+                                    className="rounded-xl bg-[var(--primary)] px-3 py-2 text-sm text-primary-foreground transition hover:opacity-90"
                                 >
                                     Confirm
                                 </button>
@@ -203,7 +203,7 @@ export default function AdminPaymentsPage() {
                                 <button
                                     onClick={() => act(p.id, "confirm")}
                                     disabled={busy === p.id}
-                                    className="rounded-xl bg-[var(--primary)] px-3 py-2 text-sm text-white disabled:opacity-60"
+                                    className="rounded-xl bg-[var(--primary)] px-3 py-2 text-sm text-primary-foreground disabled:opacity-60"
                                 >
                                     {busy === p.id ? "Granting..." : "Yes, grant it"}
                                 </button>

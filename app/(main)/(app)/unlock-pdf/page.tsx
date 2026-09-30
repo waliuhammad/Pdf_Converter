@@ -89,7 +89,7 @@ export default function UnlockPdfPage() {
             {/* Header — one copy, outside the branches. It used to be
                 duplicated in both the empty and the configured state. */}
             <div className="text-center mb-6 sm:mb-8">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto rounded-2xl bg-purple-50 dark:bg-cyan-950/60 border border-purple-200 dark:border-cyan-800/40 flex items-center justify-center mb-3 text-purple-900 dark:text-cyan-400">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto rounded-2xl bg-accent border border-primary/20 flex items-center justify-center mb-3 text-primary">
                     <LockOpen className="w-6 h-6 sm:w-7 sm:h-7" />
                 </div>
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-fg tracking-tight px-2">
@@ -121,7 +121,7 @@ export default function UnlockPdfPage() {
                     {/* File summary */}
                     <div className="bg-card border border-card rounded-2xl p-4 sm:p-5 shadow-sm flex items-center justify-between gap-3 sm:gap-4">
                         <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
-                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-purple-100 dark:bg-cyan-500/10 text-purple-900 dark:text-cyan-400 flex items-center justify-center shrink-0 border border-purple-200 dark:border-cyan-500/20">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20">
                                 <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
                             </div>
                             <div className="min-w-0">
@@ -156,7 +156,7 @@ export default function UnlockPdfPage() {
                                 }}
                                 placeholder="Enter current password"
                                 autoComplete="off"
-                                className="w-full px-4 py-3.5 sm:py-3 pr-12 rounded-xl border border-card bg-card text-base sm:text-sm text-fg focus:outline-none focus:border-purple-900 dark:focus:border-cyan-500"
+                                className="w-full px-4 py-3.5 sm:py-3 pr-12 rounded-xl border border-card bg-card text-base sm:text-sm text-fg focus:outline-none focus:border-primary"
                             />
                             <button
                                 type="button"

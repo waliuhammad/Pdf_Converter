@@ -173,8 +173,8 @@ export default function PdfToWordPage() {
   return (
     <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-10">
       <div className="text-center mb-6 sm:mb-8">
-        <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto rounded-2xl bg-purple-900/10 dark:bg-cyan-500/10 flex items-center justify-center mb-3 border border-purple-900/20 dark:border-cyan-500/20">
-          <FileSpreadsheet className="text-purple-900 dark:text-cyan-400 w-6 h-6 sm:w-7 sm:h-7" />
+        <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center mb-3 border border-primary/20">
+          <FileSpreadsheet className="text-primary w-6 h-6 sm:w-7 sm:h-7" />
         </div>
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-fg tracking-tight px-2">
           Convert PDF to Word (DOCX)
@@ -203,7 +203,7 @@ export default function PdfToWordPage() {
           {/* File summary */}
           <div className="bg-card border border-card rounded-2xl p-4 sm:p-5 shadow-sm flex items-center justify-between gap-3 sm:gap-4">
             <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-purple-900/10 dark:bg-cyan-500/10 flex items-center justify-center shrink-0 text-purple-900 dark:text-cyan-400 border border-purple-900/20 dark:border-cyan-500/20">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 text-primary border border-primary/20">
                 <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <div className="min-w-0">
@@ -228,10 +228,10 @@ export default function PdfToWordPage() {
           <div className="bg-card border border-card rounded-2xl p-4 sm:p-6 flex flex-col items-center justify-center relative min-h-[280px] sm:min-h-[360px] shadow-sm overflow-hidden">
             {isRendering && !renderedPages && (
               <div className="absolute inset-0 bg-black/10 backdrop-blur-xs flex items-center justify-center z-10">
-                <Loader2 className="animate-spin text-purple-900 dark:text-cyan-400 w-7 h-7 sm:w-8 sm:h-8" />
+                <Loader2 className="animate-spin text-primary w-7 h-7 sm:w-8 sm:h-8" />
               </div>
             )}
-            <div className="max-h-[240px] sm:max-h-[320px] w-full max-w-[190px] sm:max-w-[260px] overflow-y-auto flex flex-col items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-xl bg-background border border-card [&::-webkit-scrollbar]:w-1.5 sm:[&::-webkit-scrollbar]:w-2.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-300 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700 [&::-webkit-scrollbar-thumb]:rounded-full">
+            <div className="max-h-[240px] sm:max-h-[320px] w-full max-w-[190px] sm:max-w-[260px] overflow-y-auto flex flex-col items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-xl bg-background border border-card [&::-webkit-scrollbar]:w-1.5 sm:[&::-webkit-scrollbar]:w-2.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-full">
               {renderedPages && Object.keys(renderedPages).length > 0 ? (
                 Object.entries(renderedPages).map(([pageNum, dataUrl]) => (
                   <div key={pageNum} className="flex flex-col items-center w-full">
@@ -244,7 +244,7 @@ export default function PdfToWordPage() {
                 ))
               ) : (
                 <div className="h-40 sm:h-48 flex items-center justify-center">
-                  <Loader2 className="animate-spin text-purple-900 dark:text-cyan-400 w-6 h-6 sm:w-7 sm:h-7" />
+                  <Loader2 className="animate-spin text-primary w-6 h-6 sm:w-7 sm:h-7" />
                 </div>
               )}
             </div>
@@ -268,7 +268,7 @@ export default function PdfToWordPage() {
             <button
               type="button"
               onClick={clearFile}
-              className="w-full sm:w-auto py-3.5 sm:py-4 px-6 sm:px-8 rounded-2xl border border-card text-muted hover:text-slate-900 dark:hover:text-white font-bold text-sm transition-colors"
+              className="w-full sm:w-auto py-3.5 sm:py-4 px-6 sm:px-8 rounded-2xl border border-card text-muted hover:text-foreground font-bold text-sm transition-colors"
             >
               Select Different File
             </button>

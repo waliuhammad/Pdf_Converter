@@ -80,7 +80,7 @@ export function Hero() {
 
                         <Link
                             href="#pricing"
-                            className="rounded-xl border border-border px-5 py-2.5 text-sm font-semibold transition hover:bg-primary hover:text-white hover:border-primary active:scale-95"
+                            className="rounded-xl border border-border px-5 py-2.5 text-sm font-semibold transition hover:bg-primary hover:text-primary-foreground hover:border-primary active:scale-95"
                         >
                             View Pricing
                         </Link>

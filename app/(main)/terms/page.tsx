@@ -329,19 +329,19 @@ const clauses = [
 
 export default function TermsPage() {
     return (
-        <div className="flex min-h-screen flex-col bg-white text-slate-800 dark:bg-[#13131d] dark:text-purple-100">
+        <div className="flex min-h-screen flex-col bg-background text-foreground">
             <main className="flex-1">
                 <ContentPage title="Terms of Service">
-                    <p className="text-sm text-slate-500 dark:text-purple-300/60">
+                    <p className="text-sm text-muted-foreground">
                         Last updated: August 9, 2026
                     </p>
 
                     {clauses.map((clause) => (
                         <Section key={clause.heading} heading={clause.heading}>
-                            <div className="space-y-4 text-sm leading-relaxed text-slate-700 dark:text-purple-200">
+                            <div className="space-y-4 text-sm leading-relaxed text-foreground/80">
                                 {clause.items.map(([number, text]) => (
                                     <p key={number}>
-                                        <strong className="mr-2 text-slate-900 dark:text-white">
+                                        <strong className="mr-2 text-foreground">
                                             {number}
                                         </strong>
                                         {text}

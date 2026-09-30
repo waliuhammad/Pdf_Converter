@@ -33,7 +33,7 @@ export function CheckoutButton({ planId, cycle, label = "Get started" }: Props) 
     return (
         <Link
             href={`/checkout?plan=${planId}&cycle=${cycle}`}
-            className="block w-full rounded-xl bg-[var(--primary)] px-4 py-3 text-center text-white transition hover:opacity-90 focus-visible:outline focus-visible:outline-2"
+            className="block w-full rounded-xl bg-primary px-4 py-3 text-center text-primary-foreground transition hover:opacity-90 focus-visible:outline focus-visible:outline-2"
         >
             {label}
         </Link>

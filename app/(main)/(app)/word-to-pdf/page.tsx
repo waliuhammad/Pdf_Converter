@@ -84,8 +84,8 @@ export default function WordToPdfPage() {
     <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-10">
       {/* Header — same pattern as the other tool pages */}
       <div className="text-center mb-6 sm:mb-8">
-        <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto rounded-2xl bg-purple-50 dark:bg-cyan-950/60 border border-purple-200 dark:border-cyan-800/40 flex items-center justify-center mb-3">
-          <FileText className="text-purple-900 dark:text-cyan-400 w-6 h-6 sm:w-7 sm:h-7" />
+        <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto rounded-2xl bg-accent border border-primary/20 flex items-center justify-center mb-3">
+          <FileText className="text-primary w-6 h-6 sm:w-7 sm:h-7" />
         </div>
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-fg tracking-tight px-2">
           Convert Word to PDF
@@ -116,8 +116,8 @@ export default function WordToPdfPage() {
           {/* File summary */}
           <div className="bg-card border border-card rounded-2xl p-4 sm:p-5 shadow-sm flex items-center justify-between gap-3 sm:gap-4">
             <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-purple-100 dark:bg-cyan-500/10 border border-purple-200 dark:border-cyan-500/20 flex items-center justify-center shrink-0">
-                <FileText className="text-purple-900 dark:text-cyan-400 w-5 h-5 sm:w-6 sm:h-6" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                <FileText className="text-primary w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <div className="min-w-0">
                 <p className="text-fg text-[13px] sm:text-sm font-bold truncate">{file.name}</p>
@@ -147,7 +147,7 @@ export default function WordToPdfPage() {
             <button
               type="button"
               onClick={clearFile}
-              className="w-full sm:w-auto py-3.5 sm:py-4 px-6 sm:px-8 rounded-2xl border border-card text-muted hover:text-slate-900 dark:hover:text-white font-bold text-sm transition-colors"
+              className="w-full sm:w-auto py-3.5 sm:py-4 px-6 sm:px-8 rounded-2xl border border-card text-muted hover:text-foreground font-bold text-sm transition-colors"
             >
               Select Different File
             </button>

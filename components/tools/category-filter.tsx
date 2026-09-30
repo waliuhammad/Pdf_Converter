@@ -68,19 +68,14 @@ export default function CategoryFilter({
 
                         ${activeCategory === category
 
-                            ? "border-orange-400 bg-orange-400 text-neutral-900 shadow-lg"
+                            ? "border-primary bg-primary text-primary-foreground shadow-lg"
 
                             : `
-                                border-neutral-300
-                                bg-white
-                                text-neutral-700
-                                hover:border-neutral-400
-                                hover:bg-neutral-50
-                                dark:border-neutral-700
-                                dark:bg-neutral-900
-                                dark:text-neutral-300
-                                dark:hover:border-neutral-600
-                                dark:hover:bg-neutral-800
+                                border-border
+                                bg-card
+                                text-foreground/80
+                                hover:border-foreground/30
+                                hover:bg-muted
                             `
                         }
                     `}

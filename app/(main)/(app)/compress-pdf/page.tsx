@@ -126,7 +126,7 @@ export default function CompressPdfPage() {
           <FileArchive size={28} className="hidden sm:block" />
         </div>
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-fg tracking-tight">Compress PDF</h1>
-        <p className="text-slate-600 dark:text-[#9ca3af] text-xs sm:text-sm mt-1.5 max-w-lg mx-auto px-2">
+        <p className="text-muted-foreground text-xs sm:text-sm mt-1.5 max-w-lg mx-auto px-2">
           Select your target size and compress your PDF while keeping the best possible quality.
         </p>
       </div>
@@ -147,7 +147,7 @@ export default function CompressPdfPage() {
               </div>
               <div className="min-w-0">
                 <p className="text-fg text-sm font-bold truncate">{fileDetails.name}</p>
-                <p className="text-xs text-slate-600 dark:text-[#9ca3af] mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   Original Size: <strong className="text-fg">{fileDetails.formattedSize}</strong>
                 </p>
               </div>
@@ -162,7 +162,7 @@ export default function CompressPdfPage() {
                 setDone(false);
                 setErrorMessage(null);
               }}
-              className="w-full sm:w-auto py-1.5 px-3.5 rounded-xl border border-card bg-[var(--background-secondary)] hover:bg-card text-slate-600 dark:text-[#9ca3af] hover:text-fg font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors shrink-0"
+              className="w-full sm:w-auto py-1.5 px-3.5 rounded-xl border border-card bg-[var(--background-secondary)] hover:bg-card text-muted-foreground hover:text-fg font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors shrink-0"
             >
               <X size={15} className="text-red-500 dark:text-red-400" /> Remove File
             </button>
@@ -179,7 +179,7 @@ export default function CompressPdfPage() {
 
             <div className="space-y-4">
               <div>
-                <label className="text-xs uppercase tracking-wider font-semibold text-slate-600 dark:text-[#9ca3af] block mb-1.5">
+                <label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground block mb-1.5">
                   Select Compression Level & Target Size
                 </label>
                 <select
@@ -190,7 +190,7 @@ export default function CompressPdfPage() {
                     setDone(false);
                     setErrorMessage(null);
                   }}
-                  className="w-full max-w-full bg-card border border-card rounded-xl px-3 sm:px-3.5 py-2.5 sm:py-3 text-fg text-xs sm:text-sm focus:outline-none focus:border-slate-900 dark:border-white cursor-pointer"
+                  className="w-full max-w-full bg-card border border-card rounded-xl px-3 sm:px-3.5 py-2.5 sm:py-3 text-fg text-xs sm:text-sm focus:outline-none focus:border-primary cursor-pointer"
                 >
                   {options.map((opt) => (
                     <option key={opt.targetKB} value={opt.targetKB} className="bg-card text-fg">
@@ -220,7 +220,7 @@ export default function CompressPdfPage() {
                       setDone(false);
                       setErrorMessage(null);
                     }}
-                    className="w-full sm:w-auto shrink-0 py-2.5 sm:py-3 px-5 sm:px-6 rounded-2xl border border-card text-slate-600 dark:text-[#9ca3af] hover:text-slate-900 dark:hover:text-fg font-bold text-xs transition-colors"
+                    className="w-full sm:w-auto shrink-0 py-2.5 sm:py-3 px-5 sm:px-6 rounded-2xl border border-card text-muted-foreground hover:text-foreground font-bold text-xs transition-colors"
                   >
                     Clear All
                   </button>
@@ -245,7 +245,7 @@ export default function CompressPdfPage() {
                   </div>
 
                   {compressedSize && (
-                    <p className="text-xs sm:text-sm text-slate-600 dark:text-[#9ca3af]">
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       Size reduced from <strong className="text-fg">{fileDetails.formattedSize}</strong> to{" "}
                       <strong className="text-fg">{formatSize(compressedSize)}</strong>
                       {calculateSavings() > 0 && (
@@ -263,7 +263,7 @@ export default function CompressPdfPage() {
                     <button
                       type="button"
                       onClick={() => setDone(false)}
-                      className="w-full sm:w-auto shrink-0 py-2.5 sm:py-3 px-5 sm:px-6 rounded-2xl border border-card text-slate-600 dark:text-[#9ca3af] hover:text-slate-900 dark:hover:text-fg font-bold text-xs transition-colors"
+                      className="w-full sm:w-auto shrink-0 py-2.5 sm:py-3 px-5 sm:px-6 rounded-2xl border border-card text-muted-foreground hover:text-foreground font-bold text-xs transition-colors"
                     >
                       Compress Again
                     </button>

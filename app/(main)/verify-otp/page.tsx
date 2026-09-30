@@ -129,7 +129,7 @@ export default function VerifyOtpPage() {
                     <button
                         type="submit"
                         disabled={!isComplete || submitting}
-                        className="w-full py-3 rounded-xl bg-[var(--primary)] text-white font-medium hover:bg-[var(--primary-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+                        className="w-full py-3 rounded-xl bg-[var(--primary)] text-primary-foreground font-medium hover:bg-[var(--primary-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
                     >
                         {submitting && <Loader2 size={16} className="animate-spin" />}
                         {submitting ? "Verifying..." : "Verify Code"}

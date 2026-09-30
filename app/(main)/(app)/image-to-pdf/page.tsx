@@ -395,14 +395,14 @@ export default function ImageToPdf(): JSX.Element {
   const usedPages = Array.from(new Set(images.map((img) => img.page))).sort((a, b) => a - b);
 
   return (
-    <div className="w-full text-fg antialiased selection:bg-slate-900 dark:selection:bg-blue-500 selection:text-white px-4 sm:px-6 py-6 sm:py-10">
+    <div className="w-full text-fg antialiased selection:bg-primary selection:text-primary-foreground px-4 sm:px-6 py-6 sm:py-10">
       <div className="w-full max-w-4xl mx-auto space-y-5 md:space-y-8">
 
         <div className="text-center space-y-1.5 md:space-y-2">
           <div className="flex justify-center mb-1 md:mb-0">
-            <div className="w-11 h-11 flex items-center justify-center rounded-2xl bg-card border border-card shadow-sm md:w-auto md:h-auto md:inline-flex md:px-3 md:py-1 md:rounded-full md:gap-1.5 md:shadow-none md:bg-slate-100 dark:md:bg-blue-500/10 md:border-slate-200 dark:md:border-blue-500/20">
-              <Sparkles className="w-5 h-5 md:w-3.5 md:h-3.5 text-fg md:text-slate-900 dark:md:text-blue-400" />
-              <span className="hidden md:inline text-slate-700 dark:text-blue-400 text-xs font-semibold tracking-wide uppercase">
+            <div className="w-11 h-11 flex items-center justify-center rounded-2xl bg-card border border-card shadow-sm md:w-auto md:h-auto md:inline-flex md:px-3 md:py-1 md:rounded-full md:gap-1.5 md:shadow-none md:bg-primary/10 md:border-primary/20">
+              <Sparkles className="w-5 h-5 md:w-3.5 md:h-3.5 text-fg md:text-primary" />
+              <span className="hidden md:inline text-primary text-xs font-semibold tracking-wide uppercase">
                 Multi-Image Page Composition
               </span>
             </div>
@@ -436,7 +436,7 @@ export default function ImageToPdf(): JSX.Element {
               <div className="flex items-center space-x-3 shrink-0">
                 <button
                   onClick={() => addMoreInputRef.current?.click()}
-                  className="inline-flex items-center space-x-1 text-xs text-white bg-slate-900 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 hover:bg-slate-800 px-3 py-1.5 rounded-lg border border-transparent dark:border-blue-500/20 transition cursor-pointer font-medium shadow-sm dark:shadow-none"
+                  className="inline-flex items-center space-x-1 text-xs text-primary-foreground bg-primary hover:bg-[var(--primary-hover)] px-3 py-1.5 rounded-lg border border-transparent transition cursor-pointer font-medium shadow-sm"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Add Image</span>
@@ -464,11 +464,11 @@ export default function ImageToPdf(): JSX.Element {
                   key={item.id}
                   onClick={() => setSelectedImageId(item.id)}
                   className={`flex items-center space-x-2 p-2 rounded-xl border shrink-0 transition cursor-pointer ${selectedImageId === item.id
-                    ? "bg-slate-900 border-slate-900 text-white shadow-sm dark:bg-slate-800 dark:border-slate-600"
-                    : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-[var(--background-secondary)] dark:border-slate-700/60 dark:text-slate-400 dark:hover:bg-slate-800"
+                    ? "bg-primary border-primary text-primary-foreground shadow-sm"
+                    : "bg-muted border-border text-muted-foreground hover:bg-[var(--background-secondary)]"
                     }`}
                 >
-                  <img src={item.previewUrl} alt="" className="w-8 h-8 object-cover rounded-md border border-slate-200 dark:border-none" />
+                  <img src={item.previewUrl} alt="" className="w-8 h-8 object-cover rounded-md border border-border" />
                   <span className="text-xs font-medium max-w-[100px] truncate">Image #{idx + 1}</span>
                 </button>
               ))}
@@ -478,14 +478,14 @@ export default function ImageToPdf(): JSX.Element {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 bg-[var(--background-secondary)] border border-card rounded-2xl p-3 md:p-6">
 
                 {/* Visual Preview Box showing ALL images together on one page */}
-                <div className="flex flex-col items-center justify-center bg-slate-900/5 dark:bg-black/40 border border-card rounded-xl p-3 sm:p-4 pt-9 sm:pt-10 relative min-h-[240px] sm:min-h-[320px]">
+                <div className="flex flex-col items-center justify-center bg-muted border border-card rounded-xl p-3 sm:p-4 pt-9 sm:pt-10 relative min-h-[240px] sm:min-h-[320px]">
                   <span className="absolute top-3 left-3 text-[11px] text-muted uppercase font-mono tracking-wider">
                     A4 Preview &mdash; {usedPages.length} {usedPages.length === 1 ? "page" : "pages"}
                   </span>
                   <div className="flex gap-3 overflow-x-auto max-w-full pb-1">
                     {usedPages.map((pageNo, pageIdx) => (
                       <div key={pageNo} className="shrink-0 flex flex-col items-center gap-1.5">
-                        <div className="w-[110px] h-[156px] sm:w-[150px] sm:h-[212px] bg-white rounded shadow-lg dark:shadow-md relative overflow-hidden border border-slate-300">
+                        <div className="w-[110px] h-[156px] sm:w-[150px] sm:h-[212px] bg-white rounded shadow-lg dark:shadow-md relative overflow-hidden border border-border">
                           {images
                             .filter((img) => img.page === pageNo)
                             .map((img) => (
@@ -500,7 +500,7 @@ export default function ImageToPdf(): JSX.Element {
                                     width: `${(img.width / PAGE_W) * 100}%`,
                                     height: `${(img.height / PAGE_H) * 100}%`,
                                     objectFit: "fill",
-                                    outline: img.id === selectedImageId ? "2px solid #0f172a" : "none",
+                                    outline: img.id === selectedImageId ? "2px solid var(--primary)" : "none",
                                   }}
                                 />
                                 {img.texts.map((t) => (
@@ -526,7 +526,7 @@ export default function ImageToPdf(): JSX.Element {
                         </div>
                         <span
                           className={`text-[10px] font-mono ${selectedImg?.page === pageNo
-                            ? "text-slate-900 dark:text-blue-400 font-bold"
+                            ? "text-primary font-bold"
                             : "text-muted"
                             }`}
                         >
@@ -538,7 +538,7 @@ export default function ImageToPdf(): JSX.Element {
                 </div>
 
                 {/* Editor Settings Panel */}
-                <div className="space-y-5 max-h-[420px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
+                <div className="space-y-5 max-h-[420px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-border">
 
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2 text-fg text-sm font-semibold border-b border-card pb-2">
@@ -556,7 +556,7 @@ export default function ImageToPdf(): JSX.Element {
                             editDraft(`${selectedImg.id}:width`, e.target.value, (n) => handlePropertyChange("width", n), true)
                           }
                           onBlur={() => dropDraft(`${selectedImg.id}:width`)}
-                          className="w-full bg-card border border-card rounded-xl px-3 py-1.5 text-xs text-fg mt-1 focus:outline-none focus:border-slate-900 dark:focus:border-slate-500"
+                          className="w-full bg-card border border-card rounded-xl px-3 py-1.5 text-xs text-fg mt-1 focus:outline-none focus:border-primary"
                         />
                       </div>
                       <div>
@@ -568,7 +568,7 @@ export default function ImageToPdf(): JSX.Element {
                             editDraft(`${selectedImg.id}:height`, e.target.value, (n) => handlePropertyChange("height", n), true)
                           }
                           onBlur={() => dropDraft(`${selectedImg.id}:height`)}
-                          className="w-full bg-card border border-card rounded-xl px-3 py-1.5 text-xs text-fg mt-1 focus:outline-none focus:border-slate-900 dark:focus:border-slate-500"
+                          className="w-full bg-card border border-card rounded-xl px-3 py-1.5 text-xs text-fg mt-1 focus:outline-none focus:border-primary"
                         />
                       </div>
                       <div>
@@ -580,7 +580,7 @@ export default function ImageToPdf(): JSX.Element {
                             editDraft(`${selectedImg.id}:xPos`, e.target.value, (n) => handlePropertyChange("xPos", n))
                           }
                           onBlur={() => dropDraft(`${selectedImg.id}:xPos`)}
-                          className="w-full bg-card border border-card rounded-xl px-3 py-1.5 text-xs text-fg mt-1 focus:outline-none focus:border-slate-900 dark:focus:border-slate-500"
+                          className="w-full bg-card border border-card rounded-xl px-3 py-1.5 text-xs text-fg mt-1 focus:outline-none focus:border-primary"
                         />
                       </div>
                       <div>
@@ -592,7 +592,7 @@ export default function ImageToPdf(): JSX.Element {
                             editDraft(`${selectedImg.id}:yPos`, e.target.value, (n) => handlePropertyChange("yPos", n))
                           }
                           onBlur={() => dropDraft(`${selectedImg.id}:yPos`)}
-                          className="w-full bg-card border border-card rounded-xl px-3 py-1.5 text-xs text-fg mt-1 focus:outline-none focus:border-slate-900 dark:focus:border-slate-500"
+                          className="w-full bg-card border border-card rounded-xl px-3 py-1.5 text-xs text-fg mt-1 focus:outline-none focus:border-primary"
                         />
                       </div>
                       <div>
@@ -608,7 +608,7 @@ export default function ImageToPdf(): JSX.Element {
                               , true)
                           }
                           onBlur={() => dropDraft(`${selectedImg.id}:page`)}
-                          className="w-full bg-card border border-card rounded-xl px-3 py-1.5 text-xs text-fg mt-1 focus:outline-none focus:border-slate-900 dark:focus:border-slate-500"
+                          className="w-full bg-card border border-card rounded-xl px-3 py-1.5 text-xs text-fg mt-1 focus:outline-none focus:border-primary"
                         />
                       </div>
                     </div>
@@ -623,7 +623,7 @@ export default function ImageToPdf(): JSX.Element {
                       </div>
                       <button
                         onClick={handleAddTextAnnotation}
-                        className="text-xs text-white bg-slate-900 dark:text-slate-300 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 px-3 py-1 rounded-lg border border-transparent dark:border-slate-700 transition cursor-pointer font-medium shadow-sm dark:shadow-none"
+                        className="text-xs text-primary-foreground bg-primary hover:bg-[var(--primary-hover)] px-3 py-1 rounded-lg border border-transparent transition cursor-pointer font-medium shadow-sm"
                       >
                         + Add Text
                       </button>
@@ -635,7 +635,7 @@ export default function ImageToPdf(): JSX.Element {
                           <span className="text-[11px] font-bold text-muted uppercase">Text Item #{index + 1}</span>
                           <button
                             onClick={() => handleDeleteTextAnnotation(t.id)}
-                            className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition cursor-pointer"
+                            className="text-muted-foreground hover:text-rose-600 dark:hover:text-rose-400 transition cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -646,7 +646,7 @@ export default function ImageToPdf(): JSX.Element {
                           value={t.text}
                           onChange={(e) => handleUpdateTextAnnotation(t.id, { text: e.target.value })}
                           placeholder="Enter caption text..."
-                          className="w-full bg-[var(--background-secondary)] border border-card rounded-lg px-2.5 py-1.5 text-xs text-fg focus:outline-none focus:border-slate-900 dark:focus:border-slate-500"
+                          className="w-full bg-[var(--background-secondary)] border border-card rounded-lg px-2.5 py-1.5 text-xs text-fg focus:outline-none focus:border-primary"
                         />
 
                         <div className="grid grid-cols-2 gap-2">
@@ -712,7 +712,7 @@ export default function ImageToPdf(): JSX.Element {
                                 type="checkbox"
                                 checked={t.isBold}
                                 onChange={(e) => handleUpdateTextAnnotation(t.id, { isBold: e.target.checked })}
-                                className="rounded bg-[var(--background-secondary)] border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-700 focus:ring-0"
+                                className="rounded bg-[var(--background-secondary)] border-input text-primary focus:ring-0"
                               />
                               <span>Bold</span>
                             </label>
@@ -721,7 +721,7 @@ export default function ImageToPdf(): JSX.Element {
                                 type="checkbox"
                                 checked={t.isItalic}
                                 onChange={(e) => handleUpdateTextAnnotation(t.id, { isItalic: e.target.checked })}
-                                className="rounded bg-[var(--background-secondary)] border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-700 focus:ring-0"
+                                className="rounded bg-[var(--background-secondary)] border-input text-primary focus:ring-0"
                               />
                               <span>Italic</span>
                             </label>

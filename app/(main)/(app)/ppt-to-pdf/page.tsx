@@ -89,7 +89,7 @@ export default function PptToPdfPage() {
     <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-10">
       {/* Header — same pattern as the other tool pages */}
       <div className="text-center mb-6 sm:mb-8">
-        <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto rounded-2xl bg-card border border-card flex items-center justify-center mb-3 text-slate-700 dark:text-sky-400 shadow-sm">
+        <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto rounded-2xl bg-card border border-card flex items-center justify-center mb-3 text-primary shadow-sm">
           <Presentation className="w-6 h-6 sm:w-7 sm:h-7" />
         </div>
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-fg tracking-tight px-2">
@@ -123,7 +123,7 @@ export default function PptToPdfPage() {
             <button
               type="button"
               onClick={clearFile}
-              className="w-full sm:w-auto py-3.5 sm:py-4 px-6 sm:px-8 rounded-2xl border border-card text-muted hover:text-slate-900 dark:hover:text-white font-bold text-sm transition-colors"
+              className="w-full sm:w-auto py-3.5 sm:py-4 px-6 sm:px-8 rounded-2xl border border-card text-muted hover:text-foreground font-bold text-sm transition-colors"
             >
               Select Different File
             </button>

@@ -78,7 +78,7 @@ function ResetPasswordForm() {
                     <p className="text-muted text-sm mb-6">This password reset link is no longer valid. Please request a new one.</p>
                     <Link
                         href="/forget-password"
-                        className="inline-block px-6 py-3 rounded-full bg-[var(--primary)] text-white font-medium hover:bg-[var(--primary-hover)] transition-colors"
+                        className="inline-block px-6 py-3 rounded-full bg-[var(--primary)] text-primary-foreground font-medium hover:bg-[var(--primary-hover)] transition-colors"
                     >
                         Request New Link
                     </Link>
@@ -153,7 +153,7 @@ function ResetPasswordForm() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full py-3 rounded-full bg-[var(--primary)] text-white font-medium hover:bg-[var(--primary-hover)] transition-colors disabled:opacity-60"
+                            className="w-full py-3 rounded-full bg-[var(--primary)] text-primary-foreground font-medium hover:bg-[var(--primary-hover)] transition-colors disabled:opacity-60"
                         >
                             {loading ? "Updating..." : "Reset Password"}
                         </button>

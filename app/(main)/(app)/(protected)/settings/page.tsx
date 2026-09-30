@@ -182,7 +182,7 @@ export default function SettingsPage() {
     const inputClass =
         "w-full px-4 py-2.5 rounded-xl border border-card text-fg bg-card focus:outline-none focus:border-[var(--primary)] transition-colors";
     const buttonClass =
-        "px-5 py-2.5 rounded-full bg-[var(--primary)] text-white text-sm font-medium hover:bg-[var(--primary-hover)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2";
+        "px-5 py-2.5 rounded-full bg-[var(--primary)] text-primary-foreground text-sm font-medium hover:bg-[var(--primary-hover)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2";
 
     const canUsePassword = hasPasswordProvider(user);
 

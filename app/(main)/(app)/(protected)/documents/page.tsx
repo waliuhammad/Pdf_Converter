@@ -103,7 +103,7 @@ export default function DocumentsPage() {
                 </div>
                 <button
                     onClick={() => setShowUpload(true)}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--primary)] text-white text-sm font-medium hover:bg-[var(--primary-hover)] transition-colors"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--primary)] text-primary-foreground text-sm font-medium hover:bg-[var(--primary-hover)] transition-colors"
                 >
                     <Upload size={16} />
                     {t("documents.upload")}
@@ -133,14 +133,14 @@ export default function DocumentsPage() {
                 <div className="flex items-center gap-1 p-1 rounded-xl border border-card bg-card">
                     <button
                         onClick={() => setFilter("all")}
-                        className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${filter === "all" ? "bg-[var(--primary)] text-white" : "text-muted"
+                        className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${filter === "all" ? "bg-[var(--primary)] text-primary-foreground" : "text-muted"
                             }`}
                     >
                         {t("documents.all")}
                     </button>
                     <button
                         onClick={() => setFilter("favorites")}
-                        className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${filter === "favorites" ? "bg-[var(--primary)] text-white" : "text-muted"
+                        className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${filter === "favorites" ? "bg-[var(--primary)] text-primary-foreground" : "text-muted"
                             }`}
                     >
                         {t("documents.favorites")}
@@ -175,13 +175,13 @@ export default function DocumentsPage() {
                 <div className="flex items-center gap-1 p-1 rounded-xl border border-card bg-card">
                     <button
                         onClick={() => setView("grid")}
-                        className={`p-2 rounded-lg transition-colors ${view === "grid" ? "bg-[var(--primary)] text-white" : "text-muted"}`}
+                        className={`p-2 rounded-lg transition-colors ${view === "grid" ? "bg-[var(--primary)] text-primary-foreground" : "text-muted"}`}
                     >
                         <Grid3x3 size={16} />
                     </button>
                     <button
                         onClick={() => setView("list")}
-                        className={`p-2 rounded-lg transition-colors ${view === "list" ? "bg-[var(--primary)] text-white" : "text-muted"}`}
+                        className={`p-2 rounded-lg transition-colors ${view === "list" ? "bg-[var(--primary)] text-primary-foreground" : "text-muted"}`}
                     >
                         <List size={16} />
                     </button>

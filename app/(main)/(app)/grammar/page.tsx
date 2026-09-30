@@ -92,7 +92,7 @@ if (!res.ok) {
     return (
         <div className="max-w-4xl mx-auto py-8 px-4">
             <div className="text-center mb-8">
-                <div className="w-14 h-14 mx-auto rounded-2xl bg-purple-900/30 flex items-center justify-center mb-4 border border-purple-500/20">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center mb-4 border border-primary/20">
                     <CheckCheck className="text-[var(--primary)]" size={26} />
                 </div>
                 <h1 className="text-2xl font-bold text-fg">PDF Grammar Checker</h1>
@@ -123,8 +123,8 @@ if (!res.ok) {
                         </label>
 
                         <div className="flex-1 flex flex-col justify-between">
-                            <div className="flex items-center gap-3 p-3 rounded-xl bg-black/20 border border-white/5">
-                                <div className="w-9 h-9 rounded-lg bg-purple-900/30 flex items-center justify-center shrink-0">
+                            <div className="flex items-center gap-3 p-3 rounded-xl bg-muted border border-border">
+                                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                                     <FileText size={16} className="text-[var(--primary)]" />
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -143,12 +143,12 @@ if (!res.ok) {
                             </div>
                         </div>
 
-                        <div className="pt-3 border-t border-white/5 mt-3 flex justify-end">
+                        <div className="pt-3 border-t border-border mt-3 flex justify-end">
                             <button
                                 type="button"
                                 onClick={handleCheckGrammar}
                                 disabled={loading || !selectedFile}
-                                className="px-6 py-2.5 rounded-full bg-[var(--primary)] text-white text-sm font-medium hover:opacity-90 transition-colors disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-purple-900/20"
+                                className="px-6 py-2.5 rounded-full bg-[var(--primary)] text-primary-foreground text-sm font-medium hover:opacity-90 transition-colors disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-primary/20"
                             >
                                 {loading ? (
                                     <>
@@ -190,21 +190,21 @@ if (!res.ok) {
                                 <button
                                     type="button"
                                     onClick={() => setShowChanges(false)}
-                                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${!showChanges ? "bg-[var(--primary)] text-white" : "text-muted hover:text-fg"}`}
+                                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${!showChanges ? "bg-[var(--primary)] text-primary-foreground" : "text-muted hover:text-fg"}`}
                                 >
                                     Corrected
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setShowChanges(true)}
-                                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${showChanges ? "bg-[var(--primary)] text-white" : "text-muted hover:text-fg"}`}
+                                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${showChanges ? "bg-[var(--primary)] text-primary-foreground" : "text-muted hover:text-fg"}`}
                                 >
                                     Changes ({editCount})
                                 </button>
                             </div>
                         )}
 
-                        <div className="w-full flex-1 rounded-lg bg-black/20 p-4 border border-white/5 overflow-y-auto max-h-[220px]">
+                        <div className="w-full flex-1 rounded-lg bg-muted p-4 border border-border overflow-y-auto max-h-[220px]">
                             {showChanges && diff ? (
                                 editCount === 0 ? (
                                     <p className="text-sm text-muted">
@@ -243,7 +243,7 @@ if (!res.ok) {
                                 </div>
                             )}
                         </div>
-                        <div className="pt-3 border-t border-white/5 mt-3 flex justify-end">
+                        <div className="pt-3 border-t border-border mt-3 flex justify-end">
                             <span className="text-xs text-muted">Powered by AI</span>
                         </div>
                     </div>

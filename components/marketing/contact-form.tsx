@@ -138,7 +138,7 @@ export function ContactForm() {
             <button
                 type="submit"
                 disabled={!isValid || submitting}
-                className="px-5 py-2.5 rounded-full bg-[var(--primary)] text-white text-sm font-medium hover:bg-[var(--primary-hover)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2"
+                className="px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:bg-[var(--primary-hover)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2"
             >
                 {submitting && <Loader2 size={15} className="animate-spin" />}
                 {submitting ? "Sending..." : "Send Message"}

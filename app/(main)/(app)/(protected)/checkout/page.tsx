@@ -163,7 +163,7 @@ function Checkout() {
                 <div className={`${CARD} p-6`}>
                     <h1 className="text-xl text-fg">The Free plan needs no payment</h1>
                     <p className="mt-1 text-sm text-muted">You already have it. Pick Pro or Business to upgrade.</p>
-                    <Link href="/pricing" className="mt-4 inline-block rounded-xl bg-[var(--primary)] px-4 py-2.5 text-white">
+                    <Link href="/pricing" className="mt-4 inline-block rounded-xl bg-[var(--primary)] px-4 py-2.5 text-primary-foreground">
                         See plans
                     </Link>
                 </div>
@@ -265,7 +265,7 @@ function Start({
             <button
                 onClick={onStart}
                 disabled={starting}
-                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-4 py-3 text-white transition hover:opacity-90 disabled:opacity-60 focus-visible:outline focus-visible:outline-2 sm:w-auto"
+                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-4 py-3 text-primary-foreground transition hover:opacity-90 disabled:opacity-60 focus-visible:outline focus-visible:outline-2 sm:w-auto"
             >
                 {starting && <Loader2 size={16} className="animate-spin" />}
                 {starting ? "Preparing your invoice..." : `Continue to payment (${cycle})`}
@@ -330,7 +330,7 @@ function Waiting({
                     href={payee.payUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-4 py-3 text-white transition hover:opacity-90"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-4 py-3 text-primary-foreground transition hover:opacity-90"
                 >
                     Open Payoneer to pay <ExternalLink size={15} />
                 </a>
@@ -353,7 +353,7 @@ function Confirmed({ planId, expiresAt }: { planId: PlanId; expiresAt: number | 
     const plan = getPlan(planId)
     return (
         <div className={`${CARD} p-5 sm:p-6`}>
-            <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-[var(--primary)] text-white">
+            <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-[var(--primary)] text-primary-foreground">
                 <Check size={22} />
             </div>
             <h2 className="text-xl text-fg">{plan.name} is active</h2>
@@ -364,7 +364,7 @@ function Confirmed({ planId, expiresAt }: { planId: PlanId; expiresAt: number | 
             <p className="mt-1 text-sm text-muted">This was a one-time payment — it will not renew on its own.</p>
 
             <div className="mt-5 flex flex-wrap gap-2">
-                <Link href="/dashboard" className="rounded-xl bg-[var(--primary)] px-4 py-2.5 text-white transition hover:opacity-90">
+                <Link href="/dashboard" className="rounded-xl bg-[var(--primary)] px-4 py-2.5 text-primary-foreground transition hover:opacity-90">
                     Go to dashboard
                 </Link>
                 <Link href="/tools" className="rounded-xl border border-card px-4 py-2.5 text-fg transition hover:bg-[var(--background-secondary)]">
