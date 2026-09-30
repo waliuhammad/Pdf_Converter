@@ -52,6 +52,4 @@ ai-service/.env
 node_modules/
 ai-service/node_modules/
 ai-service/README
-ai-service/src/config/env.ts
-ai-service/src/modules/generator/generator.service.ts
 chroma_db/
