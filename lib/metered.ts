@@ -1,6 +1,7 @@
 import "server-only";
 import { NextRequest, NextResponse } from "next/server";
 import { readDevPlanFromRequest } from "@/lib/dev-plan";
+import { adminConfigProblem, isAdminConfigured } from "@/lib/firebase/admin";
 import { getRequestUid } from "@/lib/server-auth";
 import { checkAndCountUsage, refundOperation, type UsageResult } from "@/lib/usage";
 
@@ -20,10 +21,37 @@ export async function requireUsageAllowance(
     if (!uid) return signInRefusal();
 
     const devPlan = readDevPlanFromRequest(req);
-    const usage = await checkAndCountUsage(uid, devPlan ?? undefined);
+    const usage = await countUsage(uid, devPlan ?? undefined);
+    if (usage instanceof NextResponse) return usage;
     if (!usage.allowed) return limitRefusal(usage);
 
     return null;
+}
+
+/**
+ * checkAndCountUsage, but a Firestore failure becomes a readable 503.
+ *
+ * It used to throw straight out of the route, which Next turns into a 500 with
+ * an empty body — the page could only say "something went wrong". The usual
+ * cause is Firestore not being enabled on the Firebase project at all
+ * (PERMISSION_DENIED), and that is worth naming in the server log.
+ */
+async function countUsage(
+    uid: string,
+    devPlan: Parameters<typeof checkAndCountUsage>[1]
+): Promise<UsageResult | NextResponse> {
+    try {
+        return await checkAndCountUsage(uid, devPlan);
+    } catch (error) {
+        console.error(
+            "metered: could not check the usage allowance in Firestore. If this says " +
+                "PERMISSION_DENIED, create the Firestore database in Firebase Console -> " +
+                "Build -> Firestore Database.",
+            error
+        );
+        const message = "Could not check your usage allowance right now. Please try again shortly.";
+        return NextResponse.json({ success: false, error: message, message }, { status: 503 });
+    }
 }
 
 function signInRefusal(message = "Please sign in to use the tools."): NextResponse {
@@ -40,6 +68,38 @@ function limitRefusal(usage: UsageResult): NextResponse {
     const spent = Math.min(usage.used, usage.limit);
     const message = `Daily limit reached (${spent}/${usage.limit} operations on the ${usage.plan} plan). Upgrade for a higher daily allowance, or come back tomorrow.`;
     return NextResponse.json({ success: false, error: message, message }, { status: 429 });
+}
+
+/** A failed refund is logged, never allowed to replace the tool's own response. */
+async function refund(uid: string): Promise<void> {
+    try {
+        await refundOperation(uid);
+    } catch (error) {
+        console.error("metered: could not refund the operation:", error);
+    }
+}
+
+let warnedUnmetered = false;
+
+/**
+ * Local development without the Firebase service account.
+ *
+ * Without FIREBASE_PROJECT_ID / CLIENT_EMAIL / PRIVATE_KEY no session can be
+ * verified, so every tool route answered "Please sign in" — even for a signed-in
+ * user — and a fresh clone could not try a single tool. In development only,
+ * run the tool unmetered instead and say so once in the log. Production still
+ * fails closed: no credentials there means nobody gets through.
+ */
+function unmeteredLocalDev(): boolean {
+    if (process.env.NODE_ENV !== "development" || isAdminConfigured()) return false;
+
+    if (!warnedUnmetered) {
+        warnedUnmetered = true;
+        console.warn(
+            `metered: ${adminConfigProblem()} — running tools without sign-in or usage limits (development only).`
+        );
+    }
+    return true;
 }
 
 interface MeteredOptions {
@@ -68,23 +128,26 @@ export function metered(
     options: MeteredOptions = {}
 ): (req: NextRequest) => Promise<Response> {
     return async function meteredHandler(req: NextRequest): Promise<Response> {
+        if (unmeteredLocalDev()) return handler(req);
+
         const uid = await getRequestUid(req);
         if (!uid) return signInRefusal(options.signInMessage);
 
         const devPlan = readDevPlanFromRequest(req);
-        const usage = await checkAndCountUsage(uid, devPlan ?? undefined);
+        const usage = await countUsage(uid, devPlan ?? undefined);
+        if (usage instanceof NextResponse) return usage;
         if (!usage.allowed) return limitRefusal(usage);
 
         let response: Response;
         try {
             response = await handler(req);
         } catch (err) {
-            await refundOperation(uid);
+            await refund(uid);
             throw err;
         }
 
         // 4xx and 5xx mean no file was delivered, whatever the reason.
-        if (!response.ok) await refundOperation(uid);
+        if (!response.ok) await refund(uid);
 
         return response;
     };
