@@ -3,7 +3,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { readFormData } from "@/lib/api";
 import { LibreOfficeMissingError, officeToPdf } from "@/lib/office-to-pdf";
 import { extractPageCells } from "@/lib/pdf-text";
-import { pagesToDocx, pagesToPptx, pagesToXlsx, renderPdfPages } from "@/lib/pdf-to-office";
+import { readTextLayout, stripPdfText } from "@/lib/pdf-layout";
+import {
+    pagesToDocx,
+    pagesToPptx,
+    pagesToXlsx,
+    renderPdfPages,
+    type RenderedPage,
+} from "@/lib/pdf-to-office";
 import { contentDisposition, rejectBadUpload, type AcceptKind } from "@/lib/uploads";
 
 /**
@@ -64,6 +71,28 @@ const OUTPUT = {
     xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 } as const;
 
+/**
+ * Pages for Word and PowerPoint: the artwork rendered without its text, with
+ * each line of text attached so it can be laid on top as an editable box.
+ *
+ * Anything that goes wrong separating the two — an unusual content stream, a
+ * font pdf.js cannot read — falls back to the page rendered whole: still an
+ * exact copy, just not editable, rather than no file at all.
+ */
+async function editablePages(bytes: Uint8Array): Promise<RenderedPage[]> {
+    try {
+        const [artwork, layout] = await Promise.all([
+            stripPdfText(bytes.slice()).then((stripped) => renderPdfPages(stripped)),
+            readTextLayout(bytes.slice()),
+        ]);
+        if (artwork.length !== layout.length) throw new Error("page count mismatch");
+        return artwork.map((page, i) => ({ ...page, lines: layout[i].lines }));
+    } catch (error) {
+        console.warn("Editable conversion fell back to page images:", error);
+        return renderPdfPages(bytes.slice());
+    }
+}
+
 /** PDF in, Word / PowerPoint / Excel out — each page placed as it looks in the PDF. */
 export async function pdfToOfficeRoute(
     req: NextRequest,
@@ -76,7 +105,7 @@ export async function pdfToOfficeRoute(
 
     let output: Uint8Array;
     try {
-        const pages = await renderPdfPages(bytes.slice());
+        const pages = format === "xlsx" ? await renderPdfPages(bytes.slice()) : await editablePages(bytes);
         if (pages.length === 0) throw new Error("The PDF has no pages.");
 
         if (format === "docx") {

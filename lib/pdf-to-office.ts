@@ -6,6 +6,7 @@ import JSZip from "jszip";
 import pptxgen from "pptxgenjs";
 import { pdfToPng } from "pdf-to-png-converter";
 import { withOwnPdfWorker } from "@/lib/pdf-worker-isolation";
+import type { TextLine } from "@/lib/pdf-layout";
 
 /**
  * PDF -> Word / PowerPoint / Excel that look exactly like the PDF.
@@ -15,11 +16,13 @@ import { withOwnPdfWorker } from "@/lib/pdf-worker-isolation";
  * a brochure or a designed report came back as a page of loose text: the
  * borders, logos, fonts, colours and layout were all gone.
  *
- * Now every page is rendered to an image at print-friendly resolution and
- * placed full-size in the output — one page per Word section, one slide per
- * page, one worksheet per page — so the result is the same document in the
- * new format. The Excel file also gets a "Text" sheet with the extracted text,
- * since a spreadsheet of the content is usually why someone wants Excel.
+ * Now every page's artwork is rendered to an image at print-friendly
+ * resolution and placed full-size in the output — one page per Word section,
+ * one slide per page, one worksheet per page. For Word and PowerPoint the
+ * artwork is rendered without its text, and each line of text is laid on top
+ * as a real text box in the same place, font, size, weight and colour (see
+ * lib/pdf-layout.ts), so the document looks the same and can still be edited.
+ * The Excel file shows each page whole and adds a "Text" sheet with the text.
  */
 
 /** 2.5 x 72 dpi = 180 dpi: sharp on screen and acceptable in print. */
@@ -30,6 +33,8 @@ export interface RenderedPage {
     /** Page size in PDF points (1/72 inch). */
     widthPt: number;
     heightPt: number;
+    /** Editable text to lay over the image; absent when the image already shows the text. */
+    lines?: TextLine[];
 }
 
 export async function renderPdfPages(bytes: Uint8Array): Promise<RenderedPage[]> {
@@ -68,6 +73,24 @@ function xmlEscape(text: string): string {
 // ---------------------------------------------------------------- Word
 
 /**
+ * One line of text as a borderless, transparent text box pinned to the page
+ * at the line's position. It grows to fit and never wraps, so editing the
+ * words keeps them on one line where they were. Wrapped in
+ * mc:AlternateContent the way Word itself writes text boxes.
+ */
+function docxTextBox(line: TextLine, id: number): string {
+    const x = Math.round(line.x * EMU_PER_PT);
+    const y = Math.round(line.top * EMU_PER_PT);
+    // Office fonts are rarely metrically identical to the PDF's, so leave room.
+    const cx = Math.round((line.width * 1.15 + line.size) * EMU_PER_PT);
+    const cy = Math.round(line.size * 1.3 * EMU_PER_PT);
+    const halfPoints = Math.max(2, Math.round(line.size * 2));
+    const font = xmlEscape(line.font);
+    const rPr = `<w:rPr><w:rFonts w:ascii="${font}" w:hAnsi="${font}" w:cs="${font}"/>${line.bold ? "<w:b/>" : ""}${line.italic ? "<w:i/>" : ""}<w:color w:val="${line.color}"/><w:sz w:val="${halfPoints}"/><w:szCs w:val="${halfPoints}"/></w:rPr>`;
+    return `<w:r><mc:AlternateContent><mc:Choice Requires="wps"><w:drawing><wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="${id}" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1"><wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="page"><wp:posOffset>${x}</wp:posOffset></wp:positionH><wp:positionV relativeFrom="page"><wp:posOffset>${y}</wp:posOffset></wp:positionV><wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/><wp:docPr id="${id}" name="Text ${id}"/><wp:cNvGraphicFramePr/><a:graphic><a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"><wps:wsp><wps:cNvSpPr txBox="1"/><wps:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln></wps:spPr><wps:txbx><w:txbxContent><w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/></w:pPr><w:r>${rPr}<w:t xml:space="preserve">${xmlEscape(line.text)}</w:t></w:r></w:p></w:txbxContent></wps:txbx><wps:bodyPr rot="0" vert="horz" wrap="none" lIns="0" tIns="0" rIns="0" bIns="0" anchor="t" anchorCtr="0"><a:spAutoFit/></wps:bodyPr></wps:wsp></a:graphicData></a:graphic></wp:anchor></w:drawing></mc:Choice><mc:Fallback/></mc:AlternateContent></w:r>`;
+}
+
+/**
  * Each page becomes its own section, sized to that page with zero margins, and
  * the image is anchored behind the text at the page's top-left corner. An
  * anchored image (rather than an inline one) is what stops Word adding a blank
@@ -83,12 +106,13 @@ export async function pagesToDocx(pages: RenderedPage[]): Promise<Uint8Array> {
             const cy = Math.round(page.heightPt * EMU_PER_PT);
             const sectPr = `<w:sectPr><w:pgSz w:w="${Math.round(page.widthPt * TWIPS_PER_PT)}" w:h="${Math.round(page.heightPt * TWIPS_PER_PT)}"${page.widthPt > page.heightPt ? ' w:orient="landscape"' : ""}/><w:pgMar w:top="0" w:right="0" w:bottom="0" w:left="0" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr>`;
             const drawing = `<w:r><w:drawing><wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="${n}" behindDoc="1" locked="1" layoutInCell="1" allowOverlap="1"><wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="page"><wp:posOffset>0</wp:posOffset></wp:positionH><wp:positionV relativeFrom="page"><wp:posOffset>0</wp:posOffset></wp:positionV><wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/><wp:docPr id="${n}" name="Page ${n}"/><wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="${n}" name="page${n}.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rIdImg${n}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:anchor></w:drawing></w:r>`;
+            const textBoxes = (page.lines ?? []).map((line, j) => docxTextBox(line, n * 1000 + j)).join("");
             const isLast = i === pages.length - 1;
             // A section ends with the paragraph that carries its sectPr; the
             // last section's sectPr sits directly in the body instead.
             return isLast
-                ? `<w:p>${drawing}</w:p>${sectPr}`
-                : `<w:p><w:pPr>${sectPr}</w:pPr>${drawing}</w:p>`;
+                ? `<w:p>${drawing}${textBoxes}</w:p>${sectPr}`
+                : `<w:p><w:pPr>${sectPr}</w:pPr>${drawing}${textBoxes}</w:p>`;
         })
         .join("");
 
@@ -111,7 +135,7 @@ export async function pagesToDocx(pages: RenderedPage[]): Promise<Uint8Array> {
     );
     zip.file(
         "word/document.xml",
-        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>${body}</w:body></w:document>`
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"><w:body>${body}</w:body></w:document>`
     );
     pages.forEach((page, i) => zip.file(`word/media/page${i + 1}.png`, page.png));
 
@@ -136,13 +160,35 @@ export async function pagesToPptx(pages: RenderedPage[], title: string): Promise
         const scale = Math.min(slideW / (page.widthPt / 72), slideH / (page.heightPt / 72));
         const w = (page.widthPt / 72) * scale;
         const h = (page.heightPt / 72) * scale;
-        pptx.addSlide().addImage({
+        const offsetX = (slideW - w) / 2;
+        const offsetY = (slideH - h) / 2;
+        const slide = pptx.addSlide();
+        slide.addImage({
             data: `image/png;base64,${page.png.toString("base64")}`,
-            x: (slideW - w) / 2,
-            y: (slideH - h) / 2,
+            x: offsetX,
+            y: offsetY,
             w,
             h,
         });
+
+        // Each line as an editable text box at the same place, same style.
+        for (const line of page.lines ?? []) {
+            slide.addText(line.text, {
+                x: offsetX + (line.x / 72) * scale,
+                y: offsetY + (line.top / 72) * scale,
+                w: ((line.width * 1.15 + line.size) / 72) * scale,
+                h: ((line.size * 1.3) / 72) * scale,
+                fontFace: line.font,
+                fontSize: Math.max(1, line.size * scale),
+                bold: line.bold,
+                italic: line.italic,
+                color: line.color,
+                margin: 0,
+                valign: "top",
+                wrap: false,
+                fit: "none",
+            });
+        }
     }
 
     const out = (await pptx.write({ outputType: "nodebuffer" })) as Buffer;

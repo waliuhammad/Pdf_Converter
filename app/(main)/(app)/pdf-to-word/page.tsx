@@ -180,7 +180,7 @@ export default function PdfToWordPage() {
           Convert PDF to Word (DOCX)
         </h1>
         <p className="text-muted text-[13px] sm:text-sm mt-1.5 max-w-xs sm:max-w-lg mx-auto leading-relaxed">
-          Turn your PDF into a Word document that looks exactly like the original — same layout, fonts, images and design.
+          Turn your PDF into a Word document that looks like the original and that you can edit — change names, dates and any text, the design stays.
         </p>
       </div>
 
@@ -196,7 +196,7 @@ export default function PdfToWordPage() {
         <UploadCard
           onFiles={handleFileAdded}
           title="Click to browse or drag & drop a PDF"
-          hint="Certificates, designed pages and scans keep their exact look"
+          hint="Text stays editable; borders, logos and images stay in place"
         />
       ) : (
         <div className="space-y-4 sm:space-y-6">
