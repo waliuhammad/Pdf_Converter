@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
-import { getFirestore } from "firebase-admin/firestore"
-import { getAdminApp, getAdminAuth, isAdminConfigured, SESSION_COOKIE } from "@/lib/firebase/admin"
+import { getAdminAuth, getAdminDb, isAdminConfigured, SESSION_COOKIE } from "@/lib/firebase/admin"
 import { latestPaymentFor } from "@/lib/billing/payoneer"
 import { getPayoneerSettings } from "@/lib/billing/payoneer-settings"
 import { resolvePlan, type UserProfile } from "@/lib/firebase/users"
@@ -15,7 +14,7 @@ export const runtime = "nodejs"
  * the customer's page says so without them refreshing. Polled rather than
  * watched from the browser on purpose: `payments` holds one document per
  * customer transaction, and letting clients subscribe to that collection means
- * loosening Firestore rules over billing records to save a few seconds of
+ * loosening the database rules over billing records to save a few seconds of
  * latency. The server already knows; it can just be asked.
  */
 export async function GET() {
@@ -36,11 +35,11 @@ export async function GET() {
 
     // Read with the admin SDK, the way lib/usage.ts does. getUserProfile() goes
     // through the *client* SDK, which on the server has no signed-in user, so
-    // Firestore rules reject it and it returns null — which read as "this user
+    // the database rules reject it and it returns null — which read as "this user
     // is on the free plan" on the very screen confirming they had upgraded.
     const profileFor = async (): Promise<UserProfile | null> => {
-        const snap = await getFirestore(getAdminApp()).collection("users").doc(uid).get()
-        return (snap.data() ?? null) as UserProfile | null
+        const snap = await getAdminDb().ref(`users/${uid}`).get()
+        return (snap.val() ?? null) as UserProfile | null
     }
 
     // Fetched together so the page never shows "confirmed" beside a stale plan.

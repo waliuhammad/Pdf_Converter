@@ -1,16 +1,46 @@
 import "server-only"
-import { FieldValue, getFirestore, type Firestore } from "firebase-admin/firestore"
-import { getAdminApp } from "@/lib/firebase/admin"
+import { ServerValue, type Database } from "firebase-admin/database"
+import { getAdminDb } from "@/lib/firebase/admin"
 import { getPlan, type PlanId, type BillingCycle } from "@/lib/plans"
 
 /**
- * admin.ts exports no `db`; it hands out the app and each caller opens
- * Firestore from it, which is what lib/usage.ts does. Resolved on call rather
- * than at import so loading this module cannot initialise Firebase as a side
+ * Payments live in the Realtime Database (payments/{id}, subscriptions/{uid}),
+ * opened per call so loading this module cannot initialise Firebase as a side
  * effect of a build.
  */
-function database(): Firestore {
-    return getFirestore(getAdminApp())
+function database(): Database {
+    return getAdminDb()
+}
+
+/**
+ * Payment ids arrive from the admin screen. Anything that is not a plain push
+ * id could address a different path ("../users/x"), so refuse it outright.
+ */
+function paymentPath(paymentId: string): string {
+    if (!/^[A-Za-z0-9_-]+$/.test(paymentId)) throw new Error("payment not found")
+    return `payments/${paymentId}`
+}
+
+interface PaymentRecord {
+    uid: string
+    email: string | null
+    planId: PlanId
+    cycle: BillingCycle
+    amount: number
+    currency: string
+    status: PaymentStatus
+    provider: string
+    reference: string
+    createdAt: number
+    confirmedAt?: number
+    confirmedBy?: string
+    note?: string
+}
+
+/** Every payment belonging to one user, newest first is up to the caller. */
+async function paymentsFor(uid: string): Promise<Array<[string, PaymentRecord]>> {
+    const snap = await database().ref("payments").orderByChild("uid").equalTo(uid).get()
+    return Object.entries((snap.val() ?? {}) as Record<string, PaymentRecord>)
 }
 
 export type PaymentStatus = "pending" | "paid" | "rejected" | "expired"
@@ -42,26 +72,12 @@ export async function createPayment(args: {
 
     // Reuse any pending invoice — a double-click otherwise means the user
     // pays twice and you owe a refund you cannot automate.
-    const existing = await database()
-        .collection("payments")
-        .where("uid", "==", args.uid)
-        .where("status", "==", "pending")
-        .limit(1)
-        .get()
-
-    if (!existing.empty) {
-        const doc = existing.docs[0]
-        const data = doc.data()
-        return {
-            id: doc.id,
-            reference: data.reference as string,
-            amount: data.amount as number,
-        }
-    }
+    const pending = await pendingPaymentFor(args.uid)
+    if (pending) return pending
 
     const reference = makeReference()
     const amount = priceFor(args.planId, args.cycle)
-    const ref = database().collection("payments").doc()
+    const ref = database().ref("payments").push()
 
     await ref.set({
         uid: args.uid,
@@ -73,70 +89,66 @@ export async function createPayment(args: {
         status: "pending",
         provider: "payoneer",
         reference,
-        createdAt: FieldValue.serverTimestamp(),
+        createdAt: ServerValue.TIMESTAMP,
     })
 
-    return { id: ref.id, reference, amount }
+    return { id: ref.key!, reference, amount }
 }
 
-/** Admin-only. Transaction so a double-confirm cannot stack two periods on one payment. */
+/**
+ * Admin-only. A double-confirm must not stack two periods on one payment.
+ *
+ * A Realtime Database transaction covers one location, so the payment's status
+ * is claimed first, atomically, pending -> paid: only the caller that wins that
+ * claim goes on to extend the plan. The period end is then computed inside a
+ * transaction on the subscription, so two different payments confirmed at the
+ * same moment for one user both extend it rather than one overwriting the other.
+ */
 export async function confirmPayment(paymentId: string, adminUid: string): Promise<void> {
     const store = database()
-    const paymentRef = store.collection("payments").doc(paymentId)
+    const paymentRef = store.ref(paymentPath(paymentId))
 
-    await store.runTransaction(async (tx) => {
-        const snap = await tx.get(paymentRef)
-        if (!snap.exists) throw new Error("payment not found")
+    const payment = (await paymentRef.get()).val() as PaymentRecord | null
+    if (!payment) throw new Error("payment not found")
 
-        const payment = snap.data()!
-        if (payment.status !== "pending") {
-            throw new Error(`payment already ${payment.status}`)
-        }
+    let seen: PaymentStatus | null = null
+    const claim = await paymentRef.child("status").transaction((current: PaymentStatus | null) => {
+        seen = current
+        return current === "pending" ? "paid" : undefined
+    })
+    if (!claim.committed) throw new Error(`payment already ${seen ?? "gone"}`)
 
-        const subRef = store.collection("subscriptions").doc(payment.uid as string)
-        const subSnap = await tx.get(subRef)
-        const currentEnd = (subSnap.data()?.currentPeriodEnd as number) ?? 0
-
-        const now = Date.now()
-        const periodMs = payment.cycle === "yearly" ? 365 * 864e5 : 30 * 864e5
-        // Extend from existing expiry so an early renewal never shortens the plan.
-        const start = currentEnd > now ? currentEnd : now
-
-        const periodEnd = start + periodMs
-
-        tx.set(
-            subRef,
-            {
+    const periodMs = payment.cycle === "yearly" ? 365 * 864e5 : 30 * 864e5
+    const sub = await store.ref(`subscriptions/${payment.uid}`).transaction(
+        (current: { currentPeriodEnd?: number } | null) => {
+            const now = Date.now()
+            const currentEnd = current?.currentPeriodEnd ?? 0
+            // Extend from existing expiry so an early renewal never shortens the plan.
+            const start = currentEnd > now ? currentEnd : now
+            return {
+                ...(current ?? {}),
                 provider: "payoneer",
                 planId: payment.planId,
                 status: "active",
                 cycle: payment.cycle,
-                currentPeriodEnd: periodEnd,
+                currentPeriodEnd: start + periodMs,
                 autoRenew: false,
-                updatedAt: FieldValue.serverTimestamp(),
-            },
-            { merge: true }
-        )
+                updatedAt: Date.now(),
+            }
+        }
+    )
+    const periodEnd = (sub.snapshot.val() as { currentPeriodEnd: number }).currentPeriodEnd
 
-        // The subscription document is the billing record, but nothing reads
-        // it: every plan check in the app goes through resolvePlan() against
-        // users/{uid}. Without this write a confirmed payment upgraded nobody —
-        // the tools, the limits and the billing tab all still saw "free".
-        tx.set(
-            store.collection("users").doc(payment.uid as string),
-            {
-                plan: payment.planId,
-                planExpiresAt: periodEnd,
-                updatedAt: FieldValue.serverTimestamp(),
-            },
-            { merge: true }
-        )
-
-        tx.update(paymentRef, {
-            status: "paid",
-            confirmedAt: FieldValue.serverTimestamp(),
-            confirmedBy: adminUid,
-        })
+    // The subscription record is the billing record, but nothing reads it:
+    // every plan check in the app goes through resolvePlan() against
+    // users/{uid}. Without this write a confirmed payment upgraded nobody —
+    // the tools, the limits and the billing tab all still saw "free".
+    await store.ref().update({
+        [`users/${payment.uid}/plan`]: payment.planId,
+        [`users/${payment.uid}/planExpiresAt`]: periodEnd,
+        [`users/${payment.uid}/updatedAt`]: ServerValue.TIMESTAMP,
+        [`${paymentPath(paymentId)}/confirmedAt`]: ServerValue.TIMESTAMP,
+        [`${paymentPath(paymentId)}/confirmedBy`]: adminUid,
     })
 }
 
@@ -145,13 +157,17 @@ export async function rejectPayment(
     adminUid: string,
     note: string
 ): Promise<void> {
-    await database().collection("payments").doc(paymentId).update({
+    const ref = database().ref(paymentPath(paymentId))
+    if (!(await ref.get()).exists()) throw new Error("payment not found")
+
+    await ref.update({
         status: "rejected",
-        confirmedAt: FieldValue.serverTimestamp(),
+        confirmedAt: ServerValue.TIMESTAMP,
         confirmedBy: adminUid,
         note,
     })
 }
+
 export interface LatestPayment {
     id: string
     reference: string
@@ -171,29 +187,20 @@ export interface LatestPayment {
  * moment the payment stops being pending, which is exactly the moment the
  * customer is waiting to hear about.
  *
- * Ordering happens here rather than in the query: `where uid == … orderBy
- * createdAt` needs a composite index, and Firestore only says so the first time
- * it runs, in production, on the screen someone is mid-payment on. A customer
- * has a handful of payments, so sorting a small page costs nothing.
+ * A customer has a handful of payments, so sorting them here costs nothing.
  */
 export async function latestPaymentFor(uid: string): Promise<LatestPayment | null> {
-    const snap = await database().collection("payments").where("uid", "==", uid).limit(25).get()
-    if (snap.empty) return null
-
-    const rows = snap.docs
-        .map((doc) => {
-            const data = doc.data()
-            return {
-                id: doc.id,
-                reference: (data.reference as string) ?? "",
-                amount: (data.amount as number) ?? 0,
-                planId: (data.planId as PlanId) ?? "pro",
-                cycle: (data.cycle as BillingCycle) ?? "monthly",
-                status: (data.status as PaymentStatus) ?? "pending",
-                note: (data.note as string | null) ?? null,
-                createdAt: data.createdAt?.toMillis?.() ?? null,
-            }
-        })
+    const rows = (await paymentsFor(uid))
+        .map(([id, data]) => ({
+            id,
+            reference: data.reference ?? "",
+            amount: data.amount ?? 0,
+            planId: data.planId ?? "pro",
+            cycle: data.cycle ?? "monthly",
+            status: data.status ?? "pending",
+            note: data.note ?? null,
+            createdAt: typeof data.createdAt === "number" ? data.createdAt : null,
+        }))
         // A pending invoice outranks a settled one regardless of age: it is the
         // one the customer still has to act on.
         .sort((a, b) => {
@@ -202,27 +209,16 @@ export async function latestPaymentFor(uid: string): Promise<LatestPayment | nul
             return (b.createdAt ?? 0) - (a.createdAt ?? 0)
         })
 
-    return rows[0]
+    return rows[0] ?? null
 }
 
 /** The caller's outstanding invoice, if they have one. */
 export async function pendingPaymentFor(
     uid: string
 ): Promise<{ id: string; reference: string; amount: number } | null> {
-    const snap = await database()
-        .collection("payments")
-        .where("uid", "==", uid)
-        .where("status", "==", "pending")
-        .limit(1)
-        .get()
+    const pending = (await paymentsFor(uid)).find(([, data]) => data.status === "pending")
+    if (!pending) return null
 
-    if (snap.empty) return null
-
-    const doc = snap.docs[0]
-    const data = doc.data()
-    return {
-        id: doc.id,
-        reference: data.reference as string,
-        amount: data.amount as number,
-    }
+    const [id, data] = pending
+    return { id, reference: data.reference, amount: data.amount }
 }

@@ -41,7 +41,7 @@ export default async function ProtectedLayout({
             }
         }
     } catch {
-        // Firestore or Remote Config unreachable. The client provider will ask
+        // Database or Remote Config unreachable. The client provider will ask
         // again; rendering the page without the figures beats failing it.
     }
 

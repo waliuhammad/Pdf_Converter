@@ -54,20 +54,26 @@ export function getFirebaseAuth(): Auth {
 }
 
 /**
- * Firestore, fetched on first use.
+ * The Realtime Database, fetched on first use.
  *
- * Importing it here meant every page that touched anything under lib/firebase
- * shipped the Firestore SDK — including the password-reset pages, which only
- * ever send an email. Two functions in the whole app write to Firestore; they
- * can wait a moment for it to arrive.
+ * The app keeps its data here rather than in Firestore: Firestore now wants
+ * the Blaze plan before it can be created, the Realtime Database works on the
+ * free Spark plan.
+ *
+ * Loaded lazily so pages that never touch the database — the password-reset
+ * pages, the signed-out tool pages — do not ship the SDK.
  */
-let firestore: Promise<import("firebase/firestore").Firestore> | null = null;
+const databaseURL =
+    process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL ||
+    `https://${firebaseConfig.projectId}-default-rtdb.firebaseio.com`;
+
+let database: Promise<import("firebase/database").Database> | null = null;
 
 export function getDb() {
-    if (!firestore) {
-        firestore = import("firebase/firestore").then((m) =>
-            m.getFirestore(getFirebaseApp())
+    if (!database) {
+        database = import("firebase/database").then((m) =>
+            m.getDatabase(getFirebaseApp(), databaseURL)
         );
     }
-    return firestore;
+    return database;
 }

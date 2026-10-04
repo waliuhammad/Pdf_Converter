@@ -1,6 +1,6 @@
 import "server-only"
-import { FieldValue, getFirestore, type Firestore } from "firebase-admin/firestore"
-import { getAdminApp } from "@/lib/firebase/admin"
+import { ServerValue, type Database } from "firebase-admin/database"
+import { getAdminDb } from "@/lib/firebase/admin"
 
 /**
  * Where the Payoneer account details live.
@@ -15,11 +15,11 @@ import { getAdminApp } from "@/lib/firebase/admin"
  * working, but the stored settings win once they exist.
  */
 
-const DOC_PATH = { collection: "config", doc: "payoneer" } as const
+const SETTINGS_PATH = "config/payoneer"
 
 /** Opened per call so importing this module cannot initialise Firebase. */
-function database(): Firestore {
-    return getFirestore(getAdminApp())
+function database(): Database {
+    return getAdminDb()
 }
 
 export interface PayoneerSettings {
@@ -102,8 +102,8 @@ async function readSettings(): Promise<PayoneerSettings> {
 
     let stored: Partial<PayoneerSettings> = {}
     try {
-        const snap = await database().collection(DOC_PATH.collection).doc(DOC_PATH.doc).get()
-        if (snap.exists) stored = snap.data() as Partial<PayoneerSettings>
+        const snap = await database().ref(SETTINGS_PATH).get()
+        if (snap.exists()) stored = snap.val() as Partial<PayoneerSettings>
     } catch (err) {
         // A read failure must not take checkout down with it: fall through to
         // the env var, which is what this deployment used before there were
@@ -169,9 +169,8 @@ export async function savePayoneerSettings(
     if (patch.enabled !== undefined) next.enabled = patch.enabled
 
     await database()
-        .collection(DOC_PATH.collection)
-        .doc(DOC_PATH.doc)
-        .set({ ...next, savedAt: FieldValue.serverTimestamp() }, { merge: true })
+        .ref(SETTINGS_PATH)
+        .update({ ...next, savedAt: ServerValue.TIMESTAMP })
 
     invalidatePayoneerSettings()
     return getPayoneerSettings()

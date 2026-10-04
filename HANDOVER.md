@@ -24,7 +24,7 @@ project; no developer accounts are involved in running the product.
 - Deploy / update: DEPLOY.md (bottom section covers updates)
 - Change plan limits, maintenance banner, AI kill-switch: Firebase
   Console → Remote Config (Server template) → edit → Publish
-- View users and data: Firebase Console → Authentication / Firestore
+- View users and data: Firebase Console → Authentication / Realtime Database
 
 ## Not included (future work)
 - Payment processing (needs client's Stripe account)

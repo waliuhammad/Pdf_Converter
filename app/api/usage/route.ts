@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
     // The metered tool routes honour the dev plan toggle through
     // requireUsageAllowance, but this one did not, so the meter always
-    // reported the Firestore profile's plan and its limit. Switching the
+    // reported the stored profile's plan and its limit. Switching the
     // tester to pro or business changed what the tools enforced while the
     // card still read "free plan".
     const devPlan = readDevPlanFromRequest(req);

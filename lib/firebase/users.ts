@@ -25,7 +25,7 @@ export interface UserProfile {
 /**
  * The plan a profile is actually on.
  *
- * Firestore hands back whatever is in the document, which is not necessarily
+ * The database hands back whatever is in the record, which is not necessarily
  * one of these strings — an older record, a hand-edited field, or a missing
  * profile because the read failed. This decides what someone is entitled to,
  * so anything unrecognised resolves to "free" rather than being trusted.
@@ -59,17 +59,17 @@ export function resolvePlan(profile: UserProfile | null | undefined): PlanId {
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
     try {
-        const [{ doc, getDoc }, db] = await Promise.all([
-            import("firebase/firestore"),
+        const [{ ref, get }, db] = await Promise.all([
+            import("firebase/database"),
             getDb(),
         ]);
 
-        const snap = await getDoc(doc(db, "users", uid));
+        const snap = await get(ref(db, `users/${uid}`));
         if (!snap.exists()) return null;
-        return snap.data() as UserProfile;
+        return snap.val() as UserProfile;
     } catch (err) {
-        // Firestore not available yet (e.g. billing not enabled) — caller falls back gracefully.
-        console.warn("Could not fetch user profile from Firestore:", err);
+        // Database unreachable or rules not published yet — caller falls back gracefully.
+        console.warn("Could not fetch user profile from the database:", err);
         return null;
     }
 }
@@ -78,8 +78,8 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
  * Updates the display name on the Firebase Auth record first — that is what the
  * sidebar and dashboard actually read — then mirrors it to the user document.
  *
- * The Firestore write is best-effort, matching how getUserProfile already
- * tolerates Firestore being unavailable or locked down by security rules.
+ * The database write is best-effort, matching how getUserProfile already
+ * tolerates the database being unavailable or locked down by security rules.
  * Reporting the whole save as failed would be wrong, since the name has in fact
  * changed, so the caller is told whether the mirror succeeded instead.
  */
@@ -90,15 +90,15 @@ export async function updateUserProfile(
     await updateProfile(user, { displayName: fullName });
 
     try {
-        const [{ doc, setDoc }, db] = await Promise.all([
-            import("firebase/firestore"),
+        const [{ ref, update }, db] = await Promise.all([
+            import("firebase/database"),
             getDb(),
         ]);
 
-        await setDoc(doc(db, "users", user.uid), { fullName }, { merge: true });
+        await update(ref(db, `users/${user.uid}`), { fullName });
         return { syncedToDatabase: true };
     } catch (err) {
-        console.warn("Could not mirror the profile to Firestore:", err);
+        console.warn("Could not mirror the profile to the database:", err);
         return { syncedToDatabase: false };
     }
 }

@@ -107,7 +107,7 @@ export const PLANS: Plan[] = [
 
 export function getPlan(id: PlanId): Plan {
     // PLANS covers every PlanId, so the fallback only guards bad data
-    // arriving from outside (e.g. an old Firestore document).
+    // arriving from outside (e.g. an old stored profile).
     return PLANS.find((p) => p.id === id) ?? PLANS[0];
 }
 

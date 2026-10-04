@@ -29,12 +29,13 @@ export async function requireUsageAllowance(
 }
 
 /**
- * checkAndCountUsage, but a Firestore failure becomes a readable 503.
+ * checkAndCountUsage, but a database failure becomes a readable 503.
  *
  * It used to throw straight out of the route, which Next turns into a 500 with
  * an empty body — the page could only say "something went wrong". The usual
- * cause is Firestore not being enabled on the Firebase project at all
- * (PERMISSION_DENIED), and that is worth naming in the server log.
+ * cause is the Realtime Database not existing on the Firebase project yet, or
+ * FIREBASE_DATABASE_URL pointing at the wrong instance, and that is worth naming
+ * in the server log.
  */
 async function countUsage(
     uid: string,
@@ -44,9 +45,9 @@ async function countUsage(
         return await checkAndCountUsage(uid, devPlan);
     } catch (error) {
         console.error(
-            "metered: could not check the usage allowance in Firestore. If this says " +
-                "PERMISSION_DENIED, create the Firestore database in Firebase Console -> " +
-                "Build -> Firestore Database.",
+            "metered: could not check the usage allowance in the Realtime Database. " +
+                "Check it exists (Firebase Console -> Realtime Database) and, if it is not " +
+                "in us-central1, set FIREBASE_DATABASE_URL to its URL.",
             error
         );
         const message = "Could not check your usage allowance right now. Please try again shortly.";

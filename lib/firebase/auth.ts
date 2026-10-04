@@ -47,21 +47,26 @@ export interface RegisterInput {
 
 /**
  * Best-effort: the account already exists in Firebase Auth by the time this
- * runs, so a Firestore failure (rules, quota, offline) must not surface as a
- * failed sign-in. Matches how getUserProfile already tolerates Firestore.
+ * runs, so a database failure (rules, quota, offline) must not surface as a
+ * failed sign-in. Matches how getUserProfile already tolerates the database.
+ *
+ * Written with update() rather than set(): update() is checked field by field
+ * against the security rules, which let a user write their own name and
+ * contact details and set plan to "free" once, but never change plan after —
+ * that field is the server's to write when a payment is confirmed.
  */
 async function createUserDocIfNotExists(user: User, extra?: Record<string, unknown>) {
     try {
-        // Registering is the one moment this page needs Firestore, so it loads here.
-        const [{ doc, setDoc, getDoc, serverTimestamp }, db] = await Promise.all([
-            import("firebase/firestore"),
+        // Registering is the one moment this page needs the database, so it loads here.
+        const [{ ref, get, update, serverTimestamp }, db] = await Promise.all([
+            import("firebase/database"),
             getDb(),
         ]);
 
-        const userRef = doc(db, "users", user.uid);
-        const existing = await getDoc(userRef);
+        const userRef = ref(db, `users/${user.uid}`);
+        const existing = await get(userRef);
         if (!existing.exists()) {
-            await setDoc(userRef, {
+            await update(userRef, {
                 fullName: user.displayName ?? extra?.fullName ?? "",
                 email: user.email,
                 phone: extra?.phone ?? null,
@@ -70,7 +75,7 @@ async function createUserDocIfNotExists(user: User, extra?: Record<string, unkno
             });
         }
     } catch (err) {
-        console.warn("Could not create the user document in Firestore:", err);
+        console.warn("Could not create the user record in the database:", err);
     }
 }
 

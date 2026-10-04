@@ -8,11 +8,11 @@ import { deleteDocumentRecord, saveDocumentRecord } from "@/lib/firebase/library
  * Client-side library of the user's documents.
  *
  * This remains the single source of truth the documents and dashboard
- * pages read from — but it is now backed by Firestore: `hydrate` fills
- * it from users/{uid}/... on sign-in (see LibraryLoader), and every
+ * pages read from — but it is now backed by the Realtime Database: `hydrate` fills
+ * it from library/{uid} on sign-in (see LibraryLoader), and every
  * mutation writes through to the same records.
  *
- * Writes are optimistic: the UI updates immediately and the Firestore
+ * Writes are optimistic: the UI updates immediately and the database
  * write follows. A failed write is logged rather than surfaced —
  * losing one history record beats blocking someone's actual work.
  */

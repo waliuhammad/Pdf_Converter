@@ -1,0 +1,23 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "fullName": { ".write": "auth != null && auth.uid === $uid", ".validate": "newData.isString() && newData.val().length <= 200" },
+        "email": { ".write": "auth != null && auth.uid === $uid", ".validate": "newData.isString() && newData.val().length <= 320" },
+        "phone": { ".write": "auth != null && auth.uid === $uid", ".validate": "newData.isString() && newData.val().length <= 40" },
+        "createdAt": { ".write": "auth != null && auth.uid === $uid && !data.exists()" },
+        "plan": { ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.val() === 'free'" }
+      }
+    },
+    "library": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "payments": {
+      ".indexOn": ["uid", "status"]
+    }
+  }
+}

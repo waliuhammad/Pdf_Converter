@@ -1,6 +1,5 @@
 import "server-only";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
-import { getAdminApp, isAdminConfigured } from "@/lib/firebase/admin";
+import { getAdminDb, isAdminConfigured } from "@/lib/firebase/admin";
 import { resolvePlan, type UserProfile } from "@/lib/firebase/users";
 import { getAppConfig } from "@/lib/remote-config";
 import type { PlanId } from "@/lib/plans";
@@ -8,12 +7,12 @@ import type { PlanId } from "@/lib/plans";
 /**
  * Daily usage limits, enforced per signed-in user.
  *
- * Each operation increments a counter document keyed by uid and date
- * (usage/{uid}_{YYYY-MM-DD}). The limit for the user's plan comes from
+ * Each operation increments a counter in the Realtime Database keyed by uid
+ * and date (usage/{uid}/{YYYY-MM-DD}). The limit for the user's plan comes from
  * the client's Remote Config, so raising a plan's daily allowance in the
  * Firebase Console takes effect within minutes and without a deploy.
  *
- * The check and the increment happen in one Firestore transaction:
+ * The check and the increment happen in one Realtime Database transaction:
  * two requests racing on the last allowed operation can't both slip
  * through a read-then-write gap.
  */
@@ -39,13 +38,11 @@ export async function checkAndCountUsage(uid: string, devPlanOverride?: PlanId):
         return { allowed: true, used: 0, limit: Infinity, plan: "free", storageLimitGb: Infinity };
     }
 
-    const db = getFirestore(getAdminApp());
+    const db = getAdminDb();
 
     // The user's plan decides which limit applies. During local testing,
     // the dev toggle can override what the server sees for the request.
-    const profileSnap = await db.collection("users").doc(uid).get();
-    const profile = (profileSnap.data() ?? null) as UserProfile | null;
-    const plan = devPlanOverride ?? resolvePlan(profile);
+    const plan = devPlanOverride ?? resolvePlan(await readProfile(uid));
 
     // The client's Remote Config supplies the number; monthly is the
     // reference cycle (their weekly/monthly/yearly values are identical
@@ -54,24 +51,30 @@ export async function checkAndCountUsage(uid: string, devPlanOverride?: PlanId):
     const limit = limits.monthly[plan];
     const storageLimitGb = storageGb[plan];
 
-    const usageRef = db.collection("usage").doc(`${uid}_${todayKey()}`);
+    // Returning undefined from the update function aborts the transaction,
+    // which is how "already at the limit" is reported: committed === false.
+    const { committed, snapshot } = await db
+        .ref(usagePath(uid))
+        .transaction((current: number | null) => {
+            const used = current ?? 0;
+            if (used >= limit) return undefined;
+            return used + 1;
+        });
 
-    return await db.runTransaction(async (tx) => {
-        const snap = await tx.get(usageRef);
-        const used = (snap.data()?.count as number | undefined) ?? 0;
+    const used = (snapshot.val() as number | null) ?? 0;
+    if (!committed) return { allowed: false, used, limit, plan, storageLimitGb };
 
-        if (used >= limit) {
-            return { allowed: false, used, limit, plan, storageLimitGb };
-        }
+    return { allowed: true, used, limit, plan, storageLimitGb };
+}
 
-        tx.set(
-            usageRef,
-            { uid, date: todayKey(), count: FieldValue.increment(1) },
-            { merge: true }
-        );
+/** usage/{uid}/{YYYY-MM-DD}: a plain number, today's operation count. */
+function usagePath(uid: string): string {
+    return `usage/${uid}/${todayKey()}`;
+}
 
-        return { allowed: true, used: used + 1, limit, plan, storageLimitGb };
-    });
+async function readProfile(uid: string): Promise<UserProfile | null> {
+    const snap = await getAdminDb().ref(`users/${uid}`).get();
+    return (snap.val() ?? null) as UserProfile | null;
 }
 
 /**
@@ -90,17 +93,18 @@ export async function checkAndCountUsage(uid: string, devPlanOverride?: PlanId):
 export async function refundOperation(uid: string): Promise<void> {
     if (!isAdminConfigured()) return;
 
-    const db = getFirestore(getAdminApp());
-    const usageRef = db.collection("usage").doc(`${uid}_${todayKey()}`);
-
     try {
-        await db.runTransaction(async (tx) => {
-            const snap = await tx.get(usageRef);
-            const used = (snap.data()?.count as number | undefined) ?? 0;
-            if (used <= 0) return;
-
-            tx.set(usageRef, { uid, date: todayKey(), count: used - 1 }, { merge: true });
-        });
+        await getAdminDb()
+            .ref(usagePath(uid))
+            .transaction((current: number | null) => {
+                // The first attempt runs against the local cache, which on a
+                // server is always empty. Aborting there would never reach the
+                // real value, so answer null (no change if it really is empty)
+                // and let the database retry with what it actually holds.
+                if (current === null) return null;
+                if (current <= 0) return undefined;
+                return current - 1;
+            });
     } catch (err) {
         // A failed refund must not turn a tool error into a second error for
         // the user; the worst case is one operation they did not receive.
@@ -114,17 +118,14 @@ export async function peekUsage(uid: string, devPlanOverride?: PlanId): Promise<
         return { allowed: true, used: 0, limit: Infinity, plan: "free", storageLimitGb: Infinity };
     }
 
-    const db = getFirestore(getAdminApp());
-
-    const profileSnap = await db.collection("users").doc(uid).get();
-    const plan = devPlanOverride ?? resolvePlan((profileSnap.data() ?? null) as UserProfile | null);
+    const plan = devPlanOverride ?? resolvePlan(await readProfile(uid));
 
     const { limits, storageGb } = await getAppConfig();
     const limit = limits.monthly[plan];
     const storageLimitGb = storageGb[plan];
 
-    const snap = await db.collection("usage").doc(`${uid}_${todayKey()}`).get();
-    const used = (snap.data()?.count as number | undefined) ?? 0;
+    const snap = await getAdminDb().ref(usagePath(uid)).get();
+    const used = (snap.val() as number | null) ?? 0;
 
     return { allowed: used < limit, used, limit, plan, storageLimitGb };
 }

@@ -1,5 +1,6 @@
 import { cert, getApp, getApps, initializeApp, type App } from "firebase-admin/app";
 import { getAuth, type Auth } from "firebase-admin/auth";
+import { getDatabaseWithUrl, type Database } from "firebase-admin/database";
 
 /**
  * The server half of Firebase, used to verify session cookies.
@@ -69,6 +70,28 @@ export function getAdminApp(): App {
 
 export function getAdminAuth(): Auth {
     return getAuth(getAdminApp());
+}
+
+/**
+ * The project's Realtime Database URL.
+ *
+ * The app stores its data in the Realtime Database rather than Firestore
+ * because Firestore now asks for the Blaze plan before it can be created, and
+ * the Realtime Database is available on the free Spark plan. The default
+ * instance is always <project-id>-default-rtdb.firebaseio.com when it is in
+ * us-central1; other regions need FIREBASE_DATABASE_URL set explicitly.
+ */
+export function databaseUrl(): string {
+    return (
+        process.env.FIREBASE_DATABASE_URL ||
+        process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL ||
+        `https://${process.env.FIREBASE_PROJECT_ID}-default-rtdb.firebaseio.com`
+    );
+}
+
+/** The Realtime Database with admin rights: security rules do not apply. */
+export function getAdminDb(): Database {
+    return getDatabaseWithUrl(databaseUrl(), getAdminApp());
 }
 
 /** True when the credentials look usable, so callers can degrade rather than throw. */

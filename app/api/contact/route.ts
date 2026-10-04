@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFirestore } from "firebase-admin/firestore";
-import { getAdminApp, isAdminConfigured, adminConfigProblem } from "@/lib/firebase/admin";
+import { getAdminDb, isAdminConfigured, adminConfigProblem } from "@/lib/firebase/admin";
 
 /**
  * Receives contact-form messages and stores them in the `contactMessages`
- * collection in Firestore, where they can be read in the Firebase Console.
+ * list in the Realtime Database, where they can be read in the Firebase Console.
  *
  * Stored rather than emailed: it needs no extra service or credentials, and
  * nothing is lost if an inbox is misconfigured. An email notification can be
@@ -60,9 +59,7 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const db = getFirestore(getAdminApp());
-
-        await db.collection("contactMessages").add({
+        await getAdminDb().ref("contactMessages").push({
             name,
             email,
             subject: subject || null,

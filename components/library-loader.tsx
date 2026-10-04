@@ -7,7 +7,7 @@ import { loadLibrary } from "@/lib/firebase/library";
 
 /**
  * Bridges auth to the library store: when a user signs in, their
- * documents are loaded from Firestore into the store; when
+ * documents are loaded from the Realtime Database into the store; when
  * they sign out, it empties. Renders nothing — mount it once inside the
  * signed-in layout.
  */
