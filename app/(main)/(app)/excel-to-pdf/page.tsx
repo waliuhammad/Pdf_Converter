@@ -8,11 +8,10 @@ import {
   Download,
   Sparkles,
   Layers,
-  Sliders,
 } from "lucide-react";
-import { loadJsPdfWithAutoTable, loadXlsx } from "@/lib/pdf-libs";
+import { loadXlsx } from "@/lib/pdf-libs";
 import { errorMessage } from "@/lib/errors";
-import { claimOperation, releaseOperation } from "@/lib/claim-operation";
+import { downloadBlob } from "@/lib/download";
 
 /** A cell as xlsx hands it back from sheet_to_json with header:1. */
 type CellValue = string | number | boolean | null;
@@ -28,11 +27,7 @@ export default function ExcelToPdf(): JSX.Element {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string>("");
-
-  const [startRow, setStartRow] = useState<number>(1);
-  const [maxRows, setMaxRows] = useState<number>(60);
-  const [startCol, setStartCol] = useState<number>(1);
-  const [maxCols, setMaxCols] = useState<number>(70);
+  const [file, setFile] = useState<File | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -46,6 +41,7 @@ export default function ExcelToPdf(): JSX.Element {
     }
 
     setFileName(file.name);
+    setFile(file);
     setError(null);
     setLoading(true);
 
@@ -89,6 +85,7 @@ export default function ExcelToPdf(): JSX.Element {
     setSheets([]);
     setSelectedSheetIndex(0);
     setFileName("");
+    setFile(null);
     setError(null);
 
     if (fileInputRef.current) {
@@ -96,28 +93,15 @@ export default function ExcelToPdf(): JSX.Element {
     }
   };
 
-  const getSlicedData = (fullData: CellValue[][]) => {
-    const sRow = Math.max(0, startRow - 1);
-    const eRow = sRow + maxRows;
-    const sCol = Math.max(0, startCol - 1);
-    const eCol = sCol + maxCols;
-
-    const slicedRows = fullData.slice(sRow, eRow);
-
-    return slicedRows.map((row) => row.slice(sCol, eCol));
-  };
-
+  /**
+   * The spreadsheet is converted on the server by LibreOffice, so the PDF keeps
+   * the sheet's own formatting — fonts, colours, borders, merged cells, column
+   * widths and print settings — instead of being redrawn as a plain table.
+   * The server route also counts the operation against the daily allowance.
+   */
   const handleConvertToPdf = async (): Promise<void> => {
-    if (sheets.length === 0) {
+    if (!file) {
       setError("Please upload a spreadsheet first.");
-      return;
-    }
-
-    // Converting happens in the browser, so no route meters this tool. Claim
-    // the operation first, and stop if the plan says no.
-    const claim = await claimOperation();
-    if (!claim.ok) {
-      setError(claim.message);
       return;
     }
 
@@ -125,58 +109,17 @@ export default function ExcelToPdf(): JSX.Element {
     setError(null);
 
     try {
-      const { jsPDF, autoTable } = await loadJsPdfWithAutoTable();
+      const formData = new FormData();
+      formData.append("file", file);
 
-      const doc = new jsPDF({
-        orientation: "landscape",
-        unit: "mm",
-        format: "a4",
-      });
+      const res = await fetch("/api/excel-to-pdf", { method: "POST", body: formData });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || data.message || "Failed to generate PDF.");
+      }
 
-      sheets.forEach((sheet, index) => {
-        if (index > 0) {
-          doc.addPage();
-        }
-
-        doc.setFontSize(14);
-
-        doc.text(
-          `Sheet: ${sheet.name} (Rows ${startRow}-${startRow + maxRows - 1}, Cols ${startCol}-${startCol + maxCols - 1})`,
-          14,
-          15
-        );
-
-        const sliced = getSlicedData(sheet.data);
-        const headers = sliced[0] || [];
-        const rows = sliced.slice(1);
-
-        autoTable(doc, {
-          head: [headers],
-          body: rows,
-          startY: 20,
-          theme: "grid",
-          styles: {
-            fontSize: 7,
-            cellPadding: 2,
-          },
-          headStyles: {
-            fillColor: [51, 65, 85],
-          },
-          margin: {
-            left: 14,
-            right: 14,
-          },
-        });
-      });
-
-      const outputName = fileName
-        ? `${fileName.replace(/\.[^/.]+$/, "")}-custom-range.pdf`
-        : "spreadsheet-export.pdf";
-
-      doc.save(outputName);
+      downloadBlob(await res.blob(), `${fileName.replace(/\.[^/.]+$/, "") || "spreadsheet"}.pdf`);
     } catch (err) {
-      // The operation was claimed before the work started, so give it back.
-      void releaseOperation();
       setError(errorMessage(err, "Failed to generate PDF."));
     } finally {
       setLoading(false);
@@ -185,9 +128,7 @@ export default function ExcelToPdf(): JSX.Element {
 
   const currentSheet = sheets[selectedSheetIndex];
 
-  const previewSlicedData = currentSheet
-    ? getSlicedData(currentSheet.data)
-    : [];
+  const previewSlicedData = currentSheet ? currentSheet.data : [];
 
   return (
     <div className="w-full text-fg antialiased selection:bg-primary selection:text-primary-foreground px-4 sm:px-6 py-6 sm:py-10">
@@ -212,7 +153,7 @@ export default function ExcelToPdf(): JSX.Element {
           </h1>
 
           <p className="text-[13px] leading-[18px] md:text-sm md:leading-normal text-muted max-w-[300px] md:max-w-xl mx-auto">
-            Restrict and clip exact rows and columns from your spreadsheets for clean target PDF output.
+            Turn your spreadsheet into a PDF that keeps its formatting, borders, colours and layout.
           </p>
         </div>
 
@@ -287,110 +228,12 @@ export default function ExcelToPdf(): JSX.Element {
               </div>
             )}
 
-            {/* Row / Column Restrictions */}
-            <div className="bg-[var(--background-secondary)] border border-card rounded-2xl p-4 md:p-5 space-y-4">
-
-              <div className="flex items-center space-x-2 text-fg text-sm font-semibold border-b border-card pb-2">
-                <Sliders className="w-4 h-4 text-muted shrink-0" />
-                <span>Row & Column Range Restrictions</span>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-
-                <div>
-                  <label className="text-[11px] text-muted font-bold uppercase">
-                    Start Row
-                  </label>
-
-                  <input
-                    type="number"
-                    min={1}
-                    value={startRow}
-                    onChange={(e) =>
-                      setStartRow(
-                        Math.max(
-                          1,
-                          parseInt(e.target.value) || 1
-                        )
-                      )
-                    }
-                    className="w-full bg-card border border-card rounded-xl px-3 py-2 text-xs text-fg mt-1 focus:outline-none focus:border-primary"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[11px] text-muted font-bold uppercase">
-                    Max Rows (e.g. 60)
-                  </label>
-
-                  <input
-                    type="number"
-                    min={1}
-                    value={maxRows}
-                    onChange={(e) =>
-                      setMaxRows(
-                        Math.max(
-                          1,
-                          parseInt(e.target.value) || 1
-                        )
-                      )
-                    }
-                    className="w-full bg-card border border-card rounded-xl px-3 py-2 text-xs text-fg mt-1 focus:outline-none focus:border-primary"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[11px] text-muted font-bold uppercase">
-                    Start Column
-                  </label>
-
-                  <input
-                    type="number"
-                    min={1}
-                    value={startCol}
-                    onChange={(e) =>
-                      setStartCol(
-                        Math.max(
-                          1,
-                          parseInt(e.target.value) || 1
-                        )
-                      )
-                    }
-                    className="w-full bg-card border border-card rounded-xl px-3 py-2 text-xs text-fg mt-1 focus:outline-none focus:border-primary"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[11px] text-muted font-bold uppercase">
-                    Max Cols (e.g. 70)
-                  </label>
-
-                  <input
-                    type="number"
-                    min={1}
-                    value={maxCols}
-                    onChange={(e) =>
-                      setMaxCols(
-                        Math.max(
-                          1,
-                          parseInt(e.target.value) || 1
-                        )
-                      )
-                    }
-                    className="w-full bg-card border border-card rounded-xl px-3 py-2 text-xs text-fg mt-1 focus:outline-none focus:border-primary"
-                  />
-                </div>
-
-              </div>
-            </div>
-
             {/* Preview */}
             {currentSheet && (
               <div className="bg-[var(--background-secondary)] border border-card rounded-2xl p-3 md:p-4 space-y-3">
 
                 <span className="text-[11px] text-muted font-bold uppercase tracking-wider block">
-                  Clipped Range Preview ({previewSlicedData.length} rows x{" "}
-                  {previewSlicedData[0]?.length || 0} cols)
+                  Sheet Preview ({previewSlicedData.length} rows)
                 </span>
 
                 <div className="max-h-[240px] overflow-auto rounded-xl border border-card bg-background">
@@ -425,7 +268,7 @@ export default function ExcelToPdf(): JSX.Element {
 
                 {previewSlicedData.length > 10 && (
                   <span className="text-[11px] text-muted-foreground text-center block">
-                    Showing first 10 preview rows of your selected range...
+                    Showing the first 10 rows. The PDF includes every sheet in full.
                   </span>
                 )}
               </div>
@@ -452,7 +295,7 @@ export default function ExcelToPdf(): JSX.Element {
             <span className="text-center">
               {loading
                 ? "Generating PDF..."
-                : "Convert Restricted Range to PDF"}
+                : "Convert to PDF"}
             </span>
           </button>
         )}

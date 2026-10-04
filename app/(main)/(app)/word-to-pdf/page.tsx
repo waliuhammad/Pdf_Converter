@@ -67,7 +67,7 @@ export default function WordToPdfPage() {
       }
 
       const blob = await res.blob();
-      downloadBlob(blob, `${file.name.replace(/\.[^/.]+$/, "")}_converted.pdf`);
+      downloadBlob(blob, `${file.name.replace(/\.[^/.]+$/, "")}.pdf`);
     } catch (err: unknown) {
       if (wasCancelled(err, signal)) return;
       if (err instanceof Error) {

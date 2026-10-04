@@ -160,7 +160,7 @@ export default function PdfToWordPage() {
 
       const blob = await response.blob();
       const originalNameWithoutExt = selectedFile.name.replace(/\.[^/.]+$/, "");
-      downloadBlob(blob, `${originalNameWithoutExt}_converted.docx`);
+      downloadBlob(blob, `${originalNameWithoutExt}.docx`);
 
       setSuccessMessage(true);
     } catch {
@@ -180,7 +180,7 @@ export default function PdfToWordPage() {
           Convert PDF to Word (DOCX)
         </h1>
         <p className="text-muted text-[13px] sm:text-sm mt-1.5 max-w-xs sm:max-w-lg mx-auto leading-relaxed">
-          Transform your static PDF document layout into a fully editable Microsoft Word document instantly.
+          Turn your PDF into a Word document that looks exactly like the original — same layout, fonts, images and design.
         </p>
       </div>
 
@@ -196,7 +196,7 @@ export default function PdfToWordPage() {
         <UploadCard
           onFiles={handleFileAdded}
           title="Click to browse or drag & drop a PDF"
-          hint="Supports standard text, multi-column blocks, and embedded structures"
+          hint="Certificates, designed pages and scans keep their exact look"
         />
       ) : (
         <div className="space-y-4 sm:space-y-6">

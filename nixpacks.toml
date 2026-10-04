@@ -1,0 +1,8 @@
+# Railway builds with Nixpacks (railway.json), not the Dockerfile, so system
+# packages the app needs at runtime are declared here.
+#
+# LibreOffice converts Word / Excel / PowerPoint to PDF with their layout,
+# fonts and images intact (lib/office-to-pdf.ts). "..." keeps Nixpacks' own
+# default packages alongside it.
+[phases.setup]
+aptPkgs = ["...", "libreoffice-writer", "libreoffice-calc", "libreoffice-impress", "fonts-dejavu", "fonts-liberation"]

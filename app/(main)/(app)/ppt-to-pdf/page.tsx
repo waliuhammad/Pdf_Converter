@@ -72,7 +72,7 @@ export default function PptToPdfPage() {
       }
 
       const blob = await response.blob();
-      downloadBlob(blob, `${file.name.replace(/\.[^/.]+$/, "")}-converted.pdf`);
+      downloadBlob(blob, `${file.name.replace(/\.[^/.]+$/, "")}.pdf`);
     } catch (err: unknown) {
       if (wasCancelled(err, signal)) return;
       if (err instanceof Error) {

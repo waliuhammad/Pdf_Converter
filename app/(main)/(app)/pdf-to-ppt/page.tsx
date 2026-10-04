@@ -86,7 +86,7 @@ export default function PdfToPpt(): JSX.Element {
     // screen, so releasing it after the first click left the second click
     // pointing at nothing — the button appeared to do nothing at all. It is
     // released when the file is cleared or replaced instead.
-    saveFromUrl(downloadUrl, `${file.name.replace(/\.[^/.]+$/, "")}-converted.pptx`);
+    saveFromUrl(downloadUrl, `${file.name.replace(/\.[^/.]+$/, "")}.pptx`);
   };
 
   return (

@@ -4,7 +4,7 @@ import { officeToPdfRoute } from "@/lib/convert-routes";
 
 export const runtime = "nodejs";
 
-// LibreOffice renders the document, so the PDF keeps its layout, fonts and images.
+// LibreOffice renders the sheets with their formatting, borders and column widths.
 export const maxDuration = 120;
 
-export const POST = metered((req: NextRequest) => officeToPdfRoute(req, "word"));
+export const POST = metered((req: NextRequest) => officeToPdfRoute(req, "excel"));

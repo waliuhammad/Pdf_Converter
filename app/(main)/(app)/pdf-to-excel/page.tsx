@@ -3,17 +3,15 @@
 import React, { useState, useRef, JSX } from "react";
 import { SecureNote, UploadCard } from "@/components/tools/upload-card";
 import { FileText, Trash2, Download, Sparkles, FileSpreadsheet } from "lucide-react";
-import { loadXlsx } from "@/lib/pdf-libs";
 import { errorMessage } from "@/lib/errors";
+import { downloadBlob } from "@/lib/download";
 import { useCancellableRun, wasCancelled } from "@/hooks/useCancellableRun";
-
-/** A cell as xlsx hands it back from sheet_to_json with header:1. */
-type CellValue = string | number | boolean | null;
 
 export default function PdfToExcel(): JSX.Element {
   const [file, setFile] = useState<File | null>(null);
   const { begin, cancel } = useCancellableRun();
-  const [extractedRows, setExtractedRows] = useState<CellValue[][] | null>(null);
+  // The finished .xlsx: every page as it looks in the PDF, plus a Text sheet.
+  const [result, setResult] = useState<Blob | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,7 +29,7 @@ export default function PdfToExcel(): JSX.Element {
 
     setFile(uploadedFile);
     setError(null);
-    setExtractedRows(null);
+    setResult(null);
     setLoading(true);
 
     try {
@@ -42,10 +40,12 @@ export default function PdfToExcel(): JSX.Element {
         method: "POST",
         body: formData, signal });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Failed to process PDF.");
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || data.message || "Failed to process PDF.");
+      }
 
-      setExtractedRows(data.rows || [["No tabular text lines found"]]);
+      setResult(await response.blob());
     } catch (err) {
       if (wasCancelled(err, signal)) return;
       setError(errorMessage(err, "An error occurred while parsing the PDF."));
@@ -58,23 +58,15 @@ export default function PdfToExcel(): JSX.Element {
     // Removing the file stops whatever it was being used for.
     cancel();
     setFile(null);
-    setExtractedRows(null);
+    setResult(null);
     setError(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleDownloadExcel = async (): Promise<void> => {
-    if (!extractedRows || extractedRows.length === 0) return;
-
-    const XLSX = await loadXlsx();
-
-    const worksheet = XLSX.utils.aoa_to_sheet(extractedRows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Extracted Data");
-
-    const safeName = file ? file.name.replace(/\.[^/.]+$/, "") : "pdf-data";
-    const outputName = `${safeName}-extracted.xlsx`;
-    XLSX.writeFile(workbook, outputName);
+  const handleDownloadExcel = (): void => {
+    if (!result) return;
+    const safeName = file ? file.name.replace(/\.[^/.]+$/, "") : "document";
+    downloadBlob(result, `${safeName}.xlsx`);
   };
 
   return (
@@ -94,7 +86,7 @@ export default function PdfToExcel(): JSX.Element {
             PDF to Excel Converter
           </h1>
           <p className="text-[13px] leading-[18px] md:text-sm md:leading-normal text-muted max-w-[300px] md:max-w-xl mx-auto">
-            Extract text rows and tables from your PDF documents and export them directly into structured spreadsheets (.xlsx).
+            Turn your PDF into an Excel file that looks exactly like the original, with its text on a separate sheet.
           </p>
         </div>
 
@@ -103,7 +95,7 @@ export default function PdfToExcel(): JSX.Element {
             <UploadCard
               onFiles={handleFileUpload}
               title="Click to upload PDF document"
-              hint="Supports text-based PDF documents"
+              hint="Each page keeps its exact layout"
             />
           </div>
         )}
@@ -131,32 +123,15 @@ export default function PdfToExcel(): JSX.Element {
 
             {loading && (
               <div className="text-center py-12 text-muted text-xs animate-pulse">
-                Parsing text rows and structuring data from PDF...
+                Converting your PDF to Excel...
               </div>
             )}
 
-            {extractedRows && !loading && (
-              <div className="bg-[var(--background-secondary)] border border-card rounded-2xl p-3 md:p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-muted font-bold uppercase tracking-wider flex items-center gap-1.5">
-                    <FileSpreadsheet className="w-3.5 h-3.5 text-muted" /> Extracted Rows Preview ({extractedRows.length} rows)
-                  </span>
-                </div>
-                <div className="max-h-[260px] overflow-auto rounded-xl border border-card bg-background">
-                  <table className="w-full min-w-max text-left text-xs text-muted border-collapse">
-                    <tbody>
-                      {extractedRows.slice(0, 10).map((row, rIdx) => (
-                        <tr key={rIdx} className="border-b border-border hover:bg-muted">
-                          {row.map((cell, cIdx) => (
-                            <td key={cIdx} className="p-2.5 truncate max-w-[150px]">
-                              {cell !== null && cell !== undefined ? String(cell) : ""}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+            {result && !loading && (
+              <div className="bg-[var(--background-secondary)] border border-card rounded-2xl p-3 md:p-4">
+                <span className="text-[11px] text-muted font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-muted" /> Ready: one sheet per page, plus a Text sheet
+                </span>
               </div>
             )}
           </div>
@@ -168,13 +143,13 @@ export default function PdfToExcel(): JSX.Element {
           </div>
         )}
 
-        {extractedRows && !loading && (
+        {result && !loading && (
           <button
             onClick={handleDownloadExcel}
             className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] active:bg-[var(--primary-hover)] text-[var(--primary-foreground)] font-semibold py-3.5 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg shadow-primary/10 border border-[var(--primary)] cursor-pointer"
           >
             <Download className="w-5 h-5" />
-            <span>Download Extracted Excel (.xlsx)</span>
+            <span>Download Excel (.xlsx)</span>
           </button>
         )}
 
