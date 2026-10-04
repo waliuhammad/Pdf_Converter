@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useTheme } from "next-themes";
 import { SettingsTabs, SettingsTab } from "@/components/settings/settings-tabs";
-import { Sun, Moon, Monitor, Check, AlertCircle, Loader2, ChevronDown, Search } from "lucide-react";
+import { Check, AlertCircle, Loader2, ChevronDown, Search } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { LOCALE_CHANGED_EVENT, useT } from "@/components/locale-provider";
 import { SUPPORTED_LANGUAGES } from "@/lib/i18n/messages";
@@ -74,7 +73,6 @@ function StatusMessage({ status, savedLabel }: { status: Status; savedLabel: str
 
 export default function SettingsPage() {
     const { user, profile } = useAuth();
-    const { theme, setTheme } = useTheme();
     const { t } = useT();
     const [tab, setTab] = useState<SettingsTab>("profile");
 
@@ -245,33 +243,6 @@ export default function SettingsPage() {
                                     {profileStatus.kind === "saving" ? "Saving..." : "Save Changes"}
                                 </button>
                                 <StatusMessage status={profileStatus} savedLabel="Profile updated" />
-                            </div>
-                        </div>
-                    )}
-
-                    {tab === "theme" && (
-                        <div className="max-w-md">
-                            <h2 className="text-lg font-semibold text-fg mb-4">Theme</h2>
-                            <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                                {[
-                                    { id: "light", label: "Light", icon: Sun },
-                                    { id: "dark", label: "Dark", icon: Moon },
-                                    { id: "system", label: "System", icon: Monitor },
-                                ].map((opt) => {
-                                    const active = theme === opt.id;
-
-                                    return (
-                                        <button
-                                            key={opt.id}
-                                            onClick={() => setTheme(opt.id as "light" | "dark" | "system")}
-                                            className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${active ? "border-[var(--primary)] bg-[var(--primary)]/5" : "border-card"
-                                                }`}
-                                        >
-                                            <opt.icon size={20} className={active ? "text-[var(--primary)]" : "text-muted"} />
-                                            <span className="text-sm text-fg">{opt.label}</span>
-                                        </button>
-                                    );
-                                })}
                             </div>
                         </div>
                     )}

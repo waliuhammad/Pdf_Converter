@@ -13,7 +13,6 @@
 
 const en = {
     "nav.dashboard": "Dashboard",
-    "nav.documents": "My Documents",
     "nav.tools": "Tools",
     "nav.settings": "Settings",
     "nav.logout": "Log out",
@@ -27,7 +26,6 @@ const en = {
     "dashboard.storageUsed": "Storage Used",
     "dashboard.favorites": "Favorites",
     "dashboard.recentDocuments": "Recent Documents",
-    "dashboard.viewAll": "View all",
     "dashboard.quickActions": "Quick Actions",
     "dashboard.noDocuments": "No documents yet — upload your first PDF to get started.",
     "dashboard.freePlan": "Free Plan",
@@ -35,7 +33,6 @@ const en = {
     "dashboard.docs": "Docs",
     "dashboard.storage": "Storage",
     "dashboard.favs": "Favs",
-    "dashboard.upload": "Upload",
     "dashboard.aiTools": "AI Tools",
 
     "usage.title": "Tools Usage Today",
@@ -46,7 +43,6 @@ const en = {
 
     "settings.title": "Settings",
     "settings.profile": "Profile",
-    "settings.theme": "Theme",
     "settings.notifications": "Notifications",
     "settings.password": "Password",
     "settings.language": "Language",
@@ -54,13 +50,6 @@ const en = {
     "settings.interfaceLanguage": "Interface language",
     "settings.searchLanguages": "Search languages...",
 
-    "documents.title": "My Documents",
-    "documents.upload": "Upload PDF",
-    "documents.searchPlaceholder": "Search documents...",
-    "documents.all": "All",
-    "documents.favorites": "Favorites",
-    "documents.count": "{count} documents",
-    "documents.countOne": "1 document",
 
     "tools.allTools": "All Tools",
     "tools.available": "{count} tools available",
@@ -80,7 +69,6 @@ const en = {
 
 const es: Partial<typeof en> = {
     "nav.dashboard": "Panel",
-    "nav.documents": "Mis documentos",
     "nav.tools": "Herramientas",
     "nav.settings": "Ajustes",
     "nav.logout": "Cerrar sesión",
@@ -94,7 +82,6 @@ const es: Partial<typeof en> = {
     "dashboard.storageUsed": "Almacenamiento usado",
     "dashboard.favorites": "Favoritos",
     "dashboard.recentDocuments": "Documentos recientes",
-    "dashboard.viewAll": "Ver todo",
     "dashboard.quickActions": "Acciones rápidas",
     "dashboard.noDocuments": "Aún no hay documentos: sube tu primer PDF para empezar.",
     "dashboard.freePlan": "Plan gratuito",
@@ -102,7 +89,6 @@ const es: Partial<typeof en> = {
     "dashboard.docs": "Docs",
     "dashboard.storage": "Almacen.",
     "dashboard.favs": "Favs",
-    "dashboard.upload": "Subir",
     "dashboard.aiTools": "Herramientas IA",
 
     "usage.title": "Uso de herramientas hoy",
@@ -113,7 +99,6 @@ const es: Partial<typeof en> = {
 
     "settings.title": "Ajustes",
     "settings.profile": "Perfil",
-    "settings.theme": "Tema",
     "settings.notifications": "Notificaciones",
     "settings.password": "Contraseña",
     "settings.language": "Idioma",
@@ -121,13 +106,6 @@ const es: Partial<typeof en> = {
     "settings.interfaceLanguage": "Idioma de la interfaz",
     "settings.searchLanguages": "Buscar idiomas...",
 
-    "documents.title": "Mis documentos",
-    "documents.upload": "Subir PDF",
-    "documents.searchPlaceholder": "Buscar documentos...",
-    "documents.all": "Todos",
-    "documents.favorites": "Favoritos",
-    "documents.count": "{count} documentos",
-    "documents.countOne": "1 documento",
 
     "tools.allTools": "Todas las herramientas",
     "tools.available": "{count} herramientas disponibles",
@@ -147,7 +125,6 @@ const es: Partial<typeof en> = {
 
 const fr: Partial<typeof en> = {
     "nav.dashboard": "Tableau de bord",
-    "nav.documents": "Mes documents",
     "nav.tools": "Outils",
     "nav.settings": "Paramètres",
     "nav.logout": "Se déconnecter",
@@ -161,7 +138,6 @@ const fr: Partial<typeof en> = {
     "dashboard.storageUsed": "Stockage utilisé",
     "dashboard.favorites": "Favoris",
     "dashboard.recentDocuments": "Documents récents",
-    "dashboard.viewAll": "Tout voir",
     "dashboard.quickActions": "Actions rapides",
     "dashboard.noDocuments": "Aucun document pour l'instant — importez votre premier PDF pour commencer.",
     "dashboard.freePlan": "Formule gratuite",
@@ -169,7 +145,6 @@ const fr: Partial<typeof en> = {
     "dashboard.docs": "Docs",
     "dashboard.storage": "Stockage",
     "dashboard.favs": "Favoris",
-    "dashboard.upload": "Importer",
     "dashboard.aiTools": "Outils IA",
 
     "usage.title": "Utilisation des outils aujourd'hui",
@@ -180,7 +155,6 @@ const fr: Partial<typeof en> = {
 
     "settings.title": "Paramètres",
     "settings.profile": "Profil",
-    "settings.theme": "Thème",
     "settings.notifications": "Notifications",
     "settings.password": "Mot de passe",
     "settings.language": "Langue",
@@ -188,13 +162,6 @@ const fr: Partial<typeof en> = {
     "settings.interfaceLanguage": "Langue de l'interface",
     "settings.searchLanguages": "Rechercher une langue...",
 
-    "documents.title": "Mes documents",
-    "documents.upload": "Importer un PDF",
-    "documents.searchPlaceholder": "Rechercher des documents...",
-    "documents.all": "Tous",
-    "documents.favorites": "Favoris",
-    "documents.count": "{count} documents",
-    "documents.countOne": "1 document",
 
     "tools.allTools": "Tous les outils",
     "tools.available": "{count} outils disponibles",
@@ -214,7 +181,6 @@ const fr: Partial<typeof en> = {
 
 const de: Partial<typeof en> = {
     "nav.dashboard": "Übersicht",
-    "nav.documents": "Meine Dokumente",
     "nav.tools": "Werkzeuge",
     "nav.settings": "Einstellungen",
     "nav.logout": "Abmelden",
@@ -228,7 +194,6 @@ const de: Partial<typeof en> = {
     "dashboard.storageUsed": "Belegter Speicher",
     "dashboard.favorites": "Favoriten",
     "dashboard.recentDocuments": "Neueste Dokumente",
-    "dashboard.viewAll": "Alle ansehen",
     "dashboard.quickActions": "Schnellaktionen",
     "dashboard.noDocuments": "Noch keine Dokumente — laden Sie Ihr erstes PDF hoch.",
     "dashboard.freePlan": "Gratis-Tarif",
@@ -236,7 +201,6 @@ const de: Partial<typeof en> = {
     "dashboard.docs": "Dok.",
     "dashboard.storage": "Speicher",
     "dashboard.favs": "Favs",
-    "dashboard.upload": "Hochladen",
     "dashboard.aiTools": "KI-Werkzeuge",
 
     "usage.title": "Heutige Nutzung",
@@ -247,7 +211,6 @@ const de: Partial<typeof en> = {
 
     "settings.title": "Einstellungen",
     "settings.profile": "Profil",
-    "settings.theme": "Design",
     "settings.notifications": "Benachrichtigungen",
     "settings.password": "Passwort",
     "settings.language": "Sprache",
@@ -255,13 +218,6 @@ const de: Partial<typeof en> = {
     "settings.interfaceLanguage": "Sprache der Oberfläche",
     "settings.searchLanguages": "Sprachen suchen...",
 
-    "documents.title": "Meine Dokumente",
-    "documents.upload": "PDF hochladen",
-    "documents.searchPlaceholder": "Dokumente suchen...",
-    "documents.all": "Alle",
-    "documents.favorites": "Favoriten",
-    "documents.count": "{count} Dokumente",
-    "documents.countOne": "1 Dokument",
 
     "tools.allTools": "Alle Werkzeuge",
     "tools.available": "{count} Werkzeuge verfügbar",
@@ -281,7 +237,6 @@ const de: Partial<typeof en> = {
 
 const pt: Partial<typeof en> = {
     "nav.dashboard": "Painel",
-    "nav.documents": "Meus documentos",
     "nav.tools": "Ferramentas",
     "nav.settings": "Configurações",
     "nav.logout": "Sair",
@@ -295,7 +250,6 @@ const pt: Partial<typeof en> = {
     "dashboard.storageUsed": "Armazenamento usado",
     "dashboard.favorites": "Favoritos",
     "dashboard.recentDocuments": "Documentos recentes",
-    "dashboard.viewAll": "Ver tudo",
     "dashboard.quickActions": "Ações rápidas",
     "dashboard.noDocuments": "Ainda não há documentos — envie seu primeiro PDF para começar.",
     "dashboard.freePlan": "Plano gratuito",
@@ -303,7 +257,6 @@ const pt: Partial<typeof en> = {
     "dashboard.docs": "Docs",
     "dashboard.storage": "Armazen.",
     "dashboard.favs": "Favs",
-    "dashboard.upload": "Enviar",
     "dashboard.aiTools": "Ferramentas de IA",
 
     "usage.title": "Uso das ferramentas hoje",
@@ -314,7 +267,6 @@ const pt: Partial<typeof en> = {
 
     "settings.title": "Configurações",
     "settings.profile": "Perfil",
-    "settings.theme": "Tema",
     "settings.notifications": "Notificações",
     "settings.password": "Senha",
     "settings.language": "Idioma",
@@ -322,13 +274,6 @@ const pt: Partial<typeof en> = {
     "settings.interfaceLanguage": "Idioma da interface",
     "settings.searchLanguages": "Pesquisar idiomas...",
 
-    "documents.title": "Meus documentos",
-    "documents.upload": "Enviar PDF",
-    "documents.searchPlaceholder": "Pesquisar documentos...",
-    "documents.all": "Todos",
-    "documents.favorites": "Favoritos",
-    "documents.count": "{count} documentos",
-    "documents.countOne": "1 documento",
 
     "tools.allTools": "Todas as ferramentas",
     "tools.available": "{count} ferramentas disponíveis",
@@ -348,7 +293,6 @@ const pt: Partial<typeof en> = {
 
 const ar: Partial<typeof en> = {
     "nav.dashboard": "لوحة التحكم",
-    "nav.documents": "مستنداتي",
     "nav.tools": "الأدوات",
     "nav.settings": "الإعدادات",
     "nav.logout": "تسجيل الخروج",
@@ -362,7 +306,6 @@ const ar: Partial<typeof en> = {
     "dashboard.storageUsed": "المساحة المستخدمة",
     "dashboard.favorites": "المفضلة",
     "dashboard.recentDocuments": "أحدث المستندات",
-    "dashboard.viewAll": "عرض الكل",
     "dashboard.quickActions": "إجراءات سريعة",
     "dashboard.noDocuments": "لا توجد مستندات بعد — ارفع أول ملف PDF للبدء.",
     "dashboard.freePlan": "الخطة المجانية",
@@ -370,7 +313,6 @@ const ar: Partial<typeof en> = {
     "dashboard.docs": "المستندات",
     "dashboard.storage": "المساحة",
     "dashboard.favs": "المفضلة",
-    "dashboard.upload": "رفع",
     "dashboard.aiTools": "أدوات الذكاء الاصطناعي",
 
     "usage.title": "استخدام الأدوات اليوم",
@@ -381,7 +323,6 @@ const ar: Partial<typeof en> = {
 
     "settings.title": "الإعدادات",
     "settings.profile": "الملف الشخصي",
-    "settings.theme": "المظهر",
     "settings.notifications": "الإشعارات",
     "settings.password": "كلمة المرور",
     "settings.language": "اللغة",
@@ -389,13 +330,6 @@ const ar: Partial<typeof en> = {
     "settings.interfaceLanguage": "لغة الواجهة",
     "settings.searchLanguages": "ابحث عن لغة...",
 
-    "documents.title": "مستنداتي",
-    "documents.upload": "رفع ملف PDF",
-    "documents.searchPlaceholder": "ابحث في المستندات...",
-    "documents.all": "الكل",
-    "documents.favorites": "المفضلة",
-    "documents.count": "{count} مستندات",
-    "documents.countOne": "مستند واحد",
 
     "tools.allTools": "كل الأدوات",
     "tools.available": "{count} أدوات متاحة",
@@ -415,7 +349,6 @@ const ar: Partial<typeof en> = {
 
 const ur: Partial<typeof en> = {
     "nav.dashboard": "ڈیش بورڈ",
-    "nav.documents": "میری دستاویزات",
     "nav.tools": "ٹولز",
     "nav.settings": "ترتیبات",
     "nav.logout": "لاگ آؤٹ",
@@ -429,7 +362,6 @@ const ur: Partial<typeof en> = {
     "dashboard.storageUsed": "استعمال شدہ اسٹوریج",
     "dashboard.favorites": "پسندیدہ",
     "dashboard.recentDocuments": "حالیہ دستاویزات",
-    "dashboard.viewAll": "سب دیکھیں",
     "dashboard.quickActions": "فوری اقدامات",
     "dashboard.noDocuments": "ابھی کوئی دستاویز نہیں — شروع کرنے کے لیے پہلا PDF اپ لوڈ کریں۔",
     "dashboard.freePlan": "مفت پلان",
@@ -437,7 +369,6 @@ const ur: Partial<typeof en> = {
     "dashboard.docs": "دستاویزات",
     "dashboard.storage": "اسٹوریج",
     "dashboard.favs": "پسندیدہ",
-    "dashboard.upload": "اپ لوڈ",
     "dashboard.aiTools": "AI ٹولز",
 
     "usage.title": "آج ٹولز کا استعمال",
@@ -448,7 +379,6 @@ const ur: Partial<typeof en> = {
 
     "settings.title": "ترتیبات",
     "settings.profile": "پروفائل",
-    "settings.theme": "تھیم",
     "settings.notifications": "اطلاعات",
     "settings.password": "پاس ورڈ",
     "settings.language": "زبان",
@@ -456,13 +386,6 @@ const ur: Partial<typeof en> = {
     "settings.interfaceLanguage": "انٹرفیس کی زبان",
     "settings.searchLanguages": "زبانیں تلاش کریں...",
 
-    "documents.title": "میری دستاویزات",
-    "documents.upload": "PDF اپ لوڈ کریں",
-    "documents.searchPlaceholder": "دستاویزات تلاش کریں...",
-    "documents.all": "سب",
-    "documents.favorites": "پسندیدہ",
-    "documents.count": "{count} دستاویزات",
-    "documents.countOne": "1 دستاویز",
 
     "tools.allTools": "تمام ٹولز",
     "tools.available": "{count} ٹولز دستیاب",
@@ -482,7 +405,6 @@ const ur: Partial<typeof en> = {
 
 const zh: Partial<typeof en> = {
     "nav.dashboard": "仪表板",
-    "nav.documents": "我的文档",
     "nav.tools": "工具",
     "nav.settings": "设置",
     "nav.logout": "退出登录",
@@ -496,7 +418,6 @@ const zh: Partial<typeof en> = {
     "dashboard.storageUsed": "已用存储",
     "dashboard.favorites": "收藏",
     "dashboard.recentDocuments": "最近的文档",
-    "dashboard.viewAll": "查看全部",
     "dashboard.quickActions": "快捷操作",
     "dashboard.noDocuments": "还没有文档 — 上传第一个 PDF 开始使用。",
     "dashboard.freePlan": "免费方案",
@@ -504,7 +425,6 @@ const zh: Partial<typeof en> = {
     "dashboard.docs": "文档",
     "dashboard.storage": "存储",
     "dashboard.favs": "收藏",
-    "dashboard.upload": "上传",
     "dashboard.aiTools": "AI 工具",
 
     "usage.title": "今日工具用量",
@@ -515,7 +435,6 @@ const zh: Partial<typeof en> = {
 
     "settings.title": "设置",
     "settings.profile": "个人资料",
-    "settings.theme": "主题",
     "settings.notifications": "通知",
     "settings.password": "密码",
     "settings.language": "语言",
@@ -523,13 +442,6 @@ const zh: Partial<typeof en> = {
     "settings.interfaceLanguage": "界面语言",
     "settings.searchLanguages": "搜索语言...",
 
-    "documents.title": "我的文档",
-    "documents.upload": "上传 PDF",
-    "documents.searchPlaceholder": "搜索文档...",
-    "documents.all": "全部",
-    "documents.favorites": "收藏",
-    "documents.count": "{count} 个文档",
-    "documents.countOne": "1 个文档",
 
     "tools.allTools": "全部工具",
     "tools.available": "{count} 个工具可用",

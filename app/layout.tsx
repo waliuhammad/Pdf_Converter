@@ -47,10 +47,14 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
+        {/* No theme picker any more: the site follows the visitor's device.
+            A new storageKey, so a Light/Dark choice saved by the old Settings
+            tab no longer sticks with no way to change it. */}
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
+          defaultTheme="system"
           enableSystem
+          storageKey="pdfai-theme"
           disableTransitionOnChange
         >
           {/* Wraps everything, so the language chosen in Settings applies to

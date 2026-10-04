@@ -8,8 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
  * Which frame the tool pages get.
  *
  * The tools are usable without an account but live in the signed-in layout, so
- * every visitor was given the app sidebar — Dashboard, My Documents and
- * Settings, all of which bounce a signed-out visitor to the login page.
+ * every visitor was given the app sidebar — Dashboard and Settings, both of which bounce a signed-out visitor to the login page.
  *
  * Signed in: the sidebar, as before. Signed out: the marketing header, so the
  * page still has somewhere to go — hiding the sidebar on its own would leave a

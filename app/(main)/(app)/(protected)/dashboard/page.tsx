@@ -8,10 +8,8 @@ import {
     FileText,
     HardDrive,
     Star,
-    Upload,
     Wrench,
     Cpu,
-    MoreVertical,
 } from "lucide-react";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,7 +17,6 @@ import { useLibrary } from "@/lib/store";
 import { formatRelativeTime, formatStorageUsed } from "@/lib/utils";
 
 const quickActions = [
-    { key: "dashboard.upload", icon: Upload, href: "/documents" },
     { key: "nav.tools", icon: Wrench, href: "/tools" },
     { key: "dashboard.aiTools", icon: Cpu, href: "/tools?category=AI%20Tools" },
 ] as const;
@@ -44,8 +41,7 @@ export default function DashboardPage() {
         return {
             storageUsedGb: usedGb,
             favouriteCount: documents.filter((d) => d.favorite).length,
-            // Five, so the panel is filled when there are enough documents to
-            // fill it. The rest are on /documents behind "View all".
+            // The five most recent.
             recentDocs: [...documents].sort((a, b) => b.timestamp - a.timestamp).slice(0, 5),
         };
     }, [documents]);
@@ -116,12 +112,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Recent PDFs */}
                 <div className="lg:col-span-2 bg-card border border-card rounded-2xl p-4 sm:p-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-lg font-semibold text-fg">{t("dashboard.recentDocuments")}</h2>
-                        <Link href="/documents" className="text-sm text-[var(--primary)] font-medium hover:underline">
-                            {t("dashboard.viewAll")}
-                        </Link>
-                    </div>
+                    <h2 className="text-lg font-semibold text-fg mb-4">{t("dashboard.recentDocuments")}</h2>
                     {recentDocs.length === 0 ? (
                         <p className="text-sm text-muted py-6 text-center">
                             {t("dashboard.noDocuments")}
@@ -144,13 +135,6 @@ export default function DashboardPage() {
                                             </p>
                                         </div>
                                     </div>
-                                    <Link
-                                        href="/documents"
-                                        className="text-muted hover:text-fg p-1"
-                                        aria-label={`Manage ${pdf.name}`}
-                                    >
-                                        <MoreVertical size={16} />
-                                    </Link>
                                 </div>
                             ))}
                         </div>
