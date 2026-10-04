@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLibrary } from "@/lib/store";
 import { loadLibrary } from "@/lib/firebase/library";
+import { reportDatabaseError } from "@/lib/firebase/client";
 
 /**
  * Bridges auth to the library store: when a user signs in, their
@@ -30,7 +31,7 @@ export function LibraryLoader() {
                 if (!cancelled) hydrate(user.uid, documents);
             })
             .catch((err) => {
-                console.error("Failed to load library:", err);
+                reportDatabaseError("Failed to load library", err);
                 // Signed in but unreadable: keep uid so new work still saves.
                 if (!cancelled) hydrate(user.uid, []);
             });

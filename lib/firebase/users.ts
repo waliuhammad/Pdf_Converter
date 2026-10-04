@@ -1,5 +1,5 @@
 import { updateProfile, type User } from "firebase/auth";
-import { getDb } from "./client";
+import { getDb, reportDatabaseError } from "./client";
 import { type PlanId } from "@/lib/plans";
 
 export interface UserProfile {
@@ -69,7 +69,7 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
         return snap.val() as UserProfile;
     } catch (err) {
         // Database unreachable or rules not published yet — caller falls back gracefully.
-        console.warn("Could not fetch user profile from the database:", err);
+        reportDatabaseError("Could not fetch user profile from the database", err);
         return null;
     }
 }
@@ -98,7 +98,7 @@ export async function updateUserProfile(
         await update(ref(db, `users/${user.uid}`), { fullName });
         return { syncedToDatabase: true };
     } catch (err) {
-        console.warn("Could not mirror the profile to the database:", err);
+        reportDatabaseError("Could not mirror the profile to the database", err);
         return { syncedToDatabase: false };
     }
 }

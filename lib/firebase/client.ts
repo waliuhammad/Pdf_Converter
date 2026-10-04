@@ -69,6 +69,33 @@ const databaseURL =
 
 let database: Promise<import("firebase/database").Database> | null = null;
 
+let warnedRules = false;
+
+/**
+ * Report a failed database read or write from the browser.
+ *
+ * "Permission denied" almost always means database.rules.json has not been
+ * published to the project yet, and it fires on every page load — the profile
+ * and the library both read on sign-in. Logged with console.error it filled the
+ * Next dev overlay with red errors for a configuration step, so it is said
+ * once, as a warning that names the fix. Other failures are still logged.
+ */
+export function reportDatabaseError(context: string, err: unknown): void {
+    const message = err instanceof Error ? err.message : String(err);
+    if (/permission.denied/i.test(message)) {
+        if (!warnedRules) {
+            warnedRules = true;
+            console.warn(
+                "Realtime Database refused access (Permission denied). Publish database.rules.json in " +
+                    "Firebase Console -> Realtime Database -> Rules. Profiles and saved documents stay " +
+                    "local until then; the tools still work."
+            );
+        }
+        return;
+    }
+    console.warn(`${context}:`, err);
+}
+
 export function getDb() {
     if (!database) {
         database = import("firebase/database").then((m) =>

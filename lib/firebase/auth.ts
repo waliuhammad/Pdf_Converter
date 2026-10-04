@@ -10,7 +10,7 @@ import {
     type AuthProvider,
     type User,
 } from "firebase/auth";
-import { getFirebaseAuth, getDb } from "./client";
+import { getFirebaseAuth, getDb, reportDatabaseError } from "./client";
 
 /**
  * Hand the server an ID token so it can set an httpOnly session cookie.
@@ -75,7 +75,7 @@ async function createUserDocIfNotExists(user: User, extra?: Record<string, unkno
             });
         }
     } catch (err) {
-        console.warn("Could not create the user record in the database:", err);
+        reportDatabaseError("Could not create the user record in the database", err);
     }
 }
 

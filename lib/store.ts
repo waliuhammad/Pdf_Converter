@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { formatFileSize } from "@/lib/utils";
 import { deleteDocumentRecord, saveDocumentRecord } from "@/lib/firebase/library";
+import { reportDatabaseError } from "@/lib/firebase/client";
 
 /**
  * Client-side library of the user's documents.
@@ -45,7 +46,7 @@ interface LibraryState {
 
 /** Fire-and-forget persistence: log failures, never block the UI. */
 function persist(operation: Promise<void>, what: string) {
-    operation.catch((err) => console.error(`Failed to save ${what}:`, err));
+    operation.catch((err) => reportDatabaseError(`Failed to save ${what}`, err));
 }
 
 export const useLibrary = create<LibraryState>((set) => ({
