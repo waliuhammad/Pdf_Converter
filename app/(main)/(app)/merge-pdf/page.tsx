@@ -16,10 +16,13 @@ import {
   RotateCw,
   RotateCcw,
   GripVertical,
+  ArrowDownAZ,
+  ArrowUpZA,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SecureNote, UploadCard } from "@/components/tools/upload-card";
 import { downloadBlob } from "@/lib/download";
+import { loadPdfLib } from "@/lib/pdf-libs";
 import { useCancellableRun, wasCancelled } from "@/hooks/useCancellableRun";
 
 interface PDFSourceFile {
@@ -57,42 +60,61 @@ export default function MergePdfPage() {
   const [isFileListExpanded, setIsFileListExpanded] = useState(true);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const nextFileIndex = useRef(0);
 
   const formatSize = (bytes: number) => {
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   };
 
-  const handleFilesAdded = async (fileList: FileList | null) => {
+  const handleFilesAdded = async (fileList: FileList | File[] | null) => {
     if (!fileList || fileList.length === 0) return;
 
     const newSourceFiles = [...sourceFiles];
     const newPagesList = [...pagesList];
     const rejected: string[] = [];
 
+    const unreadable: string[] = [];
+    const { PDFDocument } = await loadPdfLib();
+
     for (let i = 0; i < fileList.length; i++) {
       const file = fileList[i];
-      if (file.type !== "application/pdf") continue;
+      if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) continue;
 
       try {
         const buffer = await file.arrayBuffer();
-        const textDecoder = new TextDecoder();
-        const text = textDecoder.decode(buffer);
+
+        // The page count used to come from counting "/Type /Page" in the raw
+        // bytes, which finds nothing when pages sit inside compressed object
+        // streams (most modern PDFs) and so offered one page for a 20-page
+        // file. Parsing the document gives the real number.
+        let pdf;
+        try {
+          pdf = await PDFDocument.load(buffer, { ignoreEncryption: true, updateMetadata: false });
+        } catch {
+          unreadable.push(file.name);
+          continue;
+        }
 
         // A locked PDF handed to the preview makes the browser's own viewer
         // draw a password prompt, and that prompt is wider than this panel, so
         // it appeared cut in half with a scrollbar under it. It could not be
         // merged either — the encrypted file is refused when the pages are
         // copied — so it is turned away here with a reason instead.
-        if (/\/Encrypt[\s]*\d+\s+\d+\s+R|\/Encrypt[\s]*<</.test(text)) {
+        if (pdf.isEncrypted) {
           rejected.push(file.name);
           continue;
         }
 
-        const matches = text.match(/\/Type\s*\/Page\b/g);
-        const pageCount = matches ? matches.length : 1;
+        const pageCount = pdf.getPageCount();
+        if (pageCount === 0) {
+          unreadable.push(file.name);
+          continue;
+        }
 
-        const currentFileIndex = newSourceFiles.length;
+        // Ids are never reused: deriving them from the list length gave a new
+        // file the same id as one still on the list after another was removed.
+        const currentFileIndex = nextFileIndex.current++;
 
         newSourceFiles.push({
           fileIndex: currentFileIndex,
@@ -118,10 +140,16 @@ export default function MergePdfPage() {
       }
     }
 
-    const lockedNotice =
-      rejected.length > 0
-        ? `${rejected.join(", ")} ${rejected.length === 1 ? "is" : "are"} password protected and cannot be merged. Remove the password with the Unlock PDF tool first.`
-        : null;
+    const notices: string[] = [];
+    if (rejected.length > 0) {
+      notices.push(
+        `${rejected.join(", ")} ${rejected.length === 1 ? "is" : "are"} password protected and cannot be merged. Remove the password with the Unlock PDF tool first.`
+      );
+    }
+    if (unreadable.length > 0) {
+      notices.push(`${unreadable.join(", ")} could not be read as ${unreadable.length === 1 ? "a PDF" : "PDFs"}.`);
+    }
+    const lockedNotice = notices.length > 0 ? notices.join(" ") : null;
 
     if (newSourceFiles.length === 0) {
       setErrorMessage(lockedNotice ?? "Please select valid PDF files.");
@@ -226,13 +254,34 @@ export default function MergePdfPage() {
   };
 
   const rotatePage = (index: number, direction: "cw" | "ccw") => {
-    const updated = [...pagesList];
-    const currentPage = updated[index];
+    const currentPage = pagesList[index];
     if (!currentPage) return;
 
     const delta = direction === "cw" ? 90 : -90;
-    currentPage.rotation = (currentPage.rotation + delta) % 360;
-    setPagesList(updated);
+    // A new object rather than a mutation, so React sees the change.
+    setPagesList(
+      pagesList.map((p, i) => (i === index ? { ...p, rotation: (p.rotation + delta) % 360 } : p))
+    );
+  };
+
+  /** Turns every page of one file by 90° clockwise. */
+  const rotateFile = (fileIndex: number) => {
+    setPagesList(
+      pagesList.map((p) => (p.fileIndex === fileIndex ? { ...p, rotation: (p.rotation + 90) % 360 } : p))
+    );
+  };
+
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  /** Orders the files by name (A→Z, then Z→A on the next click). */
+  const sortFilesByName = () => {
+    const sorted = [...sourceFiles].sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" })
+    );
+    if (sortDirection === "desc") sorted.reverse();
+    applyFileOrder(sorted);
+    setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    setActivePreviewIndex(0);
   };
 
   const removePage = (id: string) => {
@@ -269,13 +318,20 @@ export default function MergePdfPage() {
     setErrorMessage(null);
 
     try {
+      // The server reads pageOrder[].fileIndex as a position in the uploaded
+      // list. The page's own ids are not positions once files have been
+      // reordered or removed, so they are translated here — and only files
+      // that still contribute a page are uploaded.
       const formData = new FormData();
+      const uploadPosition = new Map<number, number>();
       sourceFiles.forEach((sf) => {
+        if (!pagesList.some((p) => p.fileIndex === sf.fileIndex)) return;
+        uploadPosition.set(sf.fileIndex, uploadPosition.size);
         formData.append("files", sf.file);
       });
 
       const pageOrderPayload = pagesList.map((p) => ({
-        fileIndex: p.fileIndex,
+        fileIndex: uploadPosition.get(p.fileIndex) ?? 0,
         pageIndex: p.localPageIndex,
         rotation: p.rotation,
       }));
@@ -283,29 +339,38 @@ export default function MergePdfPage() {
 
       const response = await fetch("/api/merge-pdf", {
         method: "POST",
-        body: formData, signal
+        body: formData,
+        signal,
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         setErrorMessage(errorData.error || "Failed to merge PDFs.");
-        setProcessing(false);
         return;
       }
 
       const blob = await response.blob();
-      downloadBlob(blob, `merged_document_${Date.now()}.pdf`);
-    } catch {
+      if (signal.aborted) return;
+      downloadBlob(blob, "merged.pdf");
+    } catch (err) {
+      if (wasCancelled(err, signal)) return;
       setErrorMessage("An error occurred while merging your PDF files.");
     } finally {
-      setProcessing(false);
+      if (!signal.aborted) setProcessing(false);
     }
   };
 
   const activePage = pagesList[activePreviewIndex];
   const activeSourceFile = activePage ? sourceFiles.find((f) => f.fileIndex === activePage.fileIndex) : null;
-  const activePreviewUrl = activeSourceFile
-    ? `${URL.createObjectURL(activeSourceFile.file)}#page=${activePage.localPageIndex + 1}&view=FitH,top&scrollbar=1&toolbar=0&navpanes=0`
+  // One object URL per file, released when it changes. Creating it during
+  // render made a new URL (and kept the old one alive) on every re-render.
+  const activeFile = activeSourceFile?.file ?? null;
+  const activeFileUrl = useMemo(() => (activeFile ? URL.createObjectURL(activeFile) : ""), [activeFile]);
+  useEffect(() => () => {
+    if (activeFileUrl) URL.revokeObjectURL(activeFileUrl);
+  }, [activeFileUrl]);
+  const activePreviewUrl = activeFileUrl && activePage
+    ? `${activeFileUrl}#page=${activePage.localPageIndex + 1}&view=FitH,top&scrollbar=1&toolbar=0&navpanes=0`
     : "";
 
   // Once there are 3+ files, the list becomes a collapsible dropdown so it
@@ -333,7 +398,12 @@ export default function MergePdfPage() {
         accept="application/pdf"
         multiple
         hidden
-        onChange={(e) => handleFilesAdded(e.target.files)}
+        onChange={(e) => {
+          // Copied first: clearing the input below empties its FileList.
+          handleFilesAdded(e.target.files ? Array.from(e.target.files) : null);
+          // Lets the same file be picked again after it was removed.
+          e.target.value = "";
+        }}
       />
 
       {sourceFiles.length === 0 ? (
@@ -363,17 +433,33 @@ export default function MergePdfPage() {
                   isFileListExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />
                 )}
               </span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  fileInputRef.current?.click();
-                }}
-                className="p-1 rounded-lg border border-foreground/10 bg-muted text-foreground hover:bg-foreground/10 transition-colors"
-                title="Add More PDFs"
-              >
-                <Plus size={16} />
-              </button>
+              <div className="flex items-center gap-1.5">
+                {sourceFiles.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      sortFilesByName();
+                    }}
+                    className="py-1 px-2 rounded-lg border border-foreground/10 bg-muted text-foreground hover:bg-foreground/10 transition-colors flex items-center gap-1 text-[11px] font-semibold normal-case tracking-normal"
+                    title={sortDirection === "asc" ? "Sort files by name, A to Z" : "Sort files by name, Z to A"}
+                  >
+                    {sortDirection === "asc" ? <ArrowDownAZ size={14} /> : <ArrowUpZA size={14} />}
+                    {sortDirection === "asc" ? "A–Z" : "Z–A"}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    fileInputRef.current?.click();
+                  }}
+                  className="p-1 rounded-lg border border-foreground/10 bg-muted text-foreground hover:bg-foreground/10 transition-colors"
+                  title="Add More PDFs"
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
             </div>
 
             {isListVisible && (
@@ -443,6 +529,19 @@ export default function MergePdfPage() {
                         <p className="text-xs font-bold truncate text-foreground w-full tracking-tight">{sf.name}</p>
                         <p className="text-[11px] mt-0.5 text-foreground/60 font-medium">{sf.size} • {sf.pageCount} {sf.pageCount === 1 ? "page" : "pages"}</p>
                       </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          rotateFile(sf.fileIndex);
+                        }}
+                        className="p-2 rounded-xl border border-foreground/15 bg-[var(--background-secondary)] transition-all shrink-0 text-foreground/70 hover:text-foreground hover:bg-foreground/5 shadow-sm"
+                        title="Rotate all pages of this file 90°"
+                        aria-label={`Rotate ${sf.name}`}
+                      >
+                        <RotateCw size={16} />
+                      </button>
 
                       <button
                         type="button"

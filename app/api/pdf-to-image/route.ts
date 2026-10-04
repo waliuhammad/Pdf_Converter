@@ -1,116 +1,117 @@
 import { NextRequest, NextResponse } from "next/server";
+import AdmZip from "adm-zip";
+import { PDFDocument } from "pdf-lib";
 import { readFormData } from "@/lib/api";
 import { metered } from "@/lib/metered";
-import { pdfToPng } from "pdf-to-png-converter";
-import type { PdfToPngOptions } from "pdf-to-png-converter";
-import fs from "fs";
-import path from "path";
-import os from "os";
-import AdmZip from "adm-zip";
-import { withOwnPdfWorker } from "@/lib/pdf-worker-isolation";
 import { rejectBadUpload, contentDisposition } from "@/lib/uploads";
+import {
+  baseNameOf,
+  extractImagesAsJpg,
+  renderPagesToJpg,
+  type JpgFile,
+  type JpgQuality,
+} from "@/lib/pdf-to-jpg";
 
-// renders every page to a bitmap,
-// so the platform default is not enough.
+// Renders every page to a bitmap, so the platform default is not enough.
 export const maxDuration = 60;
 
+/**
+ * PDF to JPG.
+ *
+ * Form fields:
+ *   file        the PDF
+ *   mode        "pages" (each page becomes a JPG) or "extract" (the images
+ *               embedded in the PDF)
+ *   quality     "normal" (150 dpi) or "high" (300 dpi)
+ *   pageNumber  optional: only this page
+ *
+ * One resulting image comes back as a .jpg, several as a .zip.
+ */
 export const POST = metered(async (req: NextRequest) => {
   try {
     const formData = await readFormData(req);
     if (!formData) {
       return NextResponse.json({ error: "No file provided." }, { status: 400 });
     }
-    const action = formData.get("action");
 
-    // Two actions share this route. "get-info" only reads the page count so
-    // the UI can render its controls — signed-in users get that for free.
-    // Only "convert", the actual work, counts against the daily allowance;
-    // charging both would bill every conversion twice.
-    if (action === "get-info") {
-    } else {
-    }
-
-    const file = formData.get("file") as File;
-
-    if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    const file = formData.get("file");
+    if (!(file instanceof File)) {
+      return NextResponse.json({ error: "No file provided." }, { status: 400 });
     }
 
     // Size and type are checked here, before anything reads the bytes.
     const badUpload = rejectBadUpload(file, "pdf");
     if (badUpload) return badUpload;
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    const mode = formData.get("mode") === "extract" ? "extract" : "pages";
+    const quality: JpgQuality = formData.get("quality") === "high" ? "high" : "normal";
 
-    // Save temporary file safely in OS tmp dir
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "pdf-"));
-    const tempFilePath = path.join(tempDir, file.name);
-    fs.writeFileSync(tempFilePath, buffer);
+    const bytes = new Uint8Array(await file.arrayBuffer());
 
-    if (action === "get-info") {
-      // Isolated: pdf-to-word runs a different pdf.js major in this same
-      // process and the two share a worker global. See the helper.
-      const pages = await withOwnPdfWorker(() =>
-        pdfToPng(tempFilePath, { returnMetadataOnly: true })
+    let pageCount: number;
+    try {
+      const doc = await PDFDocument.load(bytes, { ignoreEncryption: true, updateMetadata: false });
+      pageCount = doc.getPageCount();
+    } catch {
+      return NextResponse.json(
+        { error: "Could not read this PDF. It may be damaged or password-protected." },
+        { status: 400 }
       );
-
-      fs.rmSync(tempDir, { recursive: true, force: true });
-      return NextResponse.json({ numPages: pages.length });
     }
 
-    if (action === "convert") {
-      const mode = formData.get("mode");
-      const pageNumberStr = formData.get("pageNumber") as string;
-
-      const options: PdfToPngOptions = {
-        outputFolder: tempDir,
-        viewportScale: 2.0,
-      };
-
-      if (mode === "custom") {
-        const pageNum = parseInt(pageNumberStr, 10);
-        options.pagesToProcess = [pageNum];
+    let pages: number[] | undefined;
+    const pageField = formData.get("pageNumber");
+    if (typeof pageField === "string" && pageField.trim() !== "") {
+      const pageNumber = Number(pageField);
+      if (!Number.isInteger(pageNumber) || pageNumber < 1 || pageNumber > pageCount) {
+        return NextResponse.json(
+          { error: `Choose a page between 1 and ${pageCount}.` },
+          { status: 400 }
+        );
       }
+      pages = [pageNumber];
+    }
 
-      const pngPages = await withOwnPdfWorker(() => pdfToPng(tempFilePath, options));
+    const baseName = baseNameOf(file.name);
+    let files: JpgFile[];
 
-      if (mode === "custom" && pngPages.length > 0) {
-        const singlePage = pngPages[0];
-        if (singlePage.kind === "content" && singlePage.content) {
-          fs.rmSync(tempDir, { recursive: true, force: true });
-          return new NextResponse(singlePage.content as unknown as BodyInit, {
-            headers: {
-              "Content-Type": "image/png",
-              "Content-Disposition": contentDisposition(`${file.name.replace(/\.[^/.]+$/, "")}_page_${pageNumberStr}.png`),
-            },
-          });
-        }
+    if (mode === "extract") {
+      const result = await extractImagesAsJpg(bytes, baseName, quality, pages);
+      files = result.files;
+      if (files.length === 0) {
+        const error =
+          result.skipped > 0
+            ? "The images in this PDF use a format that cannot be extracted. Try \"Page to JPG\" instead."
+            : "No images were found in this PDF. Try \"Page to JPG\" instead.";
+        return NextResponse.json({ error }, { status: 422 });
       }
+    } else {
+      files = await renderPagesToJpg(bytes, baseName, quality, pages);
+      if (files.length === 0) {
+        return NextResponse.json({ error: "No pages could be rendered." }, { status: 422 });
+      }
+    }
 
-      const zip = new AdmZip();
-      pngPages.forEach((page) => {
-        if (page.kind === "content" && page.content) {
-          zip.addFile(page.name, page.content);
-        } else if (page.kind === "file" && page.path) {
-          zip.addLocalFile(page.path);
-        }
-      });
-
-      const zipBuffer = zip.toBuffer();
-      fs.rmSync(tempDir, { recursive: true, force: true });
-
-      return new NextResponse(zipBuffer as unknown as BodyInit, {
+    if (files.length === 1) {
+      return new NextResponse(new Uint8Array(files[0].data), {
         headers: {
-          "Content-Type": "application/zip",
-          "Content-Disposition": contentDisposition(`${file.name.replace(/\.[^/.]+$/, "")}_images.zip`),
+          "Content-Type": "image/jpeg",
+          "Content-Disposition": contentDisposition(files[0].name),
         },
       });
     }
 
-    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+    const zip = new AdmZip();
+    for (const f of files) zip.addFile(f.name, f.data);
+
+    return new NextResponse(new Uint8Array(zip.toBuffer()), {
+      headers: {
+        "Content-Type": "application/zip",
+        "Content-Disposition": contentDisposition(`${baseName}_jpg.zip`),
+      },
+    });
   } catch (err) {
-    console.error("PDF conversion error:", err);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    console.error("PDF to JPG error:", err);
+    return NextResponse.json({ error: "Could not convert this PDF to JPG." }, { status: 500 });
   }
 });

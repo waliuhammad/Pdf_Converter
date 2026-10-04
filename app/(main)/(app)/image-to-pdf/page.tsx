@@ -1,196 +1,184 @@
 "use client";
 /* eslint-disable @next/next/no-img-element -- Every image on this page is a
-   preview the browser just generated from the file the visitor picked: an
-   object URL or a canvas data URL. next/image cannot optimise either, since
-   there is no server-side image to resize; it would need unoptimized, which
-   renders this same tag inside a wrapper. Disabled for the file rather than
-   per line because some of these sit inside ternaries, where a JSX comment is
-   a syntax error and the two comment styles would have to be mixed. */
+   preview of a file the visitor just picked, shown from an object URL.
+   next/image cannot optimise that (there is no server-side image to resize);
+   it would need unoptimized, which renders this same tag inside a wrapper. */
 
-
-import React, { useState, useRef, JSX } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SecureNote, UploadCard } from "@/components/tools/upload-card";
-import { Trash2, UploadCloud, Sparkles, Loader2, Image as Plus, Sliders, Type } from "lucide-react";
-import { loadJsPdf } from "@/lib/pdf-libs";
+import {
+  ArrowLeft,
+  ArrowRight,
+  FileImage,
+  Loader2,
+  Plus,
+  Sparkles,
+  Download,
+  X,
+} from "lucide-react";
+import { loadJsZip, loadPdfLib } from "@/lib/pdf-libs";
 import { errorMessage } from "@/lib/errors";
 import { claimOperation, releaseOperation } from "@/lib/claim-operation";
+import { downloadBlob } from "@/lib/download";
+import {
+  MARGINS,
+  addImagePage,
+  layoutFor,
+  type LayoutOptions,
+  type MarginSize,
+  type Orientation,
+  type PageSize,
+  type PdfImageInput,
+} from "@/lib/images-to-pdf";
 
-interface TextAnnotation {
-  id: string;
-  text: string;
-  x: number;
-  y: number;
-  fontSize: number;
-  fontFamily: string;
-  isBold: boolean;
-  isItalic: boolean;
-  color: string;
-}
-
-interface ImageFile {
+interface ImageItem {
   id: string;
   file: File;
   previewUrl: string;
   width: number;
   height: number;
-  xPos: number;
-  yPos: number;
-  page: number;
-  texts: TextAnnotation[];
 }
-
-const PAGE_W = 210;
-const PAGE_H = 297;
-const MARGIN_TOP = 20;
-const MARGIN_BOTTOM = 15;
-const IMAGE_X = 35;
-const IMAGE_W = 140;
-const LABEL_OFFSET = 6;
-const IMAGE_GAP = 10;
 
 const newId = () => Math.random().toString(36).substring(2, 9);
 
-/** Fit an image to the column width, shrinking it if it is too tall for one page. */
-const fitToPage = (naturalW: number, naturalH: number): { width: number; height: number } => {
-  let width = IMAGE_W;
-  let height = (naturalH / naturalW) * width;
-  const maxHeight = PAGE_H - MARGIN_TOP - MARGIN_BOTTOM;
-
-  if (height > maxHeight) {
-    width = width * (maxHeight / height);
-    height = maxHeight;
-  }
-
-  return { width: Number(width.toFixed(1)), height: Number(height.toFixed(1)) };
-};
-
-/** Stack the next image below the previous one, moving to a new page when it no longer fits. */
-const placeAfter = (placed: ImageFile[], height: number): { page: number; yPos: number } => {
-  const last = placed[placed.length - 1];
-  if (!last) return { page: 0, yPos: MARGIN_TOP };
-
-  const yPos = last.yPos + last.height + IMAGE_GAP + LABEL_OFFSET;
-  if (yPos + height > PAGE_H - MARGIN_BOTTOM) {
-    return { page: last.page + 1, yPos: MARGIN_TOP };
-  }
-
-  return { page: last.page, yPos: Number(yPos.toFixed(1)) };
-};
+const baseName = (name: string) => name.replace(/\.[^/.]+$/, "") || "image";
 
 /**
- * jsPDF reads the real bytes and only falls back to the format argument when it
- * cannot recognise them — so an unrecognised file silently lands in the PDF as a
- * broken JPEG. Name the format ourselves and rasterise anything jsPDF cannot decode.
+ * The EXIF orientation of a JPEG (1 = upright), or 1 when there is none.
+ *
+ * Phones store photos sideways and record the turn in EXIF. Browsers honour
+ * it when showing the picture, but a PDF embeds the raw pixels, so without
+ * this a portrait photo arrived lying on its side.
  */
-const sniffFormat = (dataUrl: string): string | null => {
-  const base64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
-  const head = atob(base64.slice(0, 32));
-  const byte = (i: number) => head.charCodeAt(i);
+function jpegOrientation(bytes: Uint8Array): number {
+  if (bytes[0] !== 0xff || bytes[1] !== 0xd8) return 1;
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let offset = 2;
+  while (offset + 4 < bytes.length) {
+    if (bytes[offset] !== 0xff) return 1;
+    const marker = bytes[offset + 1];
+    const length = view.getUint16(offset + 2);
+    if (marker === 0xe1 && view.getUint32(offset + 4) === 0x45786966) {
+      const tiff = offset + 10;
+      const little = view.getUint16(tiff) === 0x4949;
+      const ifd = tiff + view.getUint32(tiff + 4, little);
+      const entries = view.getUint16(ifd, little);
+      for (let i = 0; i < entries; i++) {
+        const entry = ifd + 2 + i * 12;
+        if (entry + 10 > bytes.length) return 1;
+        if (view.getUint16(entry, little) === 0x0112) return view.getUint16(entry + 8, little);
+      }
+      return 1;
+    }
+    if (marker === 0xda) return 1; // image data starts; no EXIF before it
+    offset += 2 + length;
+  }
+  return 1;
+}
 
-  if (byte(0) === 0xff && byte(1) === 0xd8 && byte(2) === 0xff) return "JPEG";
-  if (byte(0) === 0x89 && head.slice(1, 4) === "PNG") return "PNG";
-  if (head.slice(0, 6) === "GIF89a") return "GIF89A";
-  if (head.slice(0, 6) === "GIF87a") return "GIF87A";
-  if (head.slice(0, 2) === "BM") return "BMP";
-  if (head.slice(0, 4) === "RIFF" && head.slice(8, 12) === "WEBP") return "WEBP";
-
+function sniffKind(bytes: Uint8Array): "jpg" | "png" | null {
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "jpg";
+  if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return "png";
   return null;
-};
+}
 
-const readAsDataUrl = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error(`Could not read "${file.name}".`));
-    reader.readAsDataURL(file);
-  });
-
-/** Redraw through a canvas so formats jsPDF has no decoder for (SVG, AVIF, HEIC) still work. */
-const rasteriseToPng = (previewUrl: string, name: string): Promise<string> =>
-  new Promise((resolve, reject) => {
+/**
+ * Redraw an image through a canvas: for formats pdf-lib cannot embed (WebP,
+ * GIF, BMP, SVG, AVIF...) and for JPEGs that need their EXIF turn applied,
+ * which the browser does when it draws them.
+ */
+function rasterise(previewUrl: string, name: string, asJpeg: boolean): Promise<PdfImageInput> {
+  return new Promise((resolve, reject) => {
     const img = new window.Image();
     img.onload = () => {
       const canvas = document.createElement("canvas");
-      canvas.width = img.naturalWidth || img.width || 1000;
-      canvas.height = img.naturalHeight || img.height || 1000;
+      canvas.width = img.naturalWidth || 1000;
+      canvas.height = img.naturalHeight || 1000;
       const ctx = canvas.getContext("2d");
       if (!ctx) {
         reject(new Error(`Could not render "${name}".`));
         return;
       }
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL("image/png"));
+      canvas.toBlob(
+        async (blob) => {
+          if (!blob) {
+            reject(new Error(`Could not render "${name}".`));
+            return;
+          }
+          resolve({ bytes: new Uint8Array(await blob.arrayBuffer()), kind: asJpeg ? "jpg" : "png" });
+        },
+        asJpeg ? "image/jpeg" : "image/png",
+        0.92
+      );
     };
     img.onerror = () => reject(new Error(`Could not render "${name}".`));
     img.src = previewUrl;
   });
+}
 
-export default function ImageToPdf(): JSX.Element {
-  const [images, setImages] = useState<ImageFile[]>([]);
-  const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
+async function toPdfImage(item: ImageItem): Promise<PdfImageInput> {
+  const bytes = new Uint8Array(await item.file.arrayBuffer());
+  const kind = sniffKind(bytes);
+  if (kind === "png") return { bytes, kind };
+  if (kind === "jpg") {
+    return jpegOrientation(bytes) > 1 ? rasterise(item.previewUrl, item.file.name, true) : { bytes, kind };
+  }
+  return rasterise(item.previewUrl, item.file.name, false);
+}
+
+/** Zip entry names must be unique; a second "scan.pdf" becomes "scan (2).pdf". */
+function uniqueName(name: string, used: Set<string>): string {
+  let candidate = name;
+  let n = 2;
+  while (used.has(candidate.toLowerCase())) {
+    candidate = name.replace(/(\.[^.]+)?$/, ` (${n++})$1`);
+  }
+  used.add(candidate.toLowerCase());
+  return candidate;
+}
+
+function chipClass(active: boolean): string {
+  return `py-2.5 px-3 rounded-xl border text-xs sm:text-sm font-semibold transition-all ${
+    active
+      ? "border-primary bg-primary text-primary-foreground shadow-sm"
+      : "border-border bg-card text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+  }`;
+}
+
+export default function ImageToPdf() {
+  const [images, setImages] = useState<ImageItem[]>([]);
+  const [orientation, setOrientation] = useState<Orientation>("portrait");
+  const [pageSize, setPageSize] = useState<PageSize>("a4");
+  const [margin, setMargin] = useState<MarginSize>("none");
+  const [merge, setMerge] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  /**
-   * Free-typing layer for every numeric field on this page.
-   *
-   * Binding an input's value straight to the model meant an emptied field
-   * refilled itself mid-keystroke: parseFloat("") is NaN, the || fallback
-   * wrote 10 (or 0) back, and typing a custom number meant fighting the
-   * input. While a field is being edited its raw text lives here under a
-   * key unique to the thing being edited ("<id>:width", "<textId>:x"), the
-   * model updates only when the text parses to something usable, and blur
-   * drops the draft so the display snaps back to the real value.
-   */
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
-
-  const draftFor = (key: string, modelValue: number | string): number | string =>
-    drafts[key] ?? modelValue;
-
-  const editDraft = (key: string, raw: string, commit: (parsed: number) => void, mustBePositive = false) => {
-    setDrafts((d) => ({ ...d, [key]: raw }));
-
-    const parsed = parseFloat(raw);
-    if (!Number.isFinite(parsed)) return;
-    if (mustBePositive && parsed <= 0) return;
-
-    commit(parsed);
-  };
-
-  const dropDraft = (key: string) => {
-    setDrafts((d) => {
-      if (!(key in d)) return d;
-      const next = { ...d };
-      delete next[key];
-      return next;
-    });
-  };
+  const [done, setDone] = useState<string | null>(null);
 
   const addMoreInputRef = useRef<HTMLInputElement>(null);
+  const imagesRef = useRef<ImageItem[]>([]);
 
-  const handleFilesChange = (e: React.ChangeEvent<HTMLInputElement>, isAppending: boolean = false): void => {
-    const input = e.target;
-    const newFiles = Array.from(input.files ?? []);
+  useEffect(() => {
+    imagesRef.current = images;
+  }, [images]);
 
-    // Clear the input so picking the same file again still fires a change event.
-    input.value = "";
+  // Release the previews when the page goes away.
+  useEffect(() => () => imagesRef.current.forEach((img) => URL.revokeObjectURL(img.previewUrl)), []);
 
-    if (newFiles.length === 0) return;
-    void loadFiles(newFiles, isAppending);
-  };
+  const options: LayoutOptions = { pageSize, orientation, margin };
 
-  const loadFiles = async (newFiles: File[], isAppending: boolean): Promise<void> => {
-    const loaded: Array<{ id: string; labelId: string; file: File; previewUrl: string; width: number; height: number }> = [];
+  const loadFiles = async (newFiles: File[]) => {
+    const loaded: ImageItem[] = [];
     const rejected: string[] = [];
 
     for (const file of newFiles) {
-      if (!file.type.startsWith("image/") && !/\.(jpg|jpeg|png|webp|bmp|gif)$/i.test(file.name)) {
+      if (!file.type.startsWith("image/") && !/\.(jpe?g|png|webp|bmp|gif|svg|avif)$/i.test(file.name)) {
         rejected.push(file.name);
         continue;
       }
 
       const previewUrl = URL.createObjectURL(file);
-
       const dims = await new Promise<{ w: number; h: number } | null>((resolve) => {
         const img = new window.Image();
         img.onload = () => resolve({ w: img.naturalWidth || img.width, h: img.naturalHeight || img.height });
@@ -198,15 +186,14 @@ export default function ImageToPdf(): JSX.Element {
         img.src = previewUrl;
       });
 
-      // A file the browser cannot decode used to be kept at a made-up 500x500 and
-      // then broke the PDF instead. Turn it away here, by name.
+      // A file the browser cannot decode would only break the PDF later.
       if (!dims || !dims.w || !dims.h) {
         URL.revokeObjectURL(previewUrl);
         rejected.push(file.name);
         continue;
       }
 
-      loaded.push({ id: newId(), labelId: newId(), file, previewUrl, ...fitToPage(dims.w, dims.h) });
+      loaded.push({ id: newId(), file, previewUrl, width: dims.w, height: dims.h });
     }
 
     setError(
@@ -214,122 +201,38 @@ export default function ImageToPdf(): JSX.Element {
         ? `Could not read ${rejected.length === 1 ? "this file" : "these files"}: ${rejected.join(", ")}.`
         : null
     );
+    setDone(null);
+    if (loaded.length > 0) setImages((prev) => [...prev, ...loaded]);
+  };
 
-    if (loaded.length === 0) return;
-
-    if (!isAppending) {
-      images.forEach((img) => URL.revokeObjectURL(img.previewUrl));
-    }
-
+  const removeImage = (id: string) => {
     setImages((prev) => {
-      const next = isAppending ? [...prev] : [];
+      const target = prev.find((img) => img.id === id);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((img) => img.id !== id);
+    });
+  };
 
-      for (const item of loaded) {
-        const { page, yPos } = placeAfter(next, item.height);
-        next.push({
-          id: item.id,
-          file: item.file,
-          previewUrl: item.previewUrl,
-          width: item.width,
-          height: item.height,
-          xPos: IMAGE_X,
-          yPos,
-          page,
-          texts: [
-            {
-              id: item.labelId,
-              text: `Image Label ${next.length + 1}`,
-              x: IMAGE_X,
-              y: Math.max(yPos - LABEL_OFFSET, 5),
-              fontSize: 12,
-              fontFamily: "helvetica",
-              isBold: true,
-              isItalic: false,
-              color: "#000000",
-            },
-          ],
-        });
-      }
-
+  const moveImage = (index: number, delta: number) => {
+    setImages((prev) => {
+      const to = index + delta;
+      if (to < 0 || to >= prev.length) return prev;
+      const next = [...prev];
+      [next[index], next[to]] = [next[to], next[index]];
       return next;
     });
-
-    if (!isAppending || !selectedImageId) {
-      setSelectedImageId(loaded[0].id);
-    }
   };
 
-  const handleClearAll = (): void => {
+  const clearAll = () => {
     images.forEach((img) => URL.revokeObjectURL(img.previewUrl));
     setImages([]);
-    setSelectedImageId(null);
-    setDrafts({});
     setError(null);
+    setDone(null);
   };
 
-  const handlePropertyChange = (field: "width" | "height" | "xPos" | "yPos" | "page", value: number) => {
-    if (!selectedImageId) return;
-    setImages((prev) =>
-      prev.map((img) => {
-        if (img.id === selectedImageId) {
-          return { ...img, [field]: value };
-        }
-        return img;
-      })
-    );
-  };
-
-  const handleAddTextAnnotation = () => {
-    if (!selectedImageId) return;
-    setImages((prev) =>
-      prev.map((img) => {
-        if (img.id === selectedImageId) {
-          const newText: TextAnnotation = {
-            id: Math.random().toString(36).substring(2, 9),
-            text: "New Text Note",
-            x: img.xPos,
-            y: img.yPos + img.height + 5,
-            fontSize: 12,
-            fontFamily: "helvetica",
-            isBold: false,
-            isItalic: false,
-            color: "#000000",
-          };
-          return { ...img, texts: [...img.texts, newText] };
-        }
-        return img;
-      })
-    );
-  };
-
-  const handleUpdateTextAnnotation = (textId: string, updatedFields: Partial<TextAnnotation>) => {
-    if (!selectedImageId) return;
-    setImages((prev) =>
-      prev.map((img) => {
-        if (img.id === selectedImageId) {
-          const updatedTexts = img.texts.map((t) => (t.id === textId ? { ...t, ...updatedFields } : t));
-          return { ...img, texts: updatedTexts };
-        }
-        return img;
-      })
-    );
-  };
-
-  const handleDeleteTextAnnotation = (textId: string) => {
-    if (!selectedImageId) return;
-    setImages((prev) =>
-      prev.map((img) => {
-        if (img.id === selectedImageId) {
-          return { ...img, texts: img.texts.filter((t) => t.id !== textId) };
-        }
-        return img;
-      })
-    );
-  };
-
-  const handleConvertToPdf = async (): Promise<void> => {
+  const handleConvert = async () => {
     if (images.length === 0) {
-      setError("Please upload at least one image.");
+      setError("Please add at least one image.");
       return;
     }
 
@@ -343,44 +246,31 @@ export default function ImageToPdf(): JSX.Element {
 
     setLoading(true);
     setError(null);
+    setDone(null);
 
     try {
-      const { jsPDF } = await loadJsPdf();
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
+      const lib = await loadPdfLib();
+      const first = baseName(images[0].file.name);
 
-      for (let p = 0; p < usedPages.length; p++) {
-        if (p > 0) pdf.addPage();
-
-        for (const item of images.filter((img) => img.page === usedPages[p])) {
-          const dataUrl = await readAsDataUrl(item.file);
-          const format = sniffFormat(dataUrl);
-
-          if (format) {
-            pdf.addImage(dataUrl, format, item.xPos, item.yPos, item.width, item.height);
-          } else {
-            const png = await rasteriseToPng(item.previewUrl, item.file.name);
-            pdf.addImage(png, "PNG", item.xPos, item.yPos, item.width, item.height);
-          }
-
-          for (const t of item.texts) {
-            let fontStyle = "normal";
-            if (t.isBold && t.isItalic) fontStyle = "bolditalic";
-            else if (t.isBold) fontStyle = "bold";
-            else if (t.isItalic) fontStyle = "italic";
-
-            pdf.setFont(t.fontFamily, fontStyle);
-            pdf.setFontSize(t.fontSize);
-            pdf.setTextColor(t.color);
-            pdf.text(t.text, t.x, t.y);
-          }
+      if (merge || images.length === 1) {
+        const doc = await lib.PDFDocument.create();
+        for (const item of images) await addImagePage(doc, await toPdfImage(item), options);
+        const bytes = await doc.save();
+        downloadBlob(new Blob([new Uint8Array(bytes)], { type: "application/pdf" }), `${first}.pdf`);
+        setDone(images.length === 1 ? "Your PDF has been downloaded." : `All ${images.length} images were merged into one PDF.`);
+      } else {
+        const JSZip = await loadJsZip();
+        const zip = new JSZip();
+        const used = new Set<string>();
+        for (const item of images) {
+          const doc = await lib.PDFDocument.create();
+          await addImagePage(doc, await toPdfImage(item), options);
+          zip.file(uniqueName(`${baseName(item.file.name)}.pdf`, used), await doc.save());
         }
+        const blob = await zip.generateAsync({ type: "blob" });
+        downloadBlob(blob, `${first}_pdf.zip`);
+        setDone(`${images.length} PDFs were downloaded in a ZIP file.`);
       }
-
-      pdf.save("combined-images-layout.pdf");
     } catch (err) {
       // The operation was claimed before the work started, so give it back.
       void releaseOperation();
@@ -390,387 +280,256 @@ export default function ImageToPdf(): JSX.Element {
     }
   };
 
-  const selectedImg = images.find((img) => img.id === selectedImageId);
-  // Only pages that actually hold something, so moving images around leaves no blanks.
-  const usedPages = Array.from(new Set(images.map((img) => img.page))).sort((a, b) => a - b);
+  /** A thumbnail of the page each image will become, drawn to the real proportions. */
+  const pagePreview = (item: ImageItem) => {
+    const box = layoutFor(item.width, item.height, options);
+    const pct = (v: number, of: number) => `${(v / of) * 100}%`;
+    return (
+      <div
+        className="relative w-full bg-white shadow-sm border border-border rounded-sm overflow-hidden"
+        style={{ aspectRatio: `${box.pageWidth} / ${box.pageHeight}` }}
+      >
+        <img
+          src={item.previewUrl}
+          alt={item.file.name}
+          className="absolute"
+          style={{
+            left: pct(box.x, box.pageWidth),
+            // PDF y runs up from the bottom; CSS top runs down.
+            top: pct(box.pageHeight - box.y - box.height, box.pageHeight),
+            width: pct(box.width, box.pageWidth),
+            height: pct(box.height, box.pageHeight),
+          }}
+        />
+      </div>
+    );
+  };
 
   return (
-    <div className="w-full text-fg antialiased selection:bg-primary selection:text-primary-foreground px-4 sm:px-6 py-6 sm:py-10">
-      <div className="w-full max-w-4xl mx-auto space-y-5 md:space-y-8">
-
+    <div className="w-full text-foreground antialiased px-4 sm:px-6 py-6 sm:py-10">
+      <div className="w-full max-w-5xl mx-auto space-y-5 md:space-y-8">
         <div className="text-center space-y-1.5 md:space-y-2">
           <div className="flex justify-center mb-1 md:mb-0">
-            <div className="w-11 h-11 flex items-center justify-center rounded-2xl bg-card border border-card shadow-sm md:w-auto md:h-auto md:inline-flex md:px-3 md:py-1 md:rounded-full md:gap-1.5 md:shadow-none md:bg-primary/10 md:border-primary/20">
-              <Sparkles className="w-5 h-5 md:w-3.5 md:h-3.5 text-fg md:text-primary" />
+            <div className="w-11 h-11 flex items-center justify-center rounded-2xl bg-card border border-border shadow-sm md:w-auto md:h-auto md:inline-flex md:px-3 md:py-1 md:rounded-full md:gap-1.5 md:shadow-none md:bg-primary/10 md:border-primary/20">
+              <Sparkles className="w-5 h-5 md:w-3.5 md:h-3.5 text-foreground md:text-primary" />
               <span className="hidden md:inline text-primary text-xs font-semibold tracking-wide uppercase">
-                Multi-Image Page Composition
+                Images to PDF
               </span>
             </div>
           </div>
-          <h1 className="text-xl leading-tight md:text-3xl font-bold tracking-tight text-fg">
-            Combine Multiple Images into a PDF
+          <h1 className="text-xl leading-tight md:text-3xl font-bold tracking-tight text-foreground">
+            JPG to PDF
           </h1>
-          <p className="text-[13px] leading-[18px] md:text-sm md:leading-normal text-muted max-w-[300px] md:max-w-xl mx-auto">
-            Arrange multiple images and custom text captions on an A4 layout. Images stack down the page and flow onto a new one once it is full.
+          <p className="text-[13px] leading-[18px] md:text-sm md:leading-normal text-muted-foreground max-w-[300px] md:max-w-xl mx-auto">
+            Turn JPG, PNG and other images into PDF. Choose the page size, orientation and margin, and merge
+            them into one file or keep one PDF per image.
           </p>
         </div>
 
-        {images.length === 0 && (
-          <div className="w-full md:w-auto">
-            <UploadCard
-              onFiles={(files) => loadFiles(Array.from(files ?? []), false)}
-              accept="image/*"
-              multiple
-              title="Click to upload multiple images"
-              hint="Supports PNG, JPG, WebP, GIF, BMP"
-            />
-          </div>
-        )}
-
-        {images.length > 0 && (
-          <div className="space-y-4 md:space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-              <span className="text-[11px] md:text-xs text-muted font-bold uppercase tracking-wider whitespace-nowrap">
-                Canvas Elements ({images.length})
-              </span>
-              <div className="flex items-center space-x-3 shrink-0">
-                <button
-                  onClick={() => addMoreInputRef.current?.click()}
-                  className="inline-flex items-center space-x-1 text-xs text-primary-foreground bg-primary hover:bg-[var(--primary-hover)] px-3 py-1.5 rounded-lg border border-transparent transition cursor-pointer font-medium shadow-sm"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Image</span>
-                </button>
-                <input
-                  ref={addMoreInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={(e) => handleFilesChange(e, true)}
-                  className="hidden"
-                />
-                <button
-                  onClick={handleClearAll}
-                  className="text-xs text-rose-600 dark:text-rose-400 hover:underline cursor-pointer font-medium"
-                >
-                  Clear All
-                </button>
-              </div>
-            </div>
-
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {images.map((item, idx) => (
-                <button
-                  key={item.id}
-                  onClick={() => setSelectedImageId(item.id)}
-                  className={`flex items-center space-x-2 p-2 rounded-xl border shrink-0 transition cursor-pointer ${selectedImageId === item.id
-                    ? "bg-primary border-primary text-primary-foreground shadow-sm"
-                    : "bg-muted border-border text-muted-foreground hover:bg-[var(--background-secondary)]"
-                    }`}
-                >
-                  <img src={item.previewUrl} alt="" className="w-8 h-8 object-cover rounded-md border border-border" />
-                  <span className="text-xs font-medium max-w-[100px] truncate">Image #{idx + 1}</span>
-                </button>
-              ))}
-            </div>
-
-            {selectedImg && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 bg-[var(--background-secondary)] border border-card rounded-2xl p-3 md:p-6">
-
-                {/* Visual Preview Box showing ALL images together on one page */}
-                <div className="flex flex-col items-center justify-center bg-muted border border-card rounded-xl p-3 sm:p-4 pt-9 sm:pt-10 relative min-h-[240px] sm:min-h-[320px]">
-                  <span className="absolute top-3 left-3 text-[11px] text-muted uppercase font-mono tracking-wider">
-                    A4 Preview &mdash; {usedPages.length} {usedPages.length === 1 ? "page" : "pages"}
-                  </span>
-                  <div className="flex gap-3 overflow-x-auto max-w-full pb-1">
-                    {usedPages.map((pageNo, pageIdx) => (
-                      <div key={pageNo} className="shrink-0 flex flex-col items-center gap-1.5">
-                        <div className="w-[110px] h-[156px] sm:w-[150px] sm:h-[212px] bg-white rounded shadow-lg dark:shadow-md relative overflow-hidden border border-border">
-                          {images
-                            .filter((img) => img.page === pageNo)
-                            .map((img) => (
-                              <React.Fragment key={img.id}>
-                                <img
-                                  src={img.previewUrl}
-                                  alt=""
-                                  style={{
-                                    position: "absolute",
-                                    left: `${(img.xPos / PAGE_W) * 100}%`,
-                                    top: `${(img.yPos / PAGE_H) * 100}%`,
-                                    width: `${(img.width / PAGE_W) * 100}%`,
-                                    height: `${(img.height / PAGE_H) * 100}%`,
-                                    objectFit: "fill",
-                                    outline: img.id === selectedImageId ? "2px solid var(--primary)" : "none",
-                                  }}
-                                />
-                                {img.texts.map((t) => (
-                                  <div
-                                    key={t.id}
-                                    style={{
-                                      position: "absolute",
-                                      left: `${(t.x / PAGE_W) * 100}%`,
-                                      top: `${(t.y / PAGE_H) * 100}%`,
-                                      fontSize: `${Math.max(8, t.fontSize * 0.6)}px`,
-                                      fontFamily: t.fontFamily,
-                                      fontWeight: t.isBold ? "bold" : "normal",
-                                      fontStyle: t.isItalic ? "italic" : "normal",
-                                      color: t.color,
-                                      whiteSpace: "nowrap",
-                                    }}
-                                  >
-                                    {t.text}
-                                  </div>
-                                ))}
-                              </React.Fragment>
-                            ))}
-                        </div>
-                        <span
-                          className={`text-[10px] font-mono ${selectedImg?.page === pageNo
-                            ? "text-primary font-bold"
-                            : "text-muted"
-                            }`}
-                        >
-                          Page {pageIdx + 1}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+        {images.length === 0 ? (
+          <UploadCard
+            onFiles={(files) => loadFiles(Array.from(files ?? []))}
+            accept="image/*"
+            multiple
+            title="Click to upload images"
+            hint="Supports JPG, PNG, WebP, GIF, BMP"
+          />
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+            {/* Pages */}
+            <div className="lg:col-span-2 bg-card border border-border rounded-2xl p-3 md:p-5 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-[11px] md:text-xs text-muted-foreground font-bold uppercase tracking-wider">
+                  {images.length} {images.length === 1 ? "image" : "images"}
+                </span>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => addMoreInputRef.current?.click()}
+                    className="inline-flex items-center gap-1 text-xs text-primary-foreground bg-primary hover:opacity-90 px-3 py-1.5 rounded-lg transition font-medium shadow-sm"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add images
+                  </button>
+                  <input
+                    ref={addMoreInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files ?? []);
+                      e.target.value = "";
+                      void loadFiles(files);
+                    }}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={clearAll}
+                    className="text-xs text-rose-600 dark:text-rose-400 hover:underline font-medium"
+                  >
+                    Clear all
+                  </button>
                 </div>
+              </div>
 
-                {/* Editor Settings Panel */}
-                <div className="space-y-5 max-h-[420px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-border">
-
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2 text-fg text-sm font-semibold border-b border-card pb-2">
-                      <Sliders className="w-4 h-4 text-muted" />
-                      <span>Selected Image Dimensions & Coordinates (mm)</span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[11px] text-muted font-bold uppercase">Width</label>
-                        <input
-                          type="number"
-                          value={draftFor(`${selectedImg.id}:width`, selectedImg.width)}
-                          onChange={(e) =>
-                            editDraft(`${selectedImg.id}:width`, e.target.value, (n) => handlePropertyChange("width", n), true)
-                          }
-                          onBlur={() => dropDraft(`${selectedImg.id}:width`)}
-                          className="w-full bg-card border border-card rounded-xl px-3 py-1.5 text-xs text-fg mt-1 focus:outline-none focus:border-primary"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[11px] text-muted font-bold uppercase">Height</label>
-                        <input
-                          type="number"
-                          value={draftFor(`${selectedImg.id}:height`, selectedImg.height)}
-                          onChange={(e) =>
-                            editDraft(`${selectedImg.id}:height`, e.target.value, (n) => handlePropertyChange("height", n), true)
-                          }
-                          onBlur={() => dropDraft(`${selectedImg.id}:height`)}
-                          className="w-full bg-card border border-card rounded-xl px-3 py-1.5 text-xs text-fg mt-1 focus:outline-none focus:border-primary"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[11px] text-muted font-bold uppercase">X Offset</label>
-                        <input
-                          type="number"
-                          value={draftFor(`${selectedImg.id}:xPos`, selectedImg.xPos)}
-                          onChange={(e) =>
-                            editDraft(`${selectedImg.id}:xPos`, e.target.value, (n) => handlePropertyChange("xPos", n))
-                          }
-                          onBlur={() => dropDraft(`${selectedImg.id}:xPos`)}
-                          className="w-full bg-card border border-card rounded-xl px-3 py-1.5 text-xs text-fg mt-1 focus:outline-none focus:border-primary"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[11px] text-muted font-bold uppercase">Y Offset</label>
-                        <input
-                          type="number"
-                          value={draftFor(`${selectedImg.id}:yPos`, selectedImg.yPos)}
-                          onChange={(e) =>
-                            editDraft(`${selectedImg.id}:yPos`, e.target.value, (n) => handlePropertyChange("yPos", n))
-                          }
-                          onBlur={() => dropDraft(`${selectedImg.id}:yPos`)}
-                          className="w-full bg-card border border-card rounded-xl px-3 py-1.5 text-xs text-fg mt-1 focus:outline-none focus:border-primary"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[11px] text-muted font-bold uppercase">Page</label>
-                        <input
-                          type="number"
-                          min={1}
-                          step={1}
-                          value={draftFor(`${selectedImg.id}:page`, selectedImg.page + 1)}
-                          onChange={(e) =>
-                            editDraft(`${selectedImg.id}:page`, e.target.value, (n) =>
-                              handlePropertyChange("page", Math.max(0, Math.round(n) - 1))
-                              , true)
-                          }
-                          onBlur={() => dropDraft(`${selectedImg.id}:page`)}
-                          className="w-full bg-card border border-card rounded-xl px-3 py-1.5 text-xs text-fg mt-1 focus:outline-none focus:border-primary"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Text Annotations Section */}
-                  <div className="space-y-3 pt-2">
-                    <div className="flex items-center justify-between border-b border-card pb-2">
-                      <div className="flex items-center space-x-2 text-fg text-sm font-semibold">
-                        <Type className="w-4 h-4 text-muted" />
-                        <span>Text Annotations</span>
-                      </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
+                {images.map((item, idx) => (
+                  <div key={item.id} className="group rounded-xl bg-muted border border-border p-2 space-y-1.5">
+                    <div className="relative">
+                      {pagePreview(item)}
                       <button
-                        onClick={handleAddTextAnnotation}
-                        className="text-xs text-primary-foreground bg-primary hover:bg-[var(--primary-hover)] px-3 py-1 rounded-lg border border-transparent transition cursor-pointer font-medium shadow-sm"
+                        type="button"
+                        onClick={() => removeImage(item.id)}
+                        title="Remove"
+                        aria-label={`Remove ${item.file.name}`}
+                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-background/90 border border-border text-muted-foreground hover:text-red-600 flex items-center justify-center"
                       >
-                        + Add Text
+                        <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => moveImage(idx, -1)}
+                        disabled={idx === 0}
+                        aria-label="Move earlier"
+                        className="p-1 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-30"
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                      </button>
+                      <span className="flex-1 min-w-0 text-[11px] text-muted-foreground truncate text-center" title={item.file.name}>
+                        {idx + 1}. {item.file.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => moveImage(idx, 1)}
+                        disabled={idx === images.length - 1}
+                        aria-label="Move later"
+                        className="p-1 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-30"
+                      >
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-                    {selectedImg.texts.map((t, index) => (
-                      <div key={t.id} className="bg-card border border-card rounded-xl p-3 space-y-3 shadow-sm dark:shadow-none">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-bold text-muted uppercase">Text Item #{index + 1}</span>
-                          <button
-                            onClick={() => handleDeleteTextAnnotation(t.id)}
-                            className="text-muted-foreground hover:text-rose-600 dark:hover:text-rose-400 transition cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-
-                        <input
-                          type="text"
-                          value={t.text}
-                          onChange={(e) => handleUpdateTextAnnotation(t.id, { text: e.target.value })}
-                          placeholder="Enter caption text..."
-                          className="w-full bg-[var(--background-secondary)] border border-card rounded-lg px-2.5 py-1.5 text-xs text-fg focus:outline-none focus:border-primary"
-                        />
-
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-[10px] text-muted uppercase">Font</label>
-                            <select
-                              value={t.fontFamily}
-                              onChange={(e) => handleUpdateTextAnnotation(t.id, { fontFamily: e.target.value })}
-                              className="w-full bg-[var(--background-secondary)] border border-card rounded-lg px-2 py-1 text-xs text-fg mt-0.5 focus:outline-none"
-                            >
-                              <option value="helvetica">Helvetica</option>
-                              <option value="times">Times New Roman</option>
-                              <option value="courier">Courier</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="text-[10px] text-muted uppercase">Size (pt)</label>
-                            <input
-                              type="number"
-                              value={draftFor(`${t.id}:fontSize`, t.fontSize)}
-                              onChange={(e) =>
-                                editDraft(`${t.id}:fontSize`, e.target.value, (n) =>
-                                  handleUpdateTextAnnotation(t.id, { fontSize: n })
-                                  , true)
-                              }
-                              onBlur={() => dropDraft(`${t.id}:fontSize`)}
-                              className="w-full bg-[var(--background-secondary)] border border-card rounded-lg px-2 py-1 text-xs text-fg mt-0.5 focus:outline-none"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-[10px] text-muted uppercase">X Coord (mm)</label>
-                            <input
-                              type="number"
-                              value={draftFor(`${t.id}:x`, t.x)}
-                              onChange={(e) =>
-                                editDraft(`${t.id}:x`, e.target.value, (n) => handleUpdateTextAnnotation(t.id, { x: n }))
-                              }
-                              onBlur={() => dropDraft(`${t.id}:x`)}
-                              className="w-full bg-[var(--background-secondary)] border border-card rounded-lg px-2 py-1 text-xs text-fg mt-0.5 focus:outline-none"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[10px] text-muted uppercase">Y Coord (mm)</label>
-                            <input
-                              type="number"
-                              value={draftFor(`${t.id}:y`, t.y)}
-                              onChange={(e) =>
-                                editDraft(`${t.id}:y`, e.target.value, (n) => handleUpdateTextAnnotation(t.id, { y: n }))
-                              }
-                              onBlur={() => dropDraft(`${t.id}:y`)}
-                              className="w-full bg-[var(--background-secondary)] border border-card rounded-lg px-2 py-1 text-xs text-fg mt-0.5 focus:outline-none"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between pt-1">
-                          <div className="flex items-center space-x-3">
-                            <label className="flex items-center space-x-1.5 text-xs text-muted cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={t.isBold}
-                                onChange={(e) => handleUpdateTextAnnotation(t.id, { isBold: e.target.checked })}
-                                className="rounded bg-[var(--background-secondary)] border-input text-primary focus:ring-0"
-                              />
-                              <span>Bold</span>
-                            </label>
-                            <label className="flex items-center space-x-1.5 text-xs text-muted cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={t.isItalic}
-                                onChange={(e) => handleUpdateTextAnnotation(t.id, { isItalic: e.target.checked })}
-                                className="rounded bg-[var(--background-secondary)] border-input text-primary focus:ring-0"
-                              />
-                              <span>Italic</span>
-                            </label>
-                          </div>
-                          <div className="flex items-center space-x-1.5">
-                            <label className="text-[10px] text-muted">Color</label>
-                            <input
-                              type="color"
-                              value={t.color}
-                              onChange={(e) => handleUpdateTextAnnotation(t.id, { color: e.target.value })}
-                              className="w-6 h-6 rounded bg-transparent cursor-pointer border-0"
-                            />
-                          </div>
-                        </div>
-                      </div>
+            {/* Options */}
+            <div className="space-y-4">
+              <div className="bg-card border border-border rounded-2xl p-4 space-y-4">
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Page orientation
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(["portrait", "landscape"] as const).map((o) => (
+                      <button
+                        key={o}
+                        type="button"
+                        disabled={pageSize === "fit"}
+                        onClick={() => setOrientation(o)}
+                        className={`${chipClass(orientation === o && pageSize !== "fit")} capitalize disabled:opacity-40 disabled:cursor-not-allowed`}
+                      >
+                        {o}
+                      </button>
                     ))}
                   </div>
-
+                  {pageSize === "fit" && (
+                    <p className="text-[11px] text-muted-foreground">Each page takes the shape of its image.</p>
+                  )}
                 </div>
-              </div>
-            )}
 
-            {error && (
-              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs">
-                {error}
-              </div>
-            )}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Page size
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(
+                      [
+                        { id: "fit", label: "Fit image" },
+                        { id: "a4", label: "A4" },
+                        { id: "letter", label: "US Letter" },
+                      ] as const
+                    ).map((s) => (
+                      <button key={s.id} type="button" onClick={() => setPageSize(s.id)} className={chipClass(pageSize === s.id)}>
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-            <div className="pt-4 flex justify-end">
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Margin
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(
+                      [
+                        { id: "none", label: "No margin" },
+                        { id: "small", label: "Small" },
+                        { id: "big", label: "Big" },
+                      ] as const
+                    ).map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => setMargin(m.id)}
+                        className={chipClass(margin === m.id)}
+                        title={m.id === "none" ? undefined : `${MARGINS[m.id]} pt`}
+                      >
+                        {m.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {images.length > 1 && (
+                  <label className="flex items-center gap-2.5 text-sm text-foreground cursor-pointer select-none pt-1">
+                    <input
+                      type="checkbox"
+                      checked={merge}
+                      onChange={(e) => setMerge(e.target.checked)}
+                      className="w-4 h-4 accent-primary rounded cursor-pointer"
+                    />
+                    Merge all images in one PDF file
+                  </label>
+                )}
+              </div>
+
+              {error && (
+                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs">
+                  {error}
+                </div>
+              )}
+              {done && (
+                <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs">
+                  {done}
+                </div>
+              )}
+
               <button
-                onClick={handleConvertToPdf}
+                type="button"
+                onClick={handleConvert}
                 disabled={loading}
-                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--primary-foreground)] font-semibold text-sm shadow-xl transition flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
+                className="w-full px-6 py-3.5 rounded-xl bg-primary hover:opacity-90 text-primary-foreground font-semibold text-sm shadow-lg transition flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Generating PDF...</span>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Converting...
                   </>
                 ) : (
                   <>
-                    <UploadCloud className="w-4 h-4" />
-                    <span>
-                      Download PDF ({images.length} {images.length === 1 ? "image" : "images"}, {usedPages.length}{" "}
-                      {usedPages.length === 1 ? "page" : "pages"})
-                    </span>
+                    {merge || images.length === 1 ? <FileImage className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+                    Convert to PDF
                   </>
                 )}
               </button>
+              {images.length > 1 && (
+                <p className="text-center text-[11px] text-muted-foreground">
+                  {merge ? "One PDF, one page per image." : `${images.length} separate PDFs in a ZIP file.`}
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -780,3 +539,4 @@ export default function ImageToPdf(): JSX.Element {
     </div>
   );
 }
+

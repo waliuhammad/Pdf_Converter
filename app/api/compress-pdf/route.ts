@@ -1,83 +1,113 @@
 import { NextRequest, NextResponse } from "next/server";
+import AdmZip from "adm-zip";
 import { readFormData } from "@/lib/api";
 import { metered } from "@/lib/metered";
-import { PDFDocument } from "pdf-lib";
-import { rejectBadUpload } from "@/lib/uploads";
+import { rejectBadUpload, contentDisposition } from "@/lib/uploads";
+import { COMPRESSION_LEVELS, compressPdf, type CompressionLevel } from "@/lib/pdf-compress";
 
+/** Several files go out as one ZIP; this keeps one request from tying up the server. */
+const MAX_FILES = 10;
+
+/**
+ * One PDF in -> one PDF out (same name). Several in -> a ZIP of them.
+ *
+ * Per-file sizes travel in the X-Compress-Results header (URI-encoded JSON) so
+ * the page can show original size, new size and the saving for each file even
+ * when the body is a ZIP.
+ */
 export const POST = metered(async (req: NextRequest) => {
-  try {
-    // Every tool counts against the user's daily allowance (2/20/50 by
-    // plan, from Remote Config) and therefore requires sign-in.
+  const formData = await readFormData(req);
+  if (!formData) {
+    return NextResponse.json({ error: "No file provided." }, { status: 400 });
+  }
 
-    const formData = await readFormData(req);
-    if (!formData) {
-      return NextResponse.json({ error: "No file provided." }, { status: 400 });
-    }
-    const file = formData.get("file") as File | null;
-    const targetSizeKB = parseInt((formData.get("targetSizeKB") as string) || "0", 10);
-    const targetRatio = parseFloat((formData.get("targetRatio") as string) || "0.5");
-
-    if (!file) {
-      return NextResponse.json({ error: "No PDF file uploaded" }, { status: 400 });
-    }
-
-    // Size and type are checked here, before anything reads the bytes.
+  // "file" is what the page used to send; still accepted.
+  const files = [...formData.getAll("files"), ...formData.getAll("file")].filter(
+    (f): f is File => typeof f === "object" && f !== null && "arrayBuffer" in f
+  );
+  if (files.length === 0) {
+    return NextResponse.json({ error: "No PDF file uploaded." }, { status: 400 });
+  }
+  if (files.length > MAX_FILES) {
+    return NextResponse.json(
+      { error: `Please compress at most ${MAX_FILES} files at a time.` },
+      { status: 400 }
+    );
+  }
+  for (const file of files) {
     const badUpload = rejectBadUpload(file, "pdf");
     if (badUpload) return badUpload;
+  }
 
-    const arrayBuffer = await file.arrayBuffer();
-    const srcDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+  const requested = String(formData.get("level") ?? "recommended") as CompressionLevel;
+  const level: CompressionLevel = COMPRESSION_LEVELS.includes(requested) ? requested : "recommended";
 
-    // Create a new compressed PDF container
-    const pdfDoc = await PDFDocument.create();
+  const results: {
+    name: string;
+    originalSize: number;
+    compressedSize: number;
+    keptOriginal: boolean;
+    reason?: string;
+  }[] = [];
+  const outputs: Uint8Array[] = [];
 
-    // Copy pages into the new document
-    const pageIndices = Array.from({ length: srcDoc.getPageCount() }, (_, i) => i);
-    const pages = await pdfDoc.copyPages(srcDoc, pageIndices);
+  for (const file of files) {
+    try {
+      const result = await compressPdf(new Uint8Array(await file.arrayBuffer()), level);
+      outputs.push(result.bytes);
+      results.push({
+        name: file.name,
+        originalSize: result.originalSize,
+        compressedSize: result.compressedSize,
+        keptOriginal: result.keptOriginal,
+        reason: result.reason,
+      });
+    } catch (error) {
+      console.error("PDF Compression Error:", error);
+      return NextResponse.json(
+        { error: `Could not compress ${file.name}. Please check it is a valid PDF.` },
+        { status: 422 }
+      );
+    }
+  }
 
-    // Scale pages according to target ratio if extreme compression is targeted
-    pages.forEach((page) => {
-      if (targetRatio <= 0.3) {
-        page.scale(0.8, 0.8);
-      }
-      pdfDoc.addPage(page);
-    });
+  const resultsHeader = encodeURIComponent(JSON.stringify(results));
 
-    // Strip metadata to minimize overhead
-    pdfDoc.setTitle("");
-    pdfDoc.setAuthor("");
-    pdfDoc.setSubject("");
-    pdfDoc.setKeywords([]);
-    pdfDoc.setProducer("");
-    pdfDoc.setCreator("");
-
-    // Save with maximum structural stream compression.
-    //
-    // Note: the output is the best *valid* compression achievable here. The
-    // previous version truncated the byte stream to force the requested
-    // target size, which corrupts the file — a PDF's cross-reference table
-    // lives at the end, so cutting bytes off produces a document many
-    // viewers cannot open. A slightly-larger-than-requested valid file
-    // beats a to-the-byte broken one.
-    const compressedBytes = await pdfDoc.save({
-      useObjectStreams: true,
-      addDefaultPage: false,
-    });
-
-    const resultBuffer = Buffer.from(compressedBytes);
-
-    return new NextResponse(resultBuffer, {
+  if (files.length === 1) {
+    return new NextResponse(Buffer.from(outputs[0]), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="compressed_${targetSizeKB > 0 ? `${targetSizeKB}KB_` : ""}${file.name}"`,
+        "Content-Disposition": contentDisposition(files[0].name),
+        "X-Compress-Results": resultsHeader,
       },
     });
-  } catch (error) {
-    console.error("PDF Compression Error:", error);
-    return NextResponse.json(
-      { error: "Failed to compress PDF" },
-      { status: 500 }
-    );
   }
+
+  const zip = new AdmZip();
+  const used = new Set<string>();
+  files.forEach((file, i) => {
+    zip.addFile(uniqueName(file.name, used), Buffer.from(outputs[i]));
+  });
+
+  return new NextResponse(new Uint8Array(zip.toBuffer()), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/zip",
+      "Content-Disposition": contentDisposition("compressed_pdfs.zip"),
+      "X-Compress-Results": resultsHeader,
+    },
+  });
 });
+
+/** Two uploads called report.pdf would overwrite each other inside the ZIP. */
+function uniqueName(name: string, used: Set<string>): string {
+  const safe = name.replace(/[\\/]/g, "_") || "document.pdf";
+  let candidate = safe;
+  const dot = safe.toLowerCase().endsWith(".pdf") ? safe.length - 4 : safe.length;
+  for (let n = 2; used.has(candidate.toLowerCase()); n++) {
+    candidate = `${safe.slice(0, dot)} (${n})${safe.slice(dot)}`;
+  }
+  used.add(candidate.toLowerCase());
+  return candidate;
+}
