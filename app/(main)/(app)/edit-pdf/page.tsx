@@ -5,6 +5,7 @@ import { FileText, X, Download, Loader2, Type, Bold, Italic, Pencil, Trash2, Che
 import { SecureNote, UploadCard } from "@/components/tools/upload-card";
 import type * as PdfjsLib from "pdfjs-dist";
 import { downloadBlob } from "@/lib/download";
+import { loadPdfjs } from "@/lib/pdf-libs";
 import { useCancellableRun, wasCancelled } from "@/hooks/useCancellableRun";
 
 interface TextAnnotation {
@@ -45,12 +46,6 @@ interface DrawAnnotation {
 }
 
 type Annotation = TextAnnotation | ReplaceAnnotation | DrawAnnotation;
-
-declare global {
-  interface Window {
-    pdfjsLib: typeof import("pdfjs-dist");
-  }
-}
 
 /** Swatches beside the native pickers: the tiny OS colour chip is easy to
  *  miss and fiddly on phones; one tap on a swatch is unambiguous. */
@@ -122,23 +117,6 @@ export default function EditPdfPage() {
   const overlayContainerRef = useRef<HTMLDivElement | null>(null);
   const previewBoxRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    if (!window.pdfjsLib) {
-      const script = document.createElement("script");
-      script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
-      script.onload = () => {
-        if (window.pdfjsLib) {
-          window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-        }
-      };
-      document.head.appendChild(script);
-    } else if (window.pdfjsLib && !window.pdfjsLib.GlobalWorkerOptions.workerSrc) {
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-    }
-  }, []);
-
   // Re-fit the page when the window changes size (rotating a phone, resizing
   // a desktop window). Debounced by rAF-ish timeout; the tick re-runs render.
   useEffect(() => {
@@ -170,12 +148,14 @@ export default function EditPdfPage() {
     try {
       const arrayBuffer = await f.arrayBuffer();
 
-      if (window.pdfjsLib) {
-        const loadingTask = window.pdfjsLib.getDocument({ data: arrayBuffer });
-        const pdf = await loadingTask.promise;
-        setPdfDocProxy(pdf);
-        setPageCount(pdf.numPages);
-      }
+      // pdf.js is fetched here, when a file is chosen, rather than injected
+      // from a CDN as soon as the page opened: visitors who never pick a file
+      // no longer download it, and a file picked before that script finished
+      // loading is no longer silently skipped with no preview.
+      const pdfjsLib = await loadPdfjs();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      setPdfDocProxy(pdf);
+      setPageCount(pdf.numPages);
 
       setRawFile(f);
       setFileDetails({ name: f.name, size: formatSize(f.size) });
