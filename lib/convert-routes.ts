@@ -113,12 +113,11 @@ export async function pdfToOfficeRoute(
         } else if (format === "pptx") {
             output = await pagesToPptx(pages, baseName(file));
         } else {
-            // One row per line of text, one cell per run, across all pages.
-            const cells = await extractPageCells(bytes.slice()).catch(() => []);
-            const rows = cells.flatMap((page) =>
-                page.map((row) => row.map((cell) => cell.text)).filter((row) => row.some(Boolean))
-            );
-            output = await pagesToXlsx(pages, rows);
+            const pageRows = await extractPageCells(bytes.slice());
+            if (pageRows.length !== pages.length) {
+                throw new Error("The PDF text and page counts do not match.");
+            }
+            output = await pagesToXlsx(pages, pageRows);
         }
     } catch (error) {
         console.error(`PDF to ${format} failed:`, error);

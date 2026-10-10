@@ -7,6 +7,7 @@ import pptxgen from "pptxgenjs";
 import { pdfToPng } from "pdf-to-png-converter";
 import { withOwnPdfWorker } from "@/lib/pdf-worker-isolation";
 import type { TextLine } from "@/lib/pdf-layout";
+import type { TextCell } from "@/lib/pdf-text";
 
 /**
  * PDF -> Word / PowerPoint / Excel that look exactly like the PDF.
@@ -22,7 +23,8 @@ import type { TextLine } from "@/lib/pdf-layout";
  * artwork is rendered without its text, and each line of text is laid on top
  * as a real text box in the same place, font, size, weight and colour (see
  * lib/pdf-layout.ts), so the document looks the same and can still be edited.
- * The Excel file shows each page whole and adds a "Text" sheet with the text.
+ * Excel has an editable, position-based grid for each page and a separate
+ * exact-layout preview sheet.
  */
 
 /** 2.5 x 72 dpi = 180 dpi: sharp on screen and acceptable in print. */
@@ -206,19 +208,115 @@ function columnName(index: number): string {
     return name;
 }
 
-/**
- * One worksheet per page holding the page image, plus a "Text" sheet with the
- * extracted text laid out row by row (one row per line, one cell per run of
- * text), so the content can still be sorted, searched and copied.
- */
+interface EditableCell {
+    x: number;
+    text: string;
+    size: number;
+    end: number;
+}
+
+function editableCells(runs: TextCell[]): EditableCell[] {
+    const cells: EditableCell[] = [];
+
+    for (const run of runs) {
+        const previous = cells[cells.length - 1];
+        const size = run.size || previous?.size || 12;
+        const gap = previous ? run.x - previous.end : Number.POSITIVE_INFINITY;
+        const joinGap = Math.max(2, size * 1.3);
+
+        if (previous && gap <= joinGap) {
+            previous.text += (gap > size * 0.12 && !/\s$/.test(previous.text) ? " " : "") + run.text;
+            previous.end = Math.max(previous.end, run.x + run.width);
+            previous.size = Math.max(previous.size, size);
+        } else {
+            cells.push({ x: run.x, text: run.text, size, end: run.x + run.width });
+        }
+    }
+
+    return cells;
+}
+
+function pageColumnAnchors(rows: TextCell[][], widthPt: number): number[] {
+    const starts = rows.flatMap((row) => editableCells(row).map((cell) => cell.x)).sort((a, b) => a - b);
+    const anchors = [0];
+
+    for (const x of starts) {
+        const previous = anchors[anchors.length - 1];
+        if (x - previous > 8) anchors.push(x);
+    }
+
+    if (anchors.length > 16_384) {
+        throw new Error("This PDF page has too many columns to fit in an Excel worksheet.");
+    }
+
+    if (anchors.length > 1) {
+        anchors[anchors.length - 1] = Math.min(anchors[anchors.length - 1], widthPt - 1);
+    }
+    return anchors;
+}
+
+function nearestColumn(x: number, anchors: number[]): number {
+    let nearest = 0;
+    for (let i = 1; i < anchors.length; i++) {
+        if (Math.abs(anchors[i] - x) < Math.abs(anchors[nearest] - x)) nearest = i;
+    }
+    return nearest;
+}
+
+function worksheetColumns(anchors: number[], widthPt: number): string {
+    return `<cols>${anchors
+        .map((anchor, i) => {
+            const next = anchors[i + 1] ?? widthPt;
+            const width = Math.max(2, Math.min(255, (next - anchor) / 7));
+            return `<col min="${i + 1}" max="${i + 1}" width="${width.toFixed(2)}" customWidth="1"/>`;
+        })
+        .join("")}</cols>`;
+}
+
+function editableSheetXml(rows: TextCell[][], pageWidthPt: number): string {
+    const anchors = pageColumnAnchors(rows, pageWidthPt);
+    const sheetRows = rows
+        .map((runs, rowIndex) => {
+            const cells = editableCells(runs);
+            const occupied = new Set<number>();
+            const xmlCells = cells
+                .map((cell) => {
+                    let column = nearestColumn(cell.x, anchors);
+                    while (occupied.has(column)) column++;
+                    if (column >= 16_384) {
+                        throw new Error("This PDF page has too many text columns to fit in an Excel worksheet.");
+                    }
+                    occupied.add(column);
+                    return `<c r="${columnName(column)}${rowIndex + 1}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(cell.text)}</t></is></c>`;
+                })
+                .join("");
+            const nextY = rows[rowIndex + 1]?.[0]?.y;
+            const currentY = runs[0]?.y;
+            const fontSize = Math.max(8, ...runs.map((run) => run.size || 12));
+            const height = nextY === undefined || currentY === undefined
+                ? fontSize * 1.5
+                : Math.max(fontSize * 1.2, Math.min(409, currentY - nextY));
+            return `<row r="${rowIndex + 1}" ht="${height.toFixed(2)}" customHeight="1">${xmlCells}</row>`;
+        })
+        .join("");
+
+    const noText = rows.length === 0
+        ? `<row r="1"><c r="A1" t="inlineStr"><is><t>No selectable text was found on this page. Scanned pages need OCR before their contents can be edited.</t></is></c></row>`
+        : "";
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"/></sheetViews>${worksheetColumns(anchors, pageWidthPt)}<sheetData>${sheetRows || noText}</sheetData></worksheet>`;
+}
+
+/** An editable, position-based worksheet and an exact page preview per page. */
 export async function pagesToXlsx(
     pages: RenderedPage[],
-    textRows: string[][]
+    pageRows: TextCell[][][]
 ): Promise<Uint8Array> {
-    const zip = new JSZip();
-    const sheetCount = pages.length + 1;
+    if (pages.length !== pageRows.length) {
+        throw new Error("The PDF text and page counts do not match.");
+    }
 
-    const sheetNames = [...pages.map((_, i) => `Page ${i + 1}`), "Text"];
+    const zip = new JSZip();
+    const sheetNames = pages.flatMap((_, i) => [`Page ${i + 1}`, `Preview ${i + 1}`]);
 
     zip.file(
         "[Content_Types].xml",
@@ -255,46 +353,36 @@ export async function pagesToXlsx(
     );
 
     pages.forEach((page, i) => {
-        const n = i + 1;
+        const editableSheet = i * 2 + 1;
+        const previewSheet = editableSheet + 1;
+        const drawingId = i + 1;
         const cx = Math.round(page.widthPt * EMU_PER_PT);
         const cy = Math.round(page.heightPt * EMU_PER_PT);
         zip.file(
-            `xl/worksheets/sheet${n}.xml`,
+            `xl/worksheets/sheet${editableSheet}.xml`,
+            editableSheetXml(pageRows[i], page.widthPt)
+        );
+        zip.file(
+            `xl/worksheets/sheet${previewSheet}.xml`,
             // Print setup matching the page — its orientation, no margins, fitted
             // to one sheet of paper — so printing the sheet or converting it back
             // to PDF gives the page whole instead of cut across several.
             `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><sheetViews><sheetView workbookViewId="0" showGridLines="0"/></sheetViews><sheetData/><pageMargins left="0" right="0" top="0" bottom="0" header="0" footer="0"/><pageSetup paperSize="9" orientation="${page.widthPt > page.heightPt ? "landscape" : "portrait"}" fitToWidth="1" fitToHeight="1"/><drawing r:id="rId1"/></worksheet>`
         );
         zip.file(
-            `xl/worksheets/_rels/sheet${n}.xml.rels`,
-            `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing${n}.xml"/></Relationships>`
+            `xl/worksheets/_rels/sheet${previewSheet}.xml.rels`,
+            `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing${drawingId}.xml"/></Relationships>`
         );
         zip.file(
-            `xl/drawings/drawing${n}.xml`,
-            `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><xdr:oneCellAnchor><xdr:from><xdr:col>0</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>0</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from><xdr:ext cx="${cx}" cy="${cy}"/><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="${n + 1}" name="Page ${n}"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr><xdr:blipFill><a:blip r:embed="rId1"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill><xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic><xdr:clientData/></xdr:oneCellAnchor></xdr:wsDr>`
+            `xl/drawings/drawing${drawingId}.xml`,
+            `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><xdr:oneCellAnchor><xdr:from><xdr:col>0</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>0</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from><xdr:ext cx="${cx}" cy="${cy}"/><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="${drawingId + 1}" name="Page ${i + 1}"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr><xdr:blipFill><a:blip r:embed="rId1"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill><xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic><xdr:clientData/></xdr:oneCellAnchor></xdr:wsDr>`
         );
         zip.file(
-            `xl/drawings/_rels/drawing${n}.xml.rels`,
-            `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/page${n}.png"/></Relationships>`
+            `xl/drawings/_rels/drawing${drawingId}.xml.rels`,
+            `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/page${i + 1}.png"/></Relationships>`
         );
-        zip.file(`xl/media/page${n}.png`, page.png);
+        zip.file(`xl/media/page${i + 1}.png`, page.png);
     });
-
-    const rows = textRows
-        .map((row, r) => {
-            const cells = row
-                .map(
-                    (text, c) =>
-                        `<c r="${columnName(c)}${r + 1}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(text)}</t></is></c>`
-                )
-                .join("");
-            return `<row r="${r + 1}">${cells}</row>`;
-        })
-        .join("");
-    zip.file(
-        `xl/worksheets/sheet${sheetCount}.xml`,
-        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${rows}</sheetData></worksheet>`
-    );
 
     return zip.generateAsync({ type: "uint8array", compression: "DEFLATE" });
 }

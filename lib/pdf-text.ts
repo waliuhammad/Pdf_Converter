@@ -17,6 +17,9 @@ import { withOwnPdfWorker } from "./pdf-worker-isolation";
 /** One text run with the position pdf.js reported for it. */
 export interface TextCell {
     x: number;
+    y: number;
+    width: number;
+    size: number;
     text: string;
 }
 
@@ -81,10 +84,12 @@ async function readPages<T>(
                 // transform is [a, b, c, d, e, f]: e is x, f is the baseline y.
                 const x = item.transform?.[4] ?? 0;
                 const y = Math.round((item.transform?.[5] ?? 0) * 2) / 2;
+                const size = Math.hypot(item.transform?.[0] ?? 0, item.transform?.[1] ?? 0);
+                const width = item.width ?? 0;
 
                 const row = rows.get(y);
-                if (row) row.push({ x, text });
-                else rows.set(y, [{ x, text }]);
+                if (row) row.push({ x, y, width, size, text });
+                else rows.set(y, [{ x, y, width, size, text }]);
             }
 
             pages.push(shape(rows));

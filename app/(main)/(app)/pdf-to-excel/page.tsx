@@ -10,7 +10,7 @@ import { useCancellableRun, wasCancelled } from "@/hooks/useCancellableRun";
 export default function PdfToExcel(): JSX.Element {
   const [file, setFile] = useState<File | null>(null);
   const { begin, cancel } = useCancellableRun();
-  // The finished .xlsx: every page as it looks in the PDF, plus a Text sheet.
+  // The finished .xlsx has an editable sheet and exact-layout preview per page.
   const [result, setResult] = useState<Blob | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +86,7 @@ export default function PdfToExcel(): JSX.Element {
             PDF to Excel Converter
           </h1>
           <p className="text-[13px] leading-[18px] md:text-sm md:leading-normal text-muted max-w-[300px] md:max-w-xl mx-auto">
-            Turn your PDF into an Excel file that looks exactly like the original, with its text on a separate sheet.
+            Convert each page into an editable spreadsheet grid, with a separate exact-layout preview for reference.
           </p>
         </div>
 
@@ -95,7 +95,7 @@ export default function PdfToExcel(): JSX.Element {
             <UploadCard
               onFiles={handleFileUpload}
               title="Click to upload PDF document"
-              hint="Each page keeps its exact layout"
+              hint="Editable cells and an exact-layout preview per page"
             />
           </div>
         )}
@@ -130,7 +130,7 @@ export default function PdfToExcel(): JSX.Element {
             {result && !loading && (
               <div className="bg-[var(--background-secondary)] border border-card rounded-2xl p-3 md:p-4">
                 <span className="text-[11px] text-muted font-bold uppercase tracking-wider flex items-center gap-1.5">
-                  <FileSpreadsheet className="w-3.5 h-3.5 text-muted" /> Ready: one sheet per page, plus a Text sheet
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-muted" /> Ready: editable cells and an exact preview for each page
                 </span>
               </div>
             )}

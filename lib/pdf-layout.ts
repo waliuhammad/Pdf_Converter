@@ -260,18 +260,22 @@ export async function readTextLayout(bytes: Uint8Array): Promise<PageText[]> {
             const squash = (s: string) => s.replace(/\s+/g, "");
 
             for (const item of content.items) {
-                if (!("str" in item) || !item.str.trim()) continue;
+                if (!("str" in item) || item.str === "") continue;
 
                 // Find the drawing op this run came from to learn its colour.
                 const target = squash(item.str);
                 let color = "000000";
-                for (let k = cursor; k < drawn.length; k++) {
-                    const op = squash(drawn[k].text);
-                    if (op && (op.includes(target) || target.includes(op))) {
-                        color = drawn[k].color;
-                        cursor = k;
-                        break;
+                if (target) {
+                    for (let k = cursor; k < drawn.length; k++) {
+                        const op = squash(drawn[k].text);
+                        if (op && (op.includes(target) || target.includes(op))) {
+                            color = drawn[k].color;
+                            cursor = k;
+                            break;
+                        }
                     }
+                } else if (runs.length > 0) {
+                    color = runs[runs.length - 1].color;
                 }
 
                 const [a, b, , d, e, f] = item.transform as number[];
@@ -314,25 +318,25 @@ export async function readTextLayout(bytes: Uint8Array): Promise<PageText[]> {
  * stay in their own positions.
  */
 function groupIntoLines(runs: Run[], pageHeight: number): TextLine[] {
-    const sorted = [...runs].sort((r, s) => s.baseline - r.baseline || r.x - s.x);
+    const sorted = [...runs].sort((r, s) => Math.round(s.baseline) - Math.round(r.baseline) || r.x - s.x);
     const lines: (Run & { end: number })[] = [];
 
     for (const run of sorted) {
         const last = lines[lines.length - 1];
         const sameLine =
             last &&
-            Math.abs(last.baseline - run.baseline) < run.size * 0.3 &&
+            Math.abs(last.baseline - run.baseline) < run.size * 0.4 &&
             last.font === run.font &&
             last.bold === run.bold &&
             last.italic === run.italic &&
             last.color === run.color &&
-            Math.abs(last.size - run.size) < 0.5 &&
-            run.x - last.end < run.size * 1.2 &&
+            Math.abs(last.size - run.size) < 1.0 &&
+            run.x - last.end < run.size * 1.5 &&
             run.x >= last.x;
 
         if (sameLine) {
             const gap = run.x - last.end;
-            const needsSpace = gap > run.size * 0.15 && !/\s$/.test(last.text) && !/^\s/.test(run.text);
+            const needsSpace = gap > run.size * 999 && !/\s$/.test(last.text) && !/^\s/.test(run.text);
             last.text += (needsSpace ? " " : "") + run.text;
             last.end = Math.max(last.end, run.x + run.width);
             last.width = last.end - last.x;
