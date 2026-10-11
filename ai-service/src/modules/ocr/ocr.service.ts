@@ -5,6 +5,7 @@ import {
 } from "@google/genai";
 import { env } from "../../config/env";
 import { OCRResult } from "./ocr.types";
+import { withModelFallback } from "../generator";
 
 const ai = new GoogleGenAI({
   apiKey: env.GOOGLE_API_KEY,
@@ -18,8 +19,9 @@ export async function extractTextWithOCR(
     file: filePath,
   });
 
-  const response = await ai.models.generateContent({
-    model: env.GEMINI_MODEL,
+  // The upload is done once; only the generate call moves between models.
+  const response = await withModelFallback((model) => ai.models.generateContent({
+    model,
 
     contents: createUserContent([
       createPartFromUri(uploadedFile.uri!, uploadedFile.mimeType!),
@@ -44,7 +46,7 @@ Rules:
 - Return only the extracted text.
 `,
     ]),
-  });
+  }));
 const extractedText = response.text ?? "";
 
 return {
