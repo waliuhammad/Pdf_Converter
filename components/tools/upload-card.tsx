@@ -4,24 +4,15 @@ import { useRef, useState } from "react";
 import { Upload, X, FileText, ShieldCheck } from "lucide-react";
 
 /**
- * The one upload area every tool uses.
- *
- * Each tool page had grown its own: padding ran from p-6 to p-16, corners from
- * rounded-xl to rounded-3xl, and seventeen of them hardcoded their own dark
- * hex values, so no two pages looked alike and none followed the theme. This
- * takes its colours from the design tokens, which means it also follows the
- * light/dark switch without a `dark:` variant for every rule.
- *
- * The width is capped here rather than left to the page, because the tool
- * pages run from max-w-xl to max-w-7xl and the box came out a different size
- * on every one of them.
+ * Standardized upload area used across all PDF tools.
+ * Provides clean drag-and-drop, prominent primary button, and responsive layout.
  */
 export function UploadCard({
     onFiles,
     accept = "application/pdf",
     multiple = false,
-    title = "Drag & drop your PDF here",
-    hint = "or click to browse",
+    title = "Drag & drop your files here",
+    hint = "or click to browse from your device",
     disabled = false,
 }: {
     onFiles: (files: FileList | null) => void;
@@ -60,12 +51,13 @@ export function UploadCard({
                 setDragging(false);
                 if (!disabled) onFiles(e.dataTransfer.files);
             }}
-            className={`mx-auto w-full max-w-[624px] rounded-3xl border p-8 sm:p-12 text-center transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${disabled
-                    ? "cursor-not-allowed opacity-60 border-card bg-[var(--background-secondary)]"
+            className={`group mx-auto w-full max-w-[640px] rounded-2xl border-2 border-dashed p-8 sm:p-12 text-center transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                disabled
+                    ? "cursor-not-allowed opacity-60 border-border bg-muted/40"
                     : dragging
-                        ? "cursor-pointer border-[var(--primary)] bg-primary-tint"
-                        : "cursor-pointer border-card bg-[var(--background-secondary)] hover:border-[var(--primary)]"
-                }`}
+                        ? "cursor-pointer border-primary bg-primary/10 shadow-md scale-[1.01]"
+                        : "cursor-pointer border-border/80 bg-card hover:border-primary/60 hover:bg-muted/30 shadow-xs hover:shadow-sm"
+            }`}
         >
             <input
                 ref={inputRef}
@@ -80,26 +72,31 @@ export function UploadCard({
                 }}
             />
 
-            <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-2xl border border-card bg-card shadow-sm">
-                <Upload className="text-fg" size={20} />
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-primary/10 dark:bg-primary/20 text-primary dark:text-blue-400 shadow-xs transition-transform duration-200 group-hover:scale-105">
+                <Upload size={24} />
             </div>
 
-            <p className="text-[var(--primary)] font-semibold text-sm">{title}</p>
-            <p className="text-muted text-xs mt-1">{hint}</p>
+            <p className="text-base sm:text-lg font-bold text-foreground">{title}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1.5">{hint}</p>
+
+            <div className="mt-5">
+                <span className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-xs transition-all group-hover:bg-primary/90">
+                    <Upload size={16} />
+                    Choose Files
+                </span>
+            </div>
         </div>
     );
 }
 
 /**
- * The reassurance line every tool ends with. It sits below the upload box
- * rather than inside it — a few tools used to tuck it under a divider within
- * the box, which made those boxes taller than the rest.
+ * Reassurance security note shown below upload zones.
  */
 export function SecureNote() {
     return (
-        <div className="pt-5 sm:pt-6 flex flex-wrap items-center justify-center gap-1.5 text-center text-muted text-[11px] sm:text-xs">
-            <ShieldCheck className="w-4 h-4 shrink-0" />
-            <span>Secure processing • Files processed privately</span>
+        <div className="pt-6 flex flex-wrap items-center justify-center gap-2 text-center text-muted-foreground text-xs font-medium">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span>256-bit SSL encryption • Files processed securely and deleted automatically</span>
         </div>
     );
 }
@@ -115,20 +112,20 @@ export function FileChip({
     onRemove?: () => void;
 }) {
     return (
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-card border border-card">
-            <div className="w-9 h-9 rounded-lg bg-primary-tint flex items-center justify-center shrink-0">
-                <FileText size={16} className="text-[var(--primary)]" />
+        <div className="flex items-center gap-3 p-3.5 rounded-xl bg-card border border-border shadow-xs">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary dark:bg-primary/20 dark:text-blue-400 flex items-center justify-center shrink-0">
+                <FileText size={18} />
             </div>
             <div className="flex-1 min-w-0 text-left">
-                <p className="text-fg text-sm truncate">{name}</p>
-                {size && <p className="text-muted text-xs">{size}</p>}
+                <p className="text-foreground text-sm font-semibold truncate">{name}</p>
+                {size && <p className="text-muted-foreground text-xs mt-0.5">{size}</p>}
             </div>
             {onRemove && (
                 <button
                     type="button"
                     onClick={onRemove}
                     aria-label={`Remove ${name}`}
-                    className="text-muted hover:text-[var(--primary)] shrink-0"
+                    className="p-1.5 rounded-lg text-muted-foreground hover:text-red-600 dark:hover:text-red-400 hover:bg-muted transition-colors shrink-0"
                 >
                     <X size={16} />
                 </button>

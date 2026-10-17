@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { isToolPath } from "@/lib/tool-paths";
 import { useState, useEffect } from "react";
 import { Menu, X, FileText } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 /** Root-relative, not bare hashes. This navbar renders on the content pages
  *  (/terms, /privacy, /about, …) as well as the landing page, and a bare
@@ -155,24 +156,21 @@ export function Navbar() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 bg-background px-3 py-1.5 sm:px-5 sm:py-2">
-      <div className="mx-auto flex h-14 w-full max-w-none items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card px-4 shadow-sm sm:h-16 sm:px-7 lg:px-9">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-card/90 dark:bg-card/90 backdrop-blur-md">
+      <div className="mx-auto flex h-14 sm:h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         {/* Logo */}
-        {/* min-w-0 + truncate: the tagline is the one piece of the bar that can
-            grow, so it shortens rather than pushing the actions off a 320px
-            screen. */}
-        <Link href="/" className="flex min-w-0 items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:h-11 sm:w-11">
-            <FileText size={21} strokeWidth={2.4} />
+        <Link href="/" className="flex shrink-0 items-center gap-2.5 transition-opacity hover:opacity-90">
+          <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-primary/10 text-primary dark:bg-primary/20 dark:text-blue-400">
+            <FileText size={20} strokeWidth={2.4} />
           </div>
 
-          <div className="min-w-0">
-            <h2 className="text-lg font-semibold tracking-tight text-fg sm:text-xl">PDF AI</h2>
+          <div className="flex items-center gap-1.5">
+            <span className="text-lg sm:text-xl font-bold tracking-tight text-foreground">PDF AI</span>
           </div>
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden items-center gap-1 rounded-full border border-border/70 bg-background-secondary p-1 lg:flex">
+        <nav className="hidden items-center gap-1 rounded-full border border-border/80 bg-background/80 p-1 lg:flex">
           {navLinks.map((item) => {
             const active = isActive(item);
 
@@ -181,10 +179,10 @@ export function Navbar() {
                 key={item.name}
                 href={item.href}
                 onClick={(e) => handleNavClick(e, item.href)}
-                className={`rounded-full px-6 py-2.5 text-[15px] font-medium transition ${
+                className={`rounded-full px-4.5 py-1.5 text-sm font-medium transition-all ${
                   active
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted hover:bg-primary/10 hover:text-primary"
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
               >
                 {item.name}
@@ -194,85 +192,85 @@ export function Navbar() {
         </nav>
 
         {/* Desktop Actions */}
-        <div className="hidden items-center gap-4 lg:flex">
+        <div className="hidden items-center gap-3 lg:flex">
+          <ThemeToggle />
+
           <Link
             href="/login"
-            className="px-1 py-2 text-base font-semibold text-fg transition hover:text-primary"
+            className="px-3 py-2 text-sm font-semibold text-foreground transition-colors hover:text-primary"
           >
             Login
           </Link>
 
           <Link
             href="/register"
-            className="rounded-xl bg-primary px-6 py-3 text-base font-semibold text-primary-foreground transition hover:bg-primary/90"
+            className="rounded-xl bg-primary px-4.5 py-2 text-sm font-semibold text-primary-foreground shadow-xs transition-all hover:bg-primary/90 hover:shadow-sm active:scale-98"
           >
             Start free
           </Link>
         </div>
 
-        {/* Mobile menu button */}
-        <div className="flex items-center gap-1 lg:hidden">
+        {/* Mobile controls */}
+        <div className="flex items-center gap-2 lg:hidden">
+          <ThemeToggle />
+
           <button
             onClick={() => setOpen(!open)}
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
-            // p-2.5 around a 24px icon gives a 44px target, the minimum
-            // comfortable tap size.
-            className="rounded-lg p-2.5"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-card text-foreground"
           >
-            {open ? <X size={24} /> : <Menu size={24} />}
+            {open ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       </div>
 
       {/* Mobile Menu */}
       {open && (
-          <div
-            className="border-t border-border bg-background lg:hidden animate-menu-in"
-          >
-            <div className="space-y-1 px-4 py-4 sm:space-y-2 sm:px-6 sm:py-6">
-              {navLinks.map((item) => {
-                const active = isActive(item);
+        <div className="border-t border-border bg-card lg:hidden animate-menu-in">
+          <div className="space-y-1 px-4 py-4 sm:px-6">
+            {navLinks.map((item) => {
+              const active = isActive(item);
 
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    onClick={(e) => {
-                      setOpen(false);
-                      handleNavClick(e, item.href);
-                    }}
-                    className={`block rounded-xl px-4 py-3 transition ${
-                      active
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted hover:bg-primary/10 hover:text-primary"
-                    }`}
-                  >
-                    {item.name}
-                  </Link>
-                );
-              })}
-
-              <div className="mt-4 flex flex-col gap-3">
+              return (
                 <Link
-                  href="/login"
-                  onClick={() => setOpen(false)}
-                  className="rounded-xl border border-border py-3 text-center font-medium transition hover:border-primary hover:text-primary"
+                  key={item.name}
+                  href={item.href}
+                  onClick={(e) => {
+                    setOpen(false);
+                    handleNavClick(e, item.href);
+                  }}
+                  className={`block rounded-xl px-4 py-2.5 text-sm font-medium transition ${
+                    active
+                      ? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-blue-400 font-semibold"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
                 >
-                  Login
+                  {item.name}
                 </Link>
+              );
+            })}
 
-                <Link
-                  href="/register"
-                  onClick={() => setOpen(false)}
-                  className="rounded-xl bg-primary py-3 text-center font-semibold text-primary-foreground transition hover:bg-primary/90"
-                >
-                  Start free
-                </Link>
-              </div>
+            <div className="mt-4 flex flex-col gap-2 pt-2 border-t border-border">
+              <Link
+                href="/login"
+                onClick={() => setOpen(false)}
+                className="rounded-xl border border-border py-2.5 text-center text-sm font-medium text-foreground transition hover:border-primary hover:text-primary"
+              >
+                Login
+              </Link>
+
+              <Link
+                href="/register"
+                onClick={() => setOpen(false)}
+                className="rounded-xl bg-primary py-2.5 text-center text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+              >
+                Start free
+              </Link>
             </div>
           </div>
-        )}
+        </div>
+      )}
     </header>
   );
 }

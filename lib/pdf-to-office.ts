@@ -8,6 +8,7 @@ import { pdfToPng } from "pdf-to-png-converter";
 import { withOwnPdfWorker } from "@/lib/pdf-worker-isolation";
 import type { TextLine } from "@/lib/pdf-layout";
 import type { TextCell } from "@/lib/pdf-text";
+import type { HLine, VLine } from "@/lib/pdf-graphics";
 
 /**
  * PDF -> Word / PowerPoint / Excel that look exactly like the PDF.
@@ -199,6 +200,18 @@ export async function pagesToPptx(pages: RenderedPage[], title: string): Promise
 
 // ---------------------------------------------------------------- Excel
 
+export interface XlsxPage {
+    widthPt: number;
+    heightPt: number;
+    /** Text runs grouped by row (lib/pdf-text.ts). */
+    rows: TextCell[][];
+    /** Table lines drawn on the page (lib/pdf-graphics.ts). */
+    hlines: HLine[];
+    vlines: VLine[];
+    /** Styled text lines, used only to look up font / bold / italic / colour. */
+    lines?: TextLine[];
+}
+
 /** "A", "B", … "Z", "AA" — the column letters for a 0-based index. */
 function columnName(index: number): string {
     let name = "";
@@ -208,6 +221,442 @@ function columnName(index: number): string {
     return name;
 }
 
+// ---- styles: fonts, borders, alignment ------------------------------------
+
+interface CellFormat {
+    size: number;
+    font?: string;
+    bold?: boolean;
+    italic?: boolean;
+    color?: string;
+    h?: "left" | "center" | "right";
+    wrap?: boolean;
+    /** Border bitmask: 1 left, 2 right, 4 top, 8 bottom. */
+    border?: number;
+}
+
+function createStyleBook() {
+    const fonts: string[] = ['<font><sz val="11"/><name val="Calibri"/><family val="2"/></font>'];
+    const fontIndex = new Map<string, number>();
+    const borders: number[] = [0];
+    const formats: string[] = ['<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'];
+    const formatIndex = new Map<string, number>();
+
+    const fontId = (f: CellFormat): number => {
+        const size = Math.min(72, Math.max(6, Math.round(f.size * 2) / 2));
+        const name = f.font || "Calibri";
+        const color = f.color && /^[0-9a-fA-F]{6}$/.test(f.color) ? f.color.toUpperCase() : "000000";
+        const key = `${name}|${size}|${f.bold ? 1 : 0}|${f.italic ? 1 : 0}|${color}`;
+        let id = fontIndex.get(key);
+        if (id === undefined) {
+            fonts.push(
+                `<font>${f.bold ? "<b/>" : ""}${f.italic ? "<i/>" : ""}<sz val="${size}"/><color rgb="FF${color}"/><name val="${xmlEscape(name)}"/><family val="2"/></font>`
+            );
+            id = fonts.length - 1;
+            fontIndex.set(key, id);
+        }
+        return id;
+    };
+
+    const side = (tag: string, on: boolean) =>
+        on ? `<${tag} style="thin"><color auto="1"/></${tag}>` : `<${tag}/>`;
+
+    return {
+        format(f: CellFormat): number {
+            const mask = f.border ?? 0;
+            let borderId = borders.indexOf(mask);
+            if (borderId < 0) {
+                borders.push(mask);
+                borderId = borders.length - 1;
+            }
+            const font = fontId(f);
+            const key = `${font}|${borderId}|${f.h ?? ""}|${f.wrap ? 1 : 0}`;
+            let id = formatIndex.get(key);
+            if (id === undefined) {
+                formats.push(
+                    `<xf numFmtId="0" fontId="${font}" fillId="0" borderId="${borderId}" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment${f.h ? ` horizontal="${f.h}"` : ""} vertical="center"${f.wrap ? ' wrapText="1"' : ""}/></xf>`
+                );
+                id = formats.length - 1;
+                formatIndex.set(key, id);
+            }
+            return id;
+        },
+        xml(): string {
+            const borderXml = borders
+                .map(
+                    (m) =>
+                        `<border>${side("left", !!(m & 1))}${side("right", !!(m & 2))}${side("top", !!(m & 4))}${side("bottom", !!(m & 8))}<diagonal/></border>`
+                )
+                .join("");
+            return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="${fonts.length}">${fonts.join("")}</fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="${borders.length}">${borderXml}</borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="${formats.length}">${formats.join("")}</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+        },
+    };
+}
+
+type StyleBook = ReturnType<typeof createStyleBook>;
+
+// ---- helpers --------------------------------------------------------------
+
+/** Plain numbers become real Excel numbers; IDs with leading zeros stay text. */
+const NUMBER_PATTERN = /^-?(?:0|[1-9]\d{0,2}(?:,\d{3})+|[1-9]\d*)(?:\.\d+)?$|^-?0\.\d+$/;
+
+function asNumber(text: string): string | null {
+    const trimmed = text.trim();
+    if (!NUMBER_PATTERN.test(trimmed)) return null;
+    const value = trimmed.replace(/,/g, "");
+    if (value.replace(/[-.]/g, "").length > 15) return null;
+    return value;
+}
+
+const GRID_TOLERANCE = 1.5;
+
+function average(values: number[]): number {
+    return values.reduce((a, b) => a + b, 0) / values.length;
+}
+
+/** Merges nearly equal coordinates into one grid line. */
+function cluster(values: number[]): number[] {
+    const sorted = [...values].sort((a, b) => a - b);
+    const out: number[] = [];
+    let group: number[] = [];
+    for (const v of sorted) {
+        if (group.length && v - group[group.length - 1] > GRID_TOLERANCE) {
+            out.push(average(group));
+            group = [];
+        }
+        group.push(v);
+    }
+    if (group.length) out.push(average(group));
+    return out;
+}
+
+function nearestIndex(values: number[], v: number): number {
+    let best = 0;
+    for (let i = 1; i < values.length; i++) {
+        if (Math.abs(values[i] - v) < Math.abs(values[best] - v)) best = i;
+    }
+    return best;
+}
+
+function unionIntervals(intervals: [number, number][]): [number, number][] {
+    const sorted = [...intervals].sort((a, b) => a[0] - b[0]);
+    const out: [number, number][] = [];
+    for (const [a, b] of sorted) {
+        const last = out[out.length - 1];
+        if (last && a <= last[1] + GRID_TOLERANCE) last[1] = Math.max(last[1], b);
+        else out.push([a, b]);
+    }
+    return out;
+}
+
+const covers = (intervals: [number, number][], v: number): boolean =>
+    intervals.some(([a, b]) => v >= a - 1 && v <= b + 1);
+
+interface RunPiece {
+    runs: TextCell[];
+}
+
+/** Text runs → lines (top to bottom), each line left to right. */
+function groupLines(runs: TextCell[]): TextCell[][] {
+    const centre = (r: TextCell) => r.y + (r.size || 12) * 0.35;
+    const sorted = [...runs].sort((a, b) => centre(b) - centre(a));
+    const lines: TextCell[][] = [];
+    for (const run of sorted) {
+        const line = lines[lines.length - 1];
+        if (line && Math.abs(centre(line[0]) - centre(run)) <= (run.size || 12) * 0.5) line.push(run);
+        else lines.push([run]);
+    }
+    return lines.map((line) => line.sort((a, b) => a.x - b.x));
+}
+
+function joinLine(line: TextCell[]): string {
+    let text = "";
+    let end = Number.NEGATIVE_INFINITY;
+    for (const run of line) {
+        const size = run.size || 12;
+        if (text && run.x - end > size * 0.12 && !/\s$/.test(text)) text += " ";
+        text += run.text;
+        end = run.x + run.width;
+    }
+    return text;
+}
+
+/** Style of the PDF text line a run belongs to (font, bold, italic, colour). */
+function styleFor(page: XlsxPage, run: TextCell): Partial<CellFormat> {
+    const baselineFromTop = page.heightPt - run.y;
+    for (const line of page.lines ?? []) {
+        if (
+            run.x >= line.x - 1 &&
+            run.x <= line.x + line.width + 1 &&
+            Math.abs(baselineFromTop - (line.top + line.size)) <= line.size * 0.8
+        ) {
+            return { font: line.font, bold: line.bold, italic: line.italic, color: line.color };
+        }
+    }
+    return {};
+}
+
+function cellXml(ref: string, style: number, value?: { number: boolean; text: string }): string {
+    if (!value) return `<c r="${ref}" s="${style}"/>`;
+    return value.number
+        ? `<c r="${ref}" s="${style}"><v>${value.text}</v></c>`
+        : `<c r="${ref}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(value.text)}</t></is></c>`;
+}
+
+interface OutRow {
+    height: number;
+    cells: Map<number, string>;
+}
+
+// ---- table pages: the grid comes from the lines drawn in the PDF ---------
+
+interface Region {
+    r: number;
+    c: number;
+    r2: number;
+    c2: number;
+}
+
+function tableSheetXml(page: XlsxPage, styles: StyleBook): string | null {
+    const hlines = page.hlines.filter((l) => l.x2 - l.x1 >= 2);
+    const vlines = page.vlines.filter((l) => l.y2 - l.y1 >= 2);
+    if (hlines.length < 2 || vlines.length < 2) return null;
+
+    const xs = cluster(vlines.map((l) => l.x));
+    const ys = cluster(hlines.map((l) => l.y)).reverse(); // top → bottom
+    const cols = xs.length - 1;
+    const rows = ys.length - 1;
+    if (cols < 1 || rows < 1 || rows * cols > 150_000) return null;
+
+    // Which grid boundaries have a line drawn along them.
+    const vEdges: [number, number][][] = xs.map(() => []);
+    for (const l of vlines) {
+        const k = nearestIndex(xs, l.x);
+        if (Math.abs(xs[k] - l.x) <= 3) vEdges[k].push([l.y1, l.y2]);
+    }
+    const hEdges: [number, number][][] = ys.map(() => []);
+    for (const l of hlines) {
+        const k = nearestIndex(ys, l.y);
+        if (Math.abs(ys[k] - l.y) <= 3) hEdges[k].push([l.x1, l.x2]);
+    }
+    const vMerged = vEdges.map(unionIntervals);
+    const hMerged = hEdges.map(unionIntervals);
+    const midY = (r: number) => (ys[r] + ys[r + 1]) / 2;
+    const midX = (c: number) => (xs[c] + xs[c + 1]) / 2;
+    /** Line on the vertical boundary k (left edge of column k) across row r. */
+    const vEdge = (k: number, r: number) => covers(vMerged[k], midY(r));
+    /** Line on the horizontal boundary k (top edge of row k) across column c. */
+    const hEdge = (k: number, c: number) => covers(hMerged[k], midX(c));
+
+    // Merge cells that have no line between them (titles spanning the table, etc.).
+    const claimed = Array.from({ length: rows }, () => new Array<boolean>(cols).fill(false));
+    const owner = Array.from({ length: rows }, () => new Array<number>(cols).fill(-1));
+    const regions: Region[] = [];
+
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            if (claimed[r][c]) continue;
+            let c2 = c;
+            while (c2 + 1 < cols && !vEdge(c2 + 1, r)) c2++;
+            let r2 = r;
+            while (r2 + 1 < rows) {
+                let open = true;
+                for (let cc = c; cc <= c2 && open; cc++) {
+                    if (hEdge(r2 + 1, cc) || claimed[r2 + 1][cc]) open = false;
+                }
+                for (let k = c + 1; k <= c2 && open; k++) {
+                    if (vEdge(k, r2 + 1)) open = false;
+                }
+                if (!open) break;
+                r2++;
+            }
+            // Only merge boxes that are really closed on all four sides; empty
+            // space between tables stays as plain cells.
+            const enclosed = vEdge(c, r) && vEdge(c2 + 1, r) && hEdge(r, c) && hEdge(r2 + 1, c);
+            if (!enclosed) {
+                c2 = c;
+                r2 = r;
+            }
+            for (let rr = r; rr <= r2; rr++) {
+                for (let cc = c; cc <= c2; cc++) {
+                    claimed[rr][cc] = true;
+                    owner[rr][cc] = regions.length;
+                }
+            }
+            regions.push({ r, c, r2, c2 });
+        }
+    }
+
+    // Put every text run into the cell it sits in.
+    const colOf = (x: number) => {
+        let c = 0;
+        for (let i = 0; i < cols; i++) if (xs[i] <= x) c = i;
+        return c;
+    };
+    const rowOf = (y: number) => {
+        let r = 0;
+        for (let i = 0; i < rows; i++) if (ys[i] >= y) r = i;
+        return r;
+    };
+
+    const byRegion = new Map<number, RunPiece>();
+    const above: TextCell[] = [];
+    const below: TextCell[] = [];
+    for (const run of page.rows.flat()) {
+        const size = run.size || 12;
+        const cy = run.y + size * 0.35;
+        const cx = run.x + run.width / 2;
+        if (cy > ys[0] + GRID_TOLERANCE) {
+            above.push(run);
+        } else if (cy < ys[rows] - GRID_TOLERANCE) {
+            below.push(run);
+        } else {
+            const id = owner[rowOf(cy)][colOf(cx)];
+            const piece = byRegion.get(id) ?? { runs: [] };
+            piece.runs.push(run);
+            byRegion.set(id, piece);
+        }
+    }
+
+    // Build the sheet: text above the table, the table, text below it.
+    const out = new Map<number, OutRow>();
+    let rowNo = 0;
+    const addRow = (height: number): OutRow => {
+        rowNo++;
+        const row: OutRow = { height: Math.min(409, Math.max(2, height)), cells: new Map() };
+        out.set(rowNo, row);
+        return row;
+    };
+    let maxColumn = cols - 1;
+    const merges: string[] = [];
+
+    const freeLines = (runs: TextCell[], previous?: { y: number; size: number }) => {
+        let last = previous;
+        for (const line of groupLines(runs)) {
+            const size = Math.max(8, ...line.map((r) => r.size || 12));
+            const y = line[0].y;
+            if (last) {
+                const extra = last.y - y - size * 1.4;
+                if (extra > 4) addRow(extra);
+            }
+            const row = addRow(size * 1.4);
+            const used = new Set<number>();
+            // Split the line into cells at wide gaps.
+            let cell: TextCell[] = [];
+            const flush = () => {
+                if (!cell.length) return;
+                let col = colOf(cell[0].x);
+                while (used.has(col)) col++;
+                used.add(col);
+                maxColumn = Math.max(maxColumn, col);
+                row.cells.set(
+                    col,
+                    cellXml(
+                        `${columnName(col)}${rowNo}`,
+                        styles.format({ size, h: "left", ...styleFor(page, cell[0]) }),
+                        { number: false, text: joinLine(cell) }
+                    )
+                );
+                cell = [];
+            };
+            for (const run of line) {
+                const prev = cell[cell.length - 1];
+                if (prev && run.x - (prev.x + prev.width) > size * 0.7) flush();
+                cell.push(run);
+            }
+            flush();
+            last = { y, size };
+        }
+        return last;
+    };
+
+    const lastAbove = freeLines(above);
+    if (lastAbove) {
+        const gap = lastAbove.y - lastAbove.size * 0.25 - ys[0];
+        if (gap > 4) addRow(gap);
+    }
+
+    const tableStart = rowNo + 1;
+    for (let r = 0; r < rows; r++) addRow(ys[r] - ys[r + 1]);
+
+    regions.forEach((region, id) => {
+        const { r, c, r2, c2 } = region;
+        const left = vEdge(c, r);
+        const right = vEdge(c2 + 1, r);
+        const top = hEdge(r, c);
+        const bottom = hEdge(r2 + 1, c);
+
+        // Text of the region.
+        const runs = byRegion.get(id)?.runs ?? [];
+        let value: { number: boolean; text: string } | undefined;
+        let format: Partial<CellFormat> = { size: 11 };
+        if (runs.length) {
+            const lines = groupLines(runs);
+            const text = lines.map(joinLine).join("\n");
+            const number = lines.length === 1 ? asNumber(text) : null;
+            value = number !== null ? { number: true, text: number } : { number: false, text };
+
+            const minX = Math.min(...runs.map((run) => run.x));
+            const maxX = Math.max(...runs.map((run) => run.x + run.width));
+            const leftGap = minX - xs[c];
+            const rightGap = xs[c2 + 1] - maxX;
+            const slack = Math.max(3, (xs[c2 + 1] - xs[c]) * 0.12);
+            const h: CellFormat["h"] =
+                Math.abs(leftGap - rightGap) <= slack ? "center" : rightGap < leftGap * 0.5 ? "right" : "left";
+            const biggest = runs.reduce((a, b) => ((b.size || 12) > (a.size || 12) ? b : a));
+            format = { size: biggest.size || 12, h, wrap: lines.length > 1, ...styleFor(page, biggest) };
+        }
+
+        for (let rr = r; rr <= r2; rr++) {
+            for (let cc = c; cc <= c2; cc++) {
+                const border =
+                    (cc === c && left ? 1 : 0) |
+                    (cc === c2 && right ? 2 : 0) |
+                    (rr === r && top ? 4 : 0) |
+                    (rr === r2 && bottom ? 8 : 0);
+                const first = rr === r && cc === c;
+                if (!border && !(first && value)) continue;
+                const style = styles.format({ size: 11, ...format, border });
+                out
+                    .get(tableStart + rr)!
+                    .cells.set(cc, cellXml(`${columnName(cc)}${tableStart + rr}`, style, first ? value : undefined));
+            }
+        }
+        if (r2 > r || c2 > c) {
+            merges.push(`${columnName(c)}${tableStart + r}:${columnName(c2)}${tableStart + r2}`);
+        }
+    });
+
+    const firstBelow = groupLines(below)[0];
+    if (firstBelow) {
+        const size = Math.max(8, ...firstBelow.map((r) => r.size || 12));
+        const gap = ys[rows] - (firstBelow[0].y + size * 0.75);
+        if (gap > 4) addRow(gap);
+    }
+    freeLines(below);
+
+    // Column widths from the PDF's column positions (Excel: ~7 px per character).
+    const colCount = maxColumn + 1;
+    const colsXml = Array.from({ length: colCount }, (_, i) => {
+        const pt = i < cols ? xs[i + 1] - xs[i] : 60;
+        const width = Math.min(255, Math.max(1, (pt * (4 / 3) - 5) / 7));
+        return `<col min="${i + 1}" max="${i + 1}" width="${width.toFixed(2)}" customWidth="1"/>`;
+    }).join("");
+
+    const sheetRows = [...out.entries()]
+        .map(([n, row]) => {
+            const cells = [...row.cells.entries()].sort((a, b) => a[0] - b[0]).map(([, xml]) => xml).join("");
+            return `<row r="${n}" ht="${row.height.toFixed(2)}" customHeight="1">${cells}</row>`;
+        })
+        .join("");
+
+    const landscape = page.widthPt > page.heightPt;
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="A1:${columnName(maxColumn)}${rowNo}"/><sheetViews><sheetView workbookViewId="0" showGridLines="0"/></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols>${colsXml}</cols><sheetData>${sheetRows}</sheetData>${merges.length ? `<mergeCells count="${merges.length}">${merges.map((m) => `<mergeCell ref="${m}"/>`).join("")}</mergeCells>` : ""
+        }<pageMargins left="0.4" right="0.4" top="0.4" bottom="0.4" header="0.2" footer="0.2"/><pageSetup paperSize="9" orientation="${landscape ? "landscape" : "portrait"}" fitToWidth="1" fitToHeight="0"/></worksheet>`;
+}
+
+// ---- pages without table lines: position-based text grid ------------------
+
 interface EditableCell {
     x: number;
     text: string;
@@ -215,16 +664,19 @@ interface EditableCell {
     end: number;
 }
 
+interface SheetLine {
+    cells: EditableCell[];
+    y: number;
+    size: number;
+}
+
 function editableCells(runs: TextCell[]): EditableCell[] {
     const cells: EditableCell[] = [];
-
-    for (const run of runs) {
+    for (const run of [...runs].sort((a, b) => a.x - b.x)) {
         const previous = cells[cells.length - 1];
         const size = run.size || previous?.size || 12;
         const gap = previous ? run.x - previous.end : Number.POSITIVE_INFINITY;
-        const joinGap = Math.max(2, size * 1.3);
-
-        if (previous && gap <= joinGap) {
+        if (previous && gap <= Math.max(2, size * 0.7)) {
             previous.text += (gap > size * 0.12 && !/\s$/.test(previous.text) ? " " : "") + run.text;
             previous.end = Math.max(previous.end, run.x + run.width);
             previous.size = Math.max(previous.size, size);
@@ -232,103 +684,126 @@ function editableCells(runs: TextCell[]): EditableCell[] {
             cells.push({ x: run.x, text: run.text, size, end: run.x + run.width });
         }
     }
-
     return cells;
 }
 
-function pageColumnAnchors(rows: TextCell[][], widthPt: number): number[] {
-    const starts = rows.flatMap((row) => editableCells(row).map((cell) => cell.x)).sort((a, b) => a - b);
-    const anchors = [0];
-
-    for (const x of starts) {
-        const previous = anchors[anchors.length - 1];
-        if (x - previous > 8) anchors.push(x);
+function columnStarts(lines: SheetLine[]): number[] {
+    const tableRows = lines.filter((line) => line.cells.length > 1);
+    const source = tableRows.length > 0 ? tableRows : lines;
+    const spans = source
+        .flatMap((line) => line.cells.map((cell) => [cell.x, cell.end] as const))
+        .sort((a, b) => a[0] - b[0]);
+    const starts: number[] = [];
+    let end = Number.NEGATIVE_INFINITY;
+    for (const [from, to] of spans) {
+        if (from > end + 4) starts.push(from);
+        end = Math.max(end, to);
     }
-
-    if (anchors.length > 16_384) {
+    if (starts.length === 0) starts.push(0);
+    if (starts.length > 16_384) {
         throw new Error("This PDF page has too many columns to fit in an Excel worksheet.");
     }
-
-    if (anchors.length > 1) {
-        anchors[anchors.length - 1] = Math.min(anchors[anchors.length - 1], widthPt - 1);
-    }
-    return anchors;
+    return starts;
 }
 
-function nearestColumn(x: number, anchors: number[]): number {
-    let nearest = 0;
-    for (let i = 1; i < anchors.length; i++) {
-        if (Math.abs(anchors[i] - x) < Math.abs(anchors[nearest] - x)) nearest = i;
-    }
-    return nearest;
-}
-
-function worksheetColumns(anchors: number[], widthPt: number): string {
-    return `<cols>${anchors
-        .map((anchor, i) => {
-            const next = anchors[i + 1] ?? widthPt;
-            const width = Math.max(2, Math.min(255, (next - anchor) / 7));
-            return `<col min="${i + 1}" max="${i + 1}" width="${width.toFixed(2)}" customWidth="1"/>`;
-        })
-        .join("")}</cols>`;
-}
-
-function editableSheetXml(rows: TextCell[][], pageWidthPt: number): string {
-    const anchors = pageColumnAnchors(rows, pageWidthPt);
-    const sheetRows = rows
-        .map((runs, rowIndex) => {
+function textSheetXml(page: XlsxPage, styles: StyleBook): string {
+    const header = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`;
+    const lines: SheetLine[] = page.rows
+        .filter((runs) => runs.length > 0)
+        .map((runs) => {
             const cells = editableCells(runs);
-            const occupied = new Set<number>();
-            const xmlCells = cells
-                .map((cell) => {
-                    let column = nearestColumn(cell.x, anchors);
-                    while (occupied.has(column)) column++;
-                    if (column >= 16_384) {
-                        throw new Error("This PDF page has too many text columns to fit in an Excel worksheet.");
-                    }
-                    occupied.add(column);
-                    return `<c r="${columnName(column)}${rowIndex + 1}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(cell.text)}</t></is></c>`;
-                })
-                .join("");
-            const nextY = rows[rowIndex + 1]?.[0]?.y;
-            const currentY = runs[0]?.y;
-            const fontSize = Math.max(8, ...runs.map((run) => run.size || 12));
-            const height = nextY === undefined || currentY === undefined
-                ? fontSize * 1.5
-                : Math.max(fontSize * 1.2, Math.min(409, currentY - nextY));
-            return `<row r="${rowIndex + 1}" ht="${height.toFixed(2)}" customHeight="1">${xmlCells}</row>`;
-        })
-        .join("");
+            return { cells, y: runs[0].y, size: Math.max(8, ...cells.map((cell) => cell.size)) };
+        });
 
-    const noText = rows.length === 0
-        ? `<row r="1"><c r="A1" t="inlineStr"><is><t>No selectable text was found on this page. Scanned pages need OCR before their contents can be edited.</t></is></c></row>`
-        : "";
-    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"/></sheetViews>${worksheetColumns(anchors, pageWidthPt)}<sheetData>${sheetRows || noText}</sheetData></worksheet>`;
-}
-
-/** An editable, position-based worksheet and an exact page preview per page. */
-export async function pagesToXlsx(
-    pages: RenderedPage[],
-    pageRows: TextCell[][][]
-): Promise<Uint8Array> {
-    if (pages.length !== pageRows.length) {
-        throw new Error("The PDF text and page counts do not match.");
+    if (lines.length === 0) {
+        return `${header}<sheetViews><sheetView workbookViewId="0"/></sheetViews><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>No selectable text was found on this page. Scanned pages need OCR before their contents can be edited.</t></is></c></row></sheetData></worksheet>`;
     }
 
+    const starts = columnStarts(lines);
+    const needed: number[] = starts.map(() => 0);
+    let maxColumn = 0;
+    let rowNumber = 0;
+    const sheetRows: string[] = [];
+
+    lines.forEach((line, lineIndex) => {
+        rowNumber++;
+        const occupied = new Set<number>();
+        const placed: { column: number; xml: string }[] = [];
+
+        for (const cell of line.cells) {
+            let column = 0;
+            for (let i = 0; i < starts.length; i++) if (starts[i] <= cell.x + 2) column = i;
+            while (occupied.has(column)) column++;
+            if (column >= 16_384) {
+                throw new Error("This PDF page has too many text columns to fit in an Excel worksheet.");
+            }
+            occupied.add(column);
+            maxColumn = Math.max(maxColumn, column);
+
+            const ref = `${columnName(column)}${rowNumber}`;
+            const number = asNumber(cell.text);
+            if (number !== null) {
+                if (column < needed.length) {
+                    needed[column] = Math.max(needed[column], ((number.length * cell.size) / 11) * 1.15 + 2);
+                }
+                placed.push({
+                    column,
+                    xml: cellXml(ref, styles.format({ size: cell.size, h: "right" }), { number: true, text: number }),
+                });
+            } else {
+                placed.push({
+                    column,
+                    xml: cellXml(ref, styles.format({ size: cell.size }), { number: false, text: cell.text }),
+                });
+            }
+        }
+
+        placed.sort((a, b) => a.column - b.column);
+        const height = Math.min(409, Math.max(12, line.size * 1.35));
+        sheetRows.push(
+            `<row r="${rowNumber}" ht="${height.toFixed(2)}" customHeight="1">${placed.map((p) => p.xml).join("")}</row>`
+        );
+
+        const next = lines[lineIndex + 1];
+        if (next) {
+            const gap = line.y - next.y;
+            if (Number.isFinite(gap) && gap > line.size * 2.2) {
+                rowNumber++;
+                sheetRows.push(`<row r="${rowNumber}" ht="${height.toFixed(2)}" customHeight="1"/>`);
+            }
+        }
+    });
+
+    const columnCount = Math.max(starts.length, maxColumn + 1);
+    const cols = Array.from({ length: columnCount }, (_, i) => {
+        const bandEnd = starts[i + 1] ?? page.widthPt;
+        const bandChars = (i < starts.length ? bandEnd - starts[i] : 40) / 5.25;
+        const width = Math.min(100, Math.max(3, bandChars, needed[i] ?? 0));
+        return `<col min="${i + 1}" max="${i + 1}" width="${width.toFixed(2)}" customWidth="1"/>`;
+    }).join("");
+
+    const landscape = page.widthPt > page.heightPt;
+    return `${header}<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="A1:${columnName(maxColumn)}${rowNumber}"/><sheetViews><sheetView workbookViewId="0"/></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols>${cols}</cols><sheetData>${sheetRows.join("")}</sheetData><pageMargins left="0.4" right="0.4" top="0.4" bottom="0.4" header="0.2" footer="0.2"/><pageSetup paperSize="9" orientation="${landscape ? "landscape" : "portrait"}" fitToWidth="1" fitToHeight="0"/></worksheet>`;
+}
+
+// ---- workbook -------------------------------------------------------------
+
+/** One editable worksheet per PDF page: the table as drawn if there is one, otherwise a text grid. */
+export async function pagesToXlsx(pages: XlsxPage[]): Promise<Uint8Array> {
     const zip = new JSZip();
-    const sheetNames = pages.flatMap((_, i) => [`Page ${i + 1}`, `Preview ${i + 1}`]);
+    const styles = createStyleBook();
+    const sheetNames = pages.map((_, i) => `Page ${i + 1}`);
+
+    pages.forEach((page, i) => {
+        zip.file(`xl/worksheets/sheet${i + 1}.xml`, tableSheetXml(page, styles) ?? textSheetXml(page, styles));
+    });
 
     zip.file(
         "[Content_Types].xml",
-        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${sheetNames
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheetNames
             .map(
                 (_, i) =>
                     `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`
-            )
-            .join("")}${pages
-            .map(
-                (_, i) =>
-                    `<Override PartName="/xl/drawings/drawing${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>`
             )
             .join("")}</Types>`
     );
@@ -349,40 +824,10 @@ export async function pagesToXlsx(
                 (_, i) =>
                     `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`
             )
-            .join("")}</Relationships>`
+            .join("")}<Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`
     );
-
-    pages.forEach((page, i) => {
-        const editableSheet = i * 2 + 1;
-        const previewSheet = editableSheet + 1;
-        const drawingId = i + 1;
-        const cx = Math.round(page.widthPt * EMU_PER_PT);
-        const cy = Math.round(page.heightPt * EMU_PER_PT);
-        zip.file(
-            `xl/worksheets/sheet${editableSheet}.xml`,
-            editableSheetXml(pageRows[i], page.widthPt)
-        );
-        zip.file(
-            `xl/worksheets/sheet${previewSheet}.xml`,
-            // Print setup matching the page — its orientation, no margins, fitted
-            // to one sheet of paper — so printing the sheet or converting it back
-            // to PDF gives the page whole instead of cut across several.
-            `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><sheetViews><sheetView workbookViewId="0" showGridLines="0"/></sheetViews><sheetData/><pageMargins left="0" right="0" top="0" bottom="0" header="0" footer="0"/><pageSetup paperSize="9" orientation="${page.widthPt > page.heightPt ? "landscape" : "portrait"}" fitToWidth="1" fitToHeight="1"/><drawing r:id="rId1"/></worksheet>`
-        );
-        zip.file(
-            `xl/worksheets/_rels/sheet${previewSheet}.xml.rels`,
-            `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing${drawingId}.xml"/></Relationships>`
-        );
-        zip.file(
-            `xl/drawings/drawing${drawingId}.xml`,
-            `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><xdr:oneCellAnchor><xdr:from><xdr:col>0</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>0</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from><xdr:ext cx="${cx}" cy="${cy}"/><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="${drawingId + 1}" name="Page ${i + 1}"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr><xdr:blipFill><a:blip r:embed="rId1"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill><xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic><xdr:clientData/></xdr:oneCellAnchor></xdr:wsDr>`
-        );
-        zip.file(
-            `xl/drawings/_rels/drawing${drawingId}.xml.rels`,
-            `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/page${i + 1}.png"/></Relationships>`
-        );
-        zip.file(`xl/media/page${i + 1}.png`, page.png);
-    });
+    // Written last: the style book fills up while the sheets are generated.
+    zip.file("xl/styles.xml", styles.xml());
 
     return zip.generateAsync({ type: "uint8array", compression: "DEFLATE" });
 }

@@ -3,14 +3,15 @@ import DevPlanSwitcher from "@/components/dev/DevPlanSwitcher";
 import { TestPlanProvider } from "@/components/dev/TestPlanProvider";
 import type { Metadata } from "next";
 import { getSiteUrl } from "@/lib/site-url";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "../components/theme-provider";
 import { LocaleProvider } from "@/components/locale-provider";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
@@ -24,12 +25,12 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   // Each tool sets only its own title; this frames it.
   title: {
-    default: "PDF_AI — Every PDF tool you need, in one place",
-    template: "%s | PDF_AI",
+    default: "PDF AI — Every PDF tool you need, in one place",
+    template: "%s | PDF AI",
   },
   description: "Every PDF tool you need, in one place.",
   openGraph: {
-    siteName: "PDF_AI",
+    siteName: "PDF AI",
     type: "website",
     url: siteUrl,
   },
@@ -43,7 +44,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>

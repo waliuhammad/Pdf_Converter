@@ -69,7 +69,7 @@ export default function RegisterPage() {
                 <p className="text-muted text-sm mb-3 sm:mb-4">Start using every PDF tool for free</p>
 
                 {error && (
-                    <div className="mb-4 px-3 py-2 rounded-lg bg-red-50 text-[var(--primary)] text-xs">{error}</div>
+                    <div className="mb-4 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 text-xs">{error}</div>
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-2.5">

@@ -6,64 +6,73 @@
    follows the visitor's system setting, so without this override, anyone with
    a dark-mode device would still trigger every `dark:` class left in the
    components. */
-@custom-variant dark (&:where(.dark-mode-disabled, .dark-mode-disabled *));
+@custom-variant dark (&:where(.dark, .dark *));
 
-/* Navy theme, light only. White surfaces, deep navy (#1E3A8A) brand colour
-   with white button text (about 10:1 contrast). Corners are square (2px)
-   across the whole app. */
+/* Modern SaaS PDF Platform Theme.
+   Light mode uses clean #F8FAFC canvas with #FFFFFF cards and #2563EB primary buttons.
+   Dark mode uses deep #0B1220 canvas with #131D33 cards and readable contrast.
+   Cards and components have ~12px rounded corners. */
 :root {
   color-scheme: light;
 
-  --radius: 2px;
+  --radius: 0.75rem;
 
-  --background: #FFFFFF;
-  --background-secondary: #F1F4FA;
-  --foreground: #0B1730;
+  --background: #F8FAFC;
+  --background-secondary: #F1F5F9;
+  --foreground: #0F172A;
 
-  --card: #F7F9FC;
-  --card-foreground: #0B1730;
-  --card-border: #E1E6F0;
+  --card: #FFFFFF;
+  --card-foreground: #0F172A;
+  --card-border: #E2E8F0;
 
   --popover: #FFFFFF;
-  --popover-foreground: #0B1730;
+  --popover-foreground: #0F172A;
 
-  --primary: #1E3A8A;
-  --primary-hover: #172E6E;
+  --primary: #2563EB;
+  --primary-hover: #1D4ED8;
   --primary-foreground: #FFFFFF;
 
-  --secondary: #EAF0FB;
-  --secondary-foreground: #1E3A8A;
+  --secondary: #F1F5F9;
+  --secondary-foreground: #0F172A;
 
-  --muted: #F1F4FA;
-  --muted-foreground: #5F6B85;
+  --muted: #F1F5F9;
+  --muted-foreground: #475569;
 
-  --accent: #EAF0FB;
-  --accent-foreground: #1E3A8A;
+  --accent: #EFF6FF;
+  --accent-foreground: #2563EB;
 
-  --destructive: #DC2626;
+  --destructive: #EF4444;
   --destructive-foreground: #FFFFFF;
 
-  --border: #E1E6F0;
-  --input: #D3DAE8;
-  --ring: #1E3A8A;
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --ring: #2563EB;
 
-  /* The five accent colours. Each has a strong colour for icons, text and
-     dots, and a soft tint for the tile or badge behind it. Use them as small
-     accents only, never as page backgrounds or main buttons. */
-  --blue: #1D4ED8;
-  --blue-tint: #EAF1FE;
-  --amber: #92400E;
-  --amber-tint: #FEF3DC;
-  --green: #15803D;
-  --green-tint: #E8F6EE;
-  --red: #B91C1C;
-  --red-tint: #FDECEC;
-  --navy: #1E3A8A;
-  --navy-tint: #EAF0FB;
+  /* Feature and File Format Colors */
+  --pdf-red: #EF4444;
+  --pdf-red-tint: #FEE2E2;
+  --word-blue: #2563EB;
+  --word-blue-tint: #DBEAFE;
+  --excel-green: #10B981;
+  --excel-green-tint: #D1FAE5;
+  --ppt-orange: #F97316;
+  --ppt-orange-tint: #FFEDD5;
+  --ai-purple: #7C3AED;
+  --ai-purple-tint: #EDE9FE;
 
-  /* Tool categories, pointing at the colours above:
-     Convert = blue, Edit = amber, Organize = green, Security = red,
-     AI Tools = navy. */
+  /* Accents */
+  --blue: #2563EB;
+  --blue-tint: #DBEAFE;
+  --amber: #D97706;
+  --amber-tint: #FEF3C7;
+  --green: #10B981;
+  --green-tint: #D1FAE5;
+  --red: #EF4444;
+  --red-tint: #FEE2E2;
+  --purple: #7C3AED;
+  --purple-tint: #EDE9FE;
+
+  /* Tool categories */
   --convert: var(--blue);
   --convert-tint: var(--blue-tint);
   --edit: var(--amber);
@@ -72,24 +81,83 @@
   --organize-tint: var(--green-tint);
   --security: var(--red);
   --security-tint: var(--red-tint);
-  --ai: var(--navy);
-  --ai-tint: var(--navy-tint);
+  --ai: var(--purple);
+  --ai-tint: var(--purple-tint);
 }
 
-html {
-  color-scheme: light;
+.dark {
+  color-scheme: dark;
+
+  --background: #070d18;
+  --background-secondary: #0b1220;
+  --foreground: #F8FAFC;
+
+  --card: #0d1527;
+  --card-foreground: #F8FAFC;
+  --card-border: #1a253c;
+
+  --popover: #0d1527;
+  --popover-foreground: #F8FAFC;
+
+  --primary: #2563EB;
+  --primary-hover: #3B82F6;
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #131d33;
+  --secondary-foreground: #F8FAFC;
+
+  --muted: #0b1220;
+  --muted-foreground: #94A3B8;
+
+  --accent: #131d33;
+  --accent-foreground: #60A5FA;
+
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+
+  --border: #1a253c;
+  --input: #1a253c;
+  --ring: #2563EB;
+
+  /* Feature and File Format Colors (Dark Mode) */
+  --pdf-red: #F87171;
+  --pdf-red-tint: rgba(239, 68, 68, 0.15);
+  --word-blue: #60A5FA;
+  --word-blue-tint: rgba(37, 99, 235, 0.15);
+  --excel-green: #34D399;
+  --excel-green-tint: rgba(16, 185, 129, 0.15);
+  --ppt-orange: #FB923C;
+  --ppt-orange-tint: rgba(249, 115, 22, 0.15);
+  --ai-purple: #A78BFA;
+  --ai-purple-tint: rgba(124, 58, 237, 0.15);
+
+  --blue: #60A5FA;
+  --blue-tint: rgba(37, 99, 235, 0.15);
+  --amber: #FBBF24;
+  --amber-tint: rgba(217, 119, 6, 0.15);
+  --green: #34D399;
+  --green-tint: rgba(16, 185, 129, 0.15);
+  --red: #F87171;
+  --red-tint: rgba(239, 68, 68, 0.15);
+  --purple: #A78BFA;
+  --purple-tint: rgba(124, 58, 237, 0.15);
+
+  --convert: var(--blue);
+  --convert-tint: var(--blue-tint);
+  --edit: var(--amber);
+  --edit-tint: var(--amber-tint);
+  --organize: var(--green);
+  --organize-tint: var(--green-tint);
+  --security: var(--red);
+  --security-tint: var(--red-tint);
+  --ai: var(--purple);
+  --ai-tint: var(--purple-tint);
 }
 
-/* Maps the CSS variables above to Tailwind utilities: bg-primary, text-foreground,
-   border-border, bg-card, bg-secondary, bg-muted, bg-destructive, etc. */
+/* Maps the CSS variables above to Tailwind utilities */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-
-  /* `fg` is registered as a real colour token, not just the hand-written
-   * .text-fg class below, so Tailwind can generate its variants. Without this
-   * `hover:text-fg` — used on the nav links and 17 other places — compiled to
-   * nothing at all and those elements had no hover state whatsoever. */
   --color-fg: var(--foreground);
 
   --color-card: var(--card);
@@ -114,7 +182,7 @@ html {
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* Colour names, e.g. `bg-blue-tint text-blue`. */
+  /* Colour names */
   --color-blue: var(--blue);
   --color-blue-tint: var(--blue-tint);
   --color-amber: var(--amber);
@@ -123,10 +191,10 @@ html {
   --color-green-tint: var(--green-tint);
   --color-red: var(--red);
   --color-red-tint: var(--red-tint);
-  --color-navy: var(--navy);
-  --color-navy-tint: var(--navy-tint);
+  --color-purple: var(--purple);
+  --color-purple-tint: var(--purple-tint);
 
-  /* Category names, e.g. `bg-convert-tint text-convert`. */
+  /* Category names */
   --color-convert: var(--convert);
   --color-convert-tint: var(--convert-tint);
   --color-edit: var(--edit);
@@ -137,25 +205,12 @@ html {
   --color-security-tint: var(--security-tint);
   --color-ai: var(--ai);
   --color-ai-tint: var(--ai-tint);
-
-  /* Square corners everywhere. Every Tailwind radius step is overridden, so
-   * existing rounded-md / rounded-lg / rounded-xl / rounded-2xl / rounded-3xl
-   * classes in components all come out sharp without editing each file.
-   * `rounded-full` is untouched, so avatars, dots and pills stay round. */
-  --radius-xs: 2px;
-  --radius-sm: 2px;
-  --radius-md: 2px;
-  --radius-lg: 2px;
-  --radius-xl: 4px;
-  --radius-2xl: 4px;
-  --radius-3xl: 4px;
-  --radius-4xl: 4px;
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* Legacy utility classes kept for backward-compatibility with existing components.

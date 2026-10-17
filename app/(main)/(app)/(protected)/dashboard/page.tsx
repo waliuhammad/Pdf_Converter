@@ -58,7 +58,7 @@ export default function DashboardPage() {
                         <h1 className="text-2xl font-bold text-fg">{t("dashboard.welcome")}, {displayName} 👋</h1>
                         <p className="text-muted text-sm mt-1">{t("dashboard.subtitle")}</p>
                     </div>
-                    <span className="text-xs font-medium px-3 py-1.5 rounded-full bg-red-50 text-[var(--primary)] shrink-0">
+                    <span className="text-xs font-medium px-3 py-1.5 rounded-full bg-primary/10 dark:bg-primary/20 text-primary dark:text-blue-400 border border-primary/20 shrink-0">
                         {planLabel}
                     </span>
                 </div>
@@ -125,7 +125,7 @@ export default function DashboardPage() {
                                     className="flex items-center justify-between p-3 rounded-xl hover:bg-[var(--background-secondary)] transition-colors"
                                 >
                                     <div className="flex items-center gap-3 min-w-0">
-                                        <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
+                                        <div className="w-10 h-10 rounded-lg bg-primary/10 dark:bg-primary/20 flex items-center justify-center shrink-0 text-primary dark:text-blue-400">
                                             <FileText size={18} className="text-[var(--primary)]" />
                                         </div>
                                         <div className="min-w-0">

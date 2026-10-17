@@ -27,10 +27,14 @@ const plans: {
     ];
 
 export default function DevPlanSwitcher() {
-    const { plan, setPlan, isTestMode } = useTestPlan();
+    const { isTestMode, plan, setPlan } = useTestPlan();
     const [open, setOpen] = useState(false);
 
-    if (!isTestMode) {
+    // Development-only visual label removed from public-facing interface
+    // as per client design requirement #8. Can be toggled with NEXT_PUBLIC_SHOW_DEV_PLAN_SWITCHER.
+    const showSwitcher = process.env.NEXT_PUBLIC_SHOW_DEV_PLAN_SWITCHER === "true";
+
+    if (!isTestMode || !showSwitcher) {
         return null;
     }
 

@@ -382,7 +382,7 @@ export default function MergePdfPage() {
     <div className="max-w-7xl mx-auto w-full px-4 py-8 text-foreground bg-background transition-colors">
       <div className="text-center mb-8">
         <div
-          className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center mb-3 shadow-inner bg-[var(--background-secondary)] border border-foreground/20 text-foreground"
+          className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center mb-3 shadow-xs bg-primary/10 dark:bg-primary/20 border border-primary/20 text-primary dark:text-blue-400 animate-icon-pulse"
         >
           <Layers size={28} />
         </div>

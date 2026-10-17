@@ -4,6 +4,7 @@ import { readFormData } from "@/lib/api";
 import { LibreOfficeMissingError, officeToPdf } from "@/lib/office-to-pdf";
 import { extractPageCells } from "@/lib/pdf-text";
 import { readTextLayout, stripPdfText } from "@/lib/pdf-layout";
+import { extractPageGraphics } from "@/lib/pdf-graphics";
 import {
     pagesToDocx,
     pagesToPptx,
@@ -105,19 +106,31 @@ export async function pdfToOfficeRoute(
 
     let output: Uint8Array;
     try {
-        const pages = format === "xlsx" ? await renderPdfPages(bytes.slice()) : await editablePages(bytes);
-        if (pages.length === 0) throw new Error("The PDF has no pages.");
-
-        if (format === "docx") {
-            output = await pagesToDocx(pages);
-        } else if (format === "pptx") {
-            output = await pagesToPptx(pages, baseName(file));
-        } else {
-            const pageRows = await extractPageCells(bytes.slice());
-            if (pageRows.length !== pages.length) {
+        if (format === "xlsx") {
+            const [rows, graphics, layout] = await Promise.all([
+                extractPageCells(bytes.slice()),
+                extractPageGraphics(bytes.slice()),
+                // Only used to copy fonts / bold / colour; the sheet works without it.
+                readTextLayout(bytes.slice()).catch(() => null),
+            ]);
+            if (graphics.length === 0) throw new Error("The PDF has no pages.");
+            if (rows.length !== graphics.length) {
                 throw new Error("The PDF text and page counts do not match.");
             }
-            output = await pagesToXlsx(pages, pageRows);
+            output = await pagesToXlsx(
+                graphics.map((g, i) => ({
+                    widthPt: g.widthPt,
+                    heightPt: g.heightPt,
+                    rows: rows[i],
+                    hlines: g.hlines,
+                    vlines: g.vlines,
+                    lines: layout?.[i]?.lines,
+                }))
+            );
+        } else {
+            const pages = await editablePages(bytes);
+            if (pages.length === 0) throw new Error("The PDF has no pages.");
+            output = format === "docx" ? await pagesToDocx(pages) : await pagesToPptx(pages, baseName(file));
         }
     } catch (error) {
         console.error(`PDF to ${format} failed:`, error);

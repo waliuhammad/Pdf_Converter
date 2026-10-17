@@ -82,7 +82,7 @@ export default function SummarizePdfPage() {
     return (
         <div className="max-w-3xl mx-auto">
             <div className="text-center mb-10">
-                <div className="w-14 h-14 mx-auto rounded-2xl bg-red-50 flex items-center justify-center mb-4">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center mb-4 border border-primary/20 text-primary dark:text-blue-400 shadow-xs animate-icon-pulse">
                     <Sparkles className="text-[var(--primary)]" size={26} />
                 </div>
                 <h1 className="text-2xl font-bold text-fg">Summarize PDF</h1>
@@ -104,7 +104,7 @@ export default function SummarizePdfPage() {
             ) : (
                 <>
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-card border border-card">
-                        <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
+                        <div className="w-9 h-9 rounded-lg bg-primary/10 dark:bg-primary/20 flex items-center justify-center shrink-0 text-primary dark:text-blue-400">
                             <FileText size={16} className="text-[var(--primary)]" />
                         </div>
                         <div className="flex-1 min-w-0">

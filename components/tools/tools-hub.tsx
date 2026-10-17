@@ -48,11 +48,11 @@ export function ToolsHub() {
     }, [search, category]);
 
     return (
-        <div>
+        <div className="w-full max-w-7xl mx-auto">
             <div className="flex items-center justify-between flex-wrap gap-2 mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-fg">{t("tools.allTools")}</h1>
-                    <p className="text-muted text-sm mt-1">
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">{t("tools.allTools")}</h1>
+                    <p className="text-muted-foreground text-sm mt-1">
                         {filteredTools.length === 1 ? t("tools.availableOne") : t("tools.available", { count: filteredTools.length })}
                     </p>
                 </div>
@@ -61,23 +61,27 @@ export function ToolsHub() {
             {/* Toolbar */}
             <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 mb-6">
                 <div className="relative flex-1">
-                    <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+                    <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                     <input
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder={t("tools.search")}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-card text-fg placeholder:text-muted text-sm focus:outline-none focus:border-[var(--primary)] transition-colors bg-card"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all bg-card shadow-xs"
                     />
                 </div>
 
-                <div className="flex items-center gap-1 p-1 rounded-xl border border-card bg-card overflow-x-auto no-scrollbar">
+                <div className="flex items-center gap-1.5 p-1 rounded-xl border border-border bg-card overflow-x-auto no-scrollbar shadow-xs">
                     {categories.map((option) => (
                         <button
                             key={option}
+                            type="button"
                             onClick={() => setCategory(option)}
-                            className={`px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors ${category === option ? "bg-primary text-primary-foreground" : "text-muted hover:text-fg"
-                                }`}
+                            className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all ${
+                                category === option
+                                    ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                            }`}
                         >
                             {categoryLabel(option)}
                         </button>
@@ -86,23 +90,20 @@ export function ToolsHub() {
             </div>
 
             {filteredTools.length === 0 ? (
-                <div className="text-center py-16">
-                    <div className="w-12 h-12 mx-auto rounded-xl bg-[var(--background-secondary)] flex items-center justify-center mb-3">
-                        <Wrench size={20} className="text-muted" />
+                <div className="text-center py-16 rounded-2xl border border-dashed border-border bg-card p-8">
+                    <div className="w-12 h-12 mx-auto rounded-xl bg-accent text-accent-foreground flex items-center justify-center mb-3">
+                        <Wrench size={20} className="text-primary" />
                     </div>
-                    <p className="text-muted text-sm">{t("tools.noMatch")} &ldquo;{search}&rdquo;.</p>
+                    <p className="text-foreground text-sm font-semibold">{t("tools.noMatch")} &ldquo;{search}&rdquo;.</p>
+                    <p className="text-muted-foreground text-xs mt-1">Try searching with different keywords or switch category.</p>
                 </div>
             ) : (
-                // Three per row on phones, matching the landing page grid.
                 <div className="grid grid-cols-3 gap-2.5 sm:gap-4 lg:gap-3 lg:grid-cols-4">
-                    {/* The stagger was a motion.div per card, so twenty-two more
-                        framer instances on top of the cards themselves. Same
-                        fade-and-rise as a CSS animation, off the main thread. */}
                     {filteredTools.map((tool, index) => (
                         <div
                             key={tool.name}
-                            className="motion-safe:animate-tool-in"
-                            style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
+                            className="motion-safe:animate-tool-in h-full"
+                            style={{ animationDelay: `${Math.min(index * 25, 250)}ms` }}
                         >
                             <ToolCard {...tool} />
                         </div>

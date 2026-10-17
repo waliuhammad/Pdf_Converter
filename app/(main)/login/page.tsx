@@ -78,7 +78,7 @@ export default function LoginPage() {
                 <p className="text-muted text-sm mb-6 sm:mb-8">Log in to continue to your account</p>
 
                 {error && (
-                    <div className="mb-4 px-3 py-2 rounded-lg bg-red-50 text-[var(--primary)] text-xs">{error}</div>
+                    <div className="mb-4 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 text-xs">{error}</div>
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">

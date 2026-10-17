@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { LucideIcon } from "lucide-react";
 import { useToolText } from "@/hooks/useToolText";
+import { getToolIllustration } from "./tool-icons";
 
 interface ToolCardProps {
     name: string;
@@ -25,15 +26,10 @@ export default function ToolCard({
     const { toolName, toolDescription, badgeLabel } = useToolText();
     const shownName = toolName(href, name);
     const shownDescription = toolDescription(href, description);
-    // The lift on hover was a framer-motion whileHover. This card is on screen
-    // twenty-two times on /tools, and the profile put framer among the most
-    // expensive scripts there — for a translate and a scale, which CSS does free.
-    //
-    // Two layouts, one component. Three of these share a row on a phone, so at
-    // roughly 110px wide the content is centred and the type is small: icon
-    // above a short title above a clamped description. From sm it is the
-    // original left-aligned card, min-h-[165px] included, so a grid row stays
-    // even.
+
+    // Illustrative icon from reference design; fallback to Lucide icon
+    const illustration = getToolIllustration(href, 64);
+
     const card = (
         <div
             className={`
@@ -55,7 +51,7 @@ export default function ToolCard({
                 duration-200
                 hover:border-foreground/30
                 hover:shadow-xl
-                sm:min-h-[82px]
+                sm:min-h-[88px]
                 sm:flex-row
                 sm:items-center
                 sm:gap-4
@@ -71,36 +67,31 @@ export default function ToolCard({
                     relative
                     mb-2
                     flex
-                    h-9
-                    w-9
+                    h-14
+                    w-14
                     shrink-0
                     items-center
                     justify-center
                     rounded-xl
-                    bg-accent
-                    ring-1
-                    ring-primary/20
-                    shadow-[0_0_0_4px_color-mix(in_srgb,var(--primary)_4%,transparent),0_8px_20px_color-mix(in_srgb,var(--primary)_12%,transparent)]
-                    motion-safe:animate-icon-pulse
                     transition-all
                     duration-300
-                    group-hover/icon:ring-primary/40
-                    group-hover/icon:shadow-[0_0_0_5px_color-mix(in_srgb,var(--primary)_8%,transparent),0_10px_26px_color-mix(in_srgb,var(--primary)_24%,transparent)]
                     sm:mb-0
-                    sm:h-10
-                    sm:w-10
+                    sm:h-16
+                    sm:w-16
                     sm:rounded-2xl
                 `}
             >
-                <span className="pointer-events-none absolute inset-0 -translate-x-full rotate-12 bg-gradient-to-r from-transparent via-white/70 to-transparent opacity-0 transition-opacity duration-300 group-hover/icon:animate-shimmer group-hover/icon:opacity-100 dark:via-white/25" />
-                <Icon
-                    size={16}
-                    className="relative z-10 text-primary transition-transform duration-300 group-hover:scale-110 group-hover/icon:rotate-3 sm:size-[19px]"
-                />
+                {illustration ?? (
+                    <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-accent ring-1 ring-primary/20">
+                        <Icon
+                            size={24}
+                            className="relative z-10 text-primary transition-transform duration-300 group-hover:scale-110 group-hover/icon:rotate-3 sm:size-[28px]"
+                        />
+                    </div>
+                )}
             </div>
 
-            {/* min-w-0 lets a long name like "PDF to PowerPoint" wrap inside the
-                column instead of forcing the card wider than its grid track. */}
+            {/* min-w-0 lets a long name wrap inside the column */}
             <div className="w-full min-w-0 sm:flex-1">
                 <h3 className="text-[10px] font-semibold leading-tight text-foreground transition-colors duration-300 [overflow-wrap:anywhere] group-hover:text-primary sm:text-sm sm:leading-snug">
                     {shownName}
@@ -111,9 +102,7 @@ export default function ToolCard({
                 </p>
             </div>
 
-            {/* Badge. Sits under the description on a phone, where a corner chip
-                would cover the title in a 110px-wide card; the original absolute
-                top-right corner from sm. */}
+            {/* Badge */}
             {(comingSoon || badge) && (
                 <span
                     className="
@@ -154,14 +143,9 @@ export default function ToolCard({
         </div>
     );
 
-    // Tools without a page yet render as a plain container so they can't 404.
     return comingSoon ? (
         <div className="block h-full cursor-not-allowed opacity-60">{card}</div>
     ) : (
-        // Twenty-two of these sit on /tools, and Next prefetches every link in
-        // view: 112 requests for a page where one card gets clicked, several of
-        // them fetched repeatedly as the grid re-renders on search. Hover is
-        // early enough to prefetch.
         <Link href={href} prefetch={false} className="block h-full">
             {card}
         </Link>
