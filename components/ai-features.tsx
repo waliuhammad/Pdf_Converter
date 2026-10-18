@@ -1,40 +1,42 @@
 import Link from "next/link";
 import { Reveal } from "@/components/reveal";
 import {
-    BrainCircuit,
-    ScanLine,
     Sparkles,
-    Languages,
-    SpellCheck2,
     ArrowRight,
 } from "lucide-react";
+import {
+    AiSummaryIcon,
+    OcrPdfIcon,
+    TranslatePdfIcon,
+    GrammarIcon,
+} from "@/components/tools/tool-icons";
 
 const features = [
     {
         title: "AI Summary",
         description: "Generate concise summaries from lengthy reports, books and documents.",
-        icon: BrainCircuit,
+        illustration: <AiSummaryIcon size={64} />,
         badge: "Popular",
         slug: "aisummary-info",
     },
     {
         title: "OCR PDF",
         description: "Convert scanned PDFs and images into fully editable searchable text.",
-        icon: ScanLine,
+        illustration: <OcrPdfIcon size={64} />,
         badge: "OCR",
         slug: "ocrscanner-info",
     },
     {
         title: "Translate PDF",
         description: "Translate documents into multiple languages while preserving formatting.",
-        icon: Languages,
+        illustration: <TranslatePdfIcon size={64} />,
         badge: "New",
         slug: "aitranslate-info",
     },
     {
         title: "Grammar Checker",
         description: "Check grammar and spelling of your document.",
-        icon: SpellCheck2,
+        illustration: <GrammarIcon size={64} />,
         badge: "Smart",
         slug: "aigrammar-info",
     },
@@ -63,16 +65,14 @@ export function AIFeatures() {
 
                 <div className="mt-8 sm:mt-10 grid gap-3.5 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                     {features.map((feature, index) => {
-                        const Icon = feature.icon;
-
                         return (
                             <Link key={feature.title} href={`/${feature.slug}`} className="block h-full outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl">
                                 <Reveal delay={index * 50} className="h-full">
                                     <div className="group relative flex flex-col justify-between h-full overflow-hidden rounded-xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:border-purple-300 dark:hover:border-purple-700 hover:shadow-md">
                                         <div>
                                             <div className="flex items-center justify-between mb-4">
-                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-50 dark:bg-purple-950/50 text-[#7C3AED] dark:text-purple-400 border border-purple-100 dark:border-purple-900/50 shadow-xs transition-transform duration-200 group-hover:scale-105">
-                                                    <Icon className="h-5 w-5" />
+                                                <div className="group/icon relative flex h-14 w-16 shrink-0 items-center justify-start transition-transform duration-300 group-hover:scale-105">
+                                                    {feature.illustration}
                                                 </div>
 
                                                 <span className="rounded-md border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#7C3AED] dark:text-purple-300">
@@ -93,6 +93,23 @@ export function AIFeatures() {
                                             <span>Learn More</span>
                                             <ArrowRight size={14} />
                                         </div>
+
+                                        {/* Hover Glow */}
+                                        <div
+                                            className="
+                                                pointer-events-none
+                                                absolute
+                                                inset-0
+                                                bg-gradient-to-br
+                                                from-purple-500/5
+                                                via-transparent
+                                                to-purple-500/5
+                                                opacity-0
+                                                transition-opacity
+                                                duration-300
+                                                group-hover:opacity-100
+                                            "
+                                        />
                                     </div>
                                 </Reveal>
                             </Link>

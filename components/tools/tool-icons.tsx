@@ -436,9 +436,14 @@ export function AiSummaryIcon({ size = 56 }: { size?: number }) {
       <g transform="translate(10, 4)">
         <FileDoc color="#7C3AED" foldColor="#C4B5FD" label="AI" />
       </g>
-      <g fill="#7C3AED" transform="translate(40, 8)">
+      <g fill="#7C3AED" transform="translate(39, 7)">
+        {/* Main 4-point sparkle */}
         <path d="M10,0 L12,7 L19,9 L12,11 L10,18 L8,11 L1,9 L8,7 Z" />
-        <path d="M18,17 L19,20 L22,21 L19,22 L18,25 L17,22 L14,21 L17,20 Z" opacity="0.75" />
+        {/* Secondary sparkle */}
+        <path d="M19,16 L20,19 L23,20 L20,21 L19,24 L18,21 L15,20 L18,19 Z" opacity="0.8" />
+        {/* Accent sparkle dots */}
+        <circle cx="5" cy="22" r="1.3" fill="#A855F7" opacity="0.9" />
+        <circle cx="21" cy="5" r="1.1" fill="#C4B5FD" opacity="0.9" />
       </g>
     </SvgWrapper>
   );
@@ -451,15 +456,16 @@ export function OcrPdfIcon({ size = 56 }: { size?: number }) {
       <g transform="translate(10, 4)">
         <FileDoc color="#EF4444" foldColor="#FCA5A5" label="PDF" />
       </g>
-      <g stroke="#7C3AED" strokeWidth="2.2" strokeLinecap="round" fill="none" transform="translate(36, 6)">
+      <g stroke="#7C3AED" strokeWidth="2.2" strokeLinecap="round" fill="none" transform="translate(37, 6)">
         <path d="M6,0 H0 V6" />
         <path d="M18,0 H24 V6" />
         <path d="M6,26 H0 V20" />
         <path d="M18,26 H24 V20" />
         {/* Scan lines */}
-        <line x1="5" y1="9" x2="19" y2="9" strokeWidth="1.5" />
-        <line x1="5" y1="13" x2="19" y2="13" strokeWidth="1.5" />
-        <line x1="5" y1="17" x2="16" y2="17" strokeWidth="1.5" />
+        <line x1="5" y1="8" x2="19" y2="8" strokeWidth="1.5" />
+        {/* Active laser beam */}
+        <line x1="2" y1="13" x2="22" y2="13" stroke="#EC4899" strokeWidth="1.8" opacity="0.95" />
+        <line x1="5" y1="18" x2="17" y2="18" strokeWidth="1.5" />
       </g>
     </SvgWrapper>
   );
@@ -482,10 +488,25 @@ export function GrammarIcon({ size = 56 }: { size?: number }) {
     <SvgWrapper size={size}>
       <g transform="translate(10, 4)">
         <FileDoc color="#7C3AED" foldColor="#C4B5FD" label="ABC" />
+        {/* Red wavy spellcheck underline under text */}
+        <path
+          d="M5,25.5 Q7.5,24 10,25.5 T15,25.5 T20,25.5"
+          fill="none"
+          stroke="#EF4444"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
       </g>
       <g transform="translate(38, 12)">
         <circle cx="10" cy="10" r="10" fill="#16A34A" />
-        <polyline points="6,10 9,13 14,7" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <polyline
+          points="6,10 9,13 14,7"
+          fill="none"
+          stroke="#FFFFFF"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </g>
     </SvgWrapper>
   );
@@ -512,8 +533,8 @@ export function getToolIllustration(href: string, size = 56): React.ReactNode | 
   if (h.includes("protect"))        return <ProtectPdfIcon size={size} />;
   if (h.includes("unlock"))         return <UnlockPdfIcon size={size} />;
   if (h.includes("ocr"))            return <OcrPdfIcon size={size} />;
-  if (h.includes("summarize"))      return <AiSummaryIcon size={size} />;
+  if (h.includes("summarize") || h.includes("summary")) return <AiSummaryIcon size={size} />;
   if (h.includes("translate"))      return <TranslatePdfIcon size={size} />;
-  if (h.includes("grammar"))        return <GrammarIcon size={size} />;
+  if (h.includes("grammar") || h.includes("spell")) return <GrammarIcon size={size} />;
   return null;
 }
