@@ -1,15 +1,6 @@
-import {
-  GoogleGenAI,
-  createPartFromUri,
-  createUserContent,
-} from "@google/genai";
-import { env } from "../../config/env";
+import { createPartFromUri, createUserContent } from "@google/genai";
 import { OCRResult } from "./ocr.types";
-import { withModelFallback } from "../generator";
-
-const ai = new GoogleGenAI({
-  apiKey: env.GOOGLE_API_KEY,
-});
+import { gemini as ai, withModelFallback } from "../generator";
 
 export async function extractTextWithOCR(
   filePath: string
