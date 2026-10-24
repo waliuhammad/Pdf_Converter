@@ -8,7 +8,12 @@
     //
     // tsx already runs the service in development and handles that interop, so
     // it runs it in production too and tsc is only a typechecker now.
-    "module": "preserve",
+    //
+    // Vercel compiles src/ with this config, though, and package.json says
+    // "commonjs": with "preserve" it emitted import statements into .js files
+    // and Node refused to load them ("Failed to load the ES module"). So the
+    // output is CommonJS; @google/genai ships a CommonJS build for require.
+    "module": "commonjs",
     "moduleResolution": "bundler",
     "noEmit": true,
     "rootDir": "./src",
