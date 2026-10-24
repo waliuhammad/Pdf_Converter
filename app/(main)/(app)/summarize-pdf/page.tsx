@@ -147,7 +147,7 @@ export default function SummarizePdfPage() {
                             <button
                                 onClick={handleSummarize}
                                 disabled={processing}
-                                className="px-8 py-3 rounded-full bg-[var(--primary)] text-fg font-medium hover:bg-[var(--primary-hover)] transition-colors disabled:opacity-60"
+                                className="w-full py-3.5 sm:py-4 px-4 rounded-2xl bg-[var(--primary)] border border-[var(--primary)] hover:bg-[var(--primary-hover)] hover:border-[var(--primary-hover)] text-[var(--primary-foreground)] font-bold text-sm sm:text-base shadow-lg disabled:opacity-60 flex items-center justify-center gap-2 transition-all"
                             >
                                 {processing ? "Summarizing..." : "Summarize with AI"}
                             </button>
@@ -155,7 +155,7 @@ export default function SummarizePdfPage() {
                             <button
                                 onClick={handleSummarize}
                                 disabled={processing}
-                                className="px-8 py-3 rounded-full bg-[var(--background-secondary)] text-fg font-medium hover:opacity-80 transition-colors disabled:opacity-60"
+                                className="w-full py-3.5 sm:py-4 px-4 rounded-2xl bg-card border border-border hover:bg-muted text-foreground font-bold text-sm sm:text-base disabled:opacity-60 flex items-center justify-center gap-2 transition-all"
                             >
                                 {processing ? "Regenerating..." : "Regenerate Summary"}
                             </button>

@@ -137,7 +137,7 @@ export default function OcrPdfPage() {
                             <button
                                 onClick={handleOcrScan}
                                 disabled={processing}
-                                className="px-8 py-3 rounded-full bg-[var(--primary)] text-primary-foreground font-medium hover:opacity-90 transition-colors disabled:opacity-60 shadow-lg shadow-primary/20"
+                                className="w-full py-3.5 sm:py-4 px-4 rounded-2xl bg-[var(--primary)] border border-[var(--primary)] hover:bg-[var(--primary-hover)] hover:border-[var(--primary-hover)] text-[var(--primary-foreground)] font-bold text-sm sm:text-base shadow-lg disabled:opacity-60 flex items-center justify-center gap-2 transition-all"
                             >
                                 {processing ? "Scanning Document..." : "Run OCR Extraction"}
                             </button>
@@ -145,7 +145,7 @@ export default function OcrPdfPage() {
                             <button
                                 onClick={handleOcrScan}
                                 disabled={processing}
-                                className="px-8 py-3 rounded-full bg-[var(--background-secondary)] text-fg font-medium hover:opacity-80 transition-colors disabled:opacity-60 border border-border"
+                                className="w-full py-3.5 sm:py-4 px-4 rounded-2xl bg-card border border-border hover:bg-muted text-foreground font-bold text-sm sm:text-base disabled:opacity-60 flex items-center justify-center gap-2 transition-all"
                             >
                                 {processing ? "Rescanning..." : "Scan Again"}
                             </button>

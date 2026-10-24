@@ -148,7 +148,7 @@ if (!res.ok) {
                                 type="button"
                                 onClick={handleCheckGrammar}
                                 disabled={loading || !selectedFile}
-                                className="px-6 py-2.5 rounded-full bg-[var(--primary)] text-primary-foreground text-sm font-medium hover:opacity-90 transition-colors disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-primary/20"
+                                className="w-full py-3.5 sm:py-4 px-4 rounded-2xl bg-[var(--primary)] border border-[var(--primary)] hover:bg-[var(--primary-hover)] hover:border-[var(--primary-hover)] text-[var(--primary-foreground)] font-bold text-sm sm:text-base shadow-lg disabled:opacity-60 flex items-center justify-center gap-2 transition-all"
                             >
                                 {loading ? (
                                     <>
