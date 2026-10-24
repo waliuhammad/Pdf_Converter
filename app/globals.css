@@ -405,6 +405,22 @@ body {
   75%      { transform: translate(90px, -20px) scale(1); }
 }
 
+@keyframes aurora-d {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(160px, -60px) scale(1.2); }
+}
+
+@keyframes aurora-e {
+  0%, 100% { transform: translate(0, 0) scale(1.1) rotate(0deg); }
+  30%      { transform: translate(-100px, 80px) scale(0.9) rotate(-10deg); }
+  70%      { transform: translate(80px, 50px) scale(1.15) rotate(6deg); }
+}
+
+@keyframes aurora-f {
+  0%, 100% { transform: translate(0, 0) scale(0.9); }
+  50%      { transform: translate(-150px, -40px) scale(1.15); }
+}
+
 /* A highlight sweeping across the progress bar, so the upload card reads as
    in-progress rather than frozen mid-upload. */
 @keyframes shimmer {
@@ -433,9 +449,12 @@ body {
 .animate-drift-a { animation: drift-a 18s ease-in-out infinite; }
 .animate-drift-b { animation: drift-b 22s ease-in-out infinite; }
 
-.animate-aurora-a { animation: aurora-a 22s ease-in-out infinite; }
-.animate-aurora-b { animation: aurora-b 17s ease-in-out infinite; }
-.animate-aurora-c { animation: aurora-c 26s ease-in-out infinite; }
+.animate-aurora-a { animation: aurora-a 11s ease-in-out infinite; }
+.animate-aurora-b { animation: aurora-b 8s ease-in-out infinite; }
+.animate-aurora-c { animation: aurora-c 13s ease-in-out infinite; }
+.animate-aurora-d { animation: aurora-d 9s ease-in-out infinite; }
+.animate-aurora-e { animation: aurora-e 12s ease-in-out infinite; }
+.animate-aurora-f { animation: aurora-f 10s ease-in-out infinite; }
 
 .animate-shimmer { animation: shimmer 2.2s ease-in-out infinite; }
 .animate-icon-pulse { animation: icon-pulse 2.8s ease-in-out infinite; }
@@ -461,6 +480,9 @@ body {
   .animate-aurora-a,
   .animate-aurora-b,
   .animate-aurora-c,
+  .animate-aurora-d,
+  .animate-aurora-e,
+  .animate-aurora-f,
   .animate-shimmer,
   .animate-icon-pulse { animation: none; }
 }
