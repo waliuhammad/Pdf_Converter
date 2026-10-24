@@ -17,6 +17,16 @@ const nextConfig: NextConfig = {
     // Its OCR worker script is loaded from its own folder at runtime.
     "tesseract.js",
   ],
+
+  /**
+   * Files read at runtime with fs, which the bundler cannot see. The PDF text
+   * fonts (Urdu/Arabic, Hindi, Latin) have to ship with the routes that draw
+   * text — serverless hosts such as Vercel have no system fonts.
+   */
+  outputFileTracingIncludes: {
+    "/api/text-pdf": ["./assets/fonts/**/*"],
+    "/api/translate": ["./assets/fonts/**/*"],
+  },
 };
 
 export default nextConfig;

@@ -4,7 +4,8 @@ import "server-only";
 // "regeneratorRuntime is not defined" while being measured.
 import "regenerator-runtime/runtime";
 import fs from "fs";
-import { PDFDocument, rgb, type PDFFont, type PDFPage, type RGB } from "pdf-lib";
+import path from "path";
+import { PDFDocument, rgb, StandardFonts, type PDFFont, type PDFPage, type RGB } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 
 /**
@@ -20,12 +21,20 @@ import fontkit from "@pdf-lib/fontkit";
  *
  * fontkit lays an RTL run out right-to-left as a whole, which also reverses
  * any digits or Latin words inside it ("12" became "21"). So a line is cut
- * into direction runs first: right-to-left script (with the spaces and
- * punctuation around it) and left-to-right pieces (Latin, digits), drawn in
- * visual order.
+ * into direction runs first, drawn in visual order.
+ *
+ * Script fonts (Vazirmatn for Arabic script, Noto Sans Devanagari) have no Latin
+ * letters, so every run is further cut by font: Latin letters (and anything
+ * the script font lacks) are drawn with a Latin font, the rest with the
+ * script font.
+ *
+ * Fonts are bundled in assets/fonts (SIL OFL) so this works the same on any
+ * host — Vercel's functions have no system fonts — with system fonts as a
+ * fallback. next.config.ts includes the folder in the server bundle.
  */
 
 const RTL_CHAR = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
+const LATIN_LETTER = /[A-Za-z\u00C0-\u024F\u0370-\u03FF\u0400-\u04FF\u2022]/;
 
 /** Arabic-script or Hebrew text: drawn right to left. */
 export function isRtlText(text: string): boolean {
@@ -41,55 +50,76 @@ function scriptOf(text: string): Script {
     return "latin";
 }
 
+const BUNDLED = (file: string) => path.join(process.cwd(), "assets", "fonts", file);
+
 /**
- * A TrueType font that has the glyphs and shaping features for the text.
- * Windows fonts locally; Noto / DejaVu on Linux (installed by nixpacks.toml
- * and the Dockerfile). Segoe UI is left out for Arabic script: embedded as a
- * subset it lost most of the letters.
+ * Fonts per script, bundled first. For Arabic script the font must carry its
+ * dots inside each letter: pdf-lib does not apply GPOS mark positioning, so
+ * fonts that place dots as separate marks (Noto Naskh Arabic) drew them
+ * beside the letters. Vazirmatn (SIL OFL) covers Urdu and works; Segoe UI is
+ * left out because embedded as a subset it lost most of the letters.
  */
 const FONT_CANDIDATES: Record<Script, string[]> = {
     rtl: [
+        BUNDLED("Vazirmatn-Regular.ttf"),
         "C:\\Windows\\Fonts\\tahoma.ttf",
-        "C:\\Windows\\Fonts\\arial.ttf",
-        "/usr/share/fonts/truetype/noto/NotoNaskhArabic-Regular.ttf",
-        "/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
     ],
     indic: [
-        "C:\\Windows\\Fonts\\Nirmala.ttf",
+        BUNDLED("NotoSansDevanagari-Regular.ttf"),
         "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf",
-        "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+        "C:\\Windows\\Fonts\\Nirmala.ttf",
     ],
     cjk: [
-        "C:\\Windows\\Fonts\\malgun.ttf",
         "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
         "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+        "C:\\Windows\\Fonts\\malgun.ttf",
     ],
     latin: [
-        "C:\\Windows\\Fonts\\arial.ttf",
+        BUNDLED("NotoSans-Regular.ttf"),
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-        "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+        "C:\\Windows\\Fonts\\arial.ttf",
     ],
 };
 
-export function findFontFile(sample: string): string | null {
-    const script = scriptOf(sample);
-    const list = [...FONT_CANDIDATES[script], ...FONT_CANDIDATES.latin];
+function firstExisting(list: string[]): string | null {
     return list.find((p) => fs.existsSync(p)) ?? null;
 }
 
-/** Embed the best available font for `sample` (fontkit registered on the document). */
-export async function embedFontFor(doc: PDFDocument, sample: string): Promise<PDFFont | null> {
+/** The font for the script of the text, and a Latin font for what it lacks. */
+export interface FontSet {
+    main: PDFFont;
+    latin: PDFFont;
+    /** Whether the main font has a glyph for this code point. */
+    mainHas: (codePoint: number) => boolean;
+}
+
+/**
+ * Embed fonts for `sample` (registers fontkit on the document). Falls back to
+ * Helvetica — Latin only — when no font file can be found at all.
+ */
+export async function embedFontsFor(doc: PDFDocument, sample: string): Promise<FontSet> {
     doc.registerFontkit(fontkit);
-    const file = findFontFile(sample);
-    if (!file) return null;
-    try {
-        return await doc.embedFont(fs.readFileSync(file), { subset: true });
-    } catch (err) {
-        console.warn(`Could not embed ${file}:`, err);
-        return null;
-    }
+
+    const load = async (file: string | null) => {
+        if (!file) return null;
+        try {
+            const bytes = fs.readFileSync(file);
+            const pdfFont = await doc.embedFont(bytes, { subset: true });
+            const fk = fontkit.create(bytes) as unknown as { hasGlyphForCodePoint?: (cp: number) => boolean };
+            return { pdfFont, has: (cp: number) => fk.hasGlyphForCodePoint?.(cp) ?? true };
+        } catch (err) {
+            console.warn(`Could not embed ${file}:`, err);
+            return null;
+        }
+    };
+
+    const latin = (await load(firstExisting(FONT_CANDIDATES.latin)))?.pdfFont ?? (await doc.embedStandardFont(StandardFonts.Helvetica));
+    const script = scriptOf(sample);
+    const main = script === "latin" ? null : await load(firstExisting(FONT_CANDIDATES[script]));
+
+    return main
+        ? { main: main.pdfFont, latin, mainHas: main.has }
+        : { main: latin, latin, mainHas: () => true };
 }
 
 interface Run {
@@ -117,43 +147,61 @@ function runsOf(line: string): Run[] {
     return runs.filter((r) => r.text.length > 0);
 }
 
-/** Width of a line as drawLine draws it. */
-export function lineWidth(font: PDFFont, line: string, size: number): number {
-    return runsOf(line).reduce((w, r) => w + font.widthOfTextAtSize(r.text, size), 0);
+/** Cut a run into pieces that each use one font. */
+function piecesOf(fonts: FontSet, text: string): { text: string; font: PDFFont }[] {
+    const pieces: { text: string; font: PDFFont }[] = [];
+    for (const ch of text) {
+        const cp = ch.codePointAt(0) ?? 32;
+        const font = fonts.main === fonts.latin || LATIN_LETTER.test(ch) || !fonts.mainHas(cp) ? fonts.latin : fonts.main;
+        const last = pieces[pieces.length - 1];
+        if (last && last.font === font) last.text += ch;
+        else pieces.push({ text: ch, font });
+    }
+    return pieces;
 }
 
-/**
- * Draw one line. `x` is the left edge for LTR text; for RTL text the line is
- * laid out right to left ending at `x + width` of the line, i.e. callers
- * position it by its left edge either way and use lineWidth to right-align.
- */
+/** Each piece in left-to-right drawing order. */
+function visualPieces(fonts: FontSet, line: string) {
+    const runs = runsOf(line);
+    // An RTL line is read right to left, so its runs appear in reverse order
+    // from the left edge; within an RTL run the font pieces reverse too, and
+    // fontkit lays each piece out in its own direction.
+    const ordered = isRtlText(line) ? [...runs].reverse() : runs;
+    return ordered.flatMap((run) => {
+        const pieces = piecesOf(fonts, run.text);
+        return run.rtl ? pieces.reverse() : pieces;
+    });
+}
+
+/** Width of a line as drawLine draws it. */
+export function lineWidth(fonts: FontSet, line: string, size: number): number {
+    return visualPieces(fonts, line).reduce((w, p) => w + p.font.widthOfTextAtSize(p.text, size), 0);
+}
+
+/** Draw one line with its left edge at `x` (right-align RTL text with lineWidth). */
 export function drawLine(
     page: PDFPage,
-    font: PDFFont,
+    fonts: FontSet,
     line: string,
     opts: { x: number; y: number; size: number; color?: RGB }
 ): void {
     const color = opts.color ?? rgb(0, 0, 0);
-    const runs = runsOf(line);
-    // An RTL line is read right to left, so its runs appear in reverse order
-    // from the left edge; each run is then laid out in its own direction.
-    const visual = isRtlText(line) ? [...runs].reverse() : runs;
     let x = opts.x;
-    for (const run of visual) {
-        page.drawText(run.text, { x, y: opts.y, size: opts.size, font, color });
-        x += font.widthOfTextAtSize(run.text, opts.size);
+    for (const piece of visualPieces(fonts, line)) {
+        page.drawText(piece.text, { x, y: opts.y, size: opts.size, font: piece.font, color });
+        x += piece.font.widthOfTextAtSize(piece.text, opts.size);
     }
 }
 
 /** Break a paragraph into lines that fit `maxWidth`, at spaces. */
-export function wrapLine(font: PDFFont, text: string, size: number, maxWidth: number): string[] {
+export function wrapLine(fonts: FontSet, text: string, size: number, maxWidth: number): string[] {
     const words = text.split(/\s+/).filter(Boolean);
     if (words.length === 0) return [""];
     const lines: string[] = [];
     let current = "";
     for (const word of words) {
         const candidate = current ? `${current} ${word}` : word;
-        if (current && lineWidth(font, candidate, size) > maxWidth) {
+        if (current && lineWidth(fonts, candidate, size) > maxWidth) {
             lines.push(current);
             current = word;
         } else {
@@ -179,9 +227,7 @@ export interface TextDocument {
 export async function textDocumentToPdf(d: TextDocument): Promise<Uint8Array> {
     const doc = await PDFDocument.create();
     const body = d.bullets ?? (d.text ?? "").split(/\r?\n/);
-    const sample = [d.title, ...body].join("\n");
-    const font = await embedFontFor(doc, sample);
-    if (!font) throw new Error("No font available for this text.");
+    const fonts = await embedFontsFor(doc, [d.title, ...body].join("\n"));
 
     const W = 595.28;
     const H = 841.89;
@@ -196,10 +242,9 @@ export async function textDocumentToPdf(d: TextDocument): Promise<Uint8Array> {
             y = H - margin;
         }
         y -= size;
-        const w = lineWidth(font, line, size);
-        const rtl = isRtlText(line);
-        const x = rtl ? margin + width - w - indent : margin + indent;
-        drawLine(page, font, line, { x, y, size, color });
+        const w = lineWidth(fonts, line, size);
+        const x = isRtlText(line) ? margin + width - w - indent : margin + indent;
+        drawLine(page, fonts, line, { x, y, size, color });
         y -= size * 0.45;
     };
 
@@ -215,7 +260,7 @@ export async function textDocumentToPdf(d: TextDocument): Promise<Uint8Array> {
             y -= 12;
             continue;
         }
-        const lines = wrapLine(font, block.trim(), 12, width - (bullets ? 16 : 0));
+        const lines = wrapLine(fonts, block.trim(), 12, width - (bullets ? 16 : 0));
         lines.forEach((line, i) => place(bullets && i === 0 ? `• ${line}` : line, 12, undefined, bullets && i > 0 ? 12 : 0));
         if (bullets) y -= 6;
     }

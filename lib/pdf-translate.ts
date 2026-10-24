@@ -1,7 +1,7 @@
 import "server-only";
-import { PDFDocument, rgb, StandardFonts, type PDFFont } from "pdf-lib";
+import { PDFDocument, rgb } from "pdf-lib";
 import { readTextLayout, stripPdfText, type PageText, type TextLine } from "@/lib/pdf-layout";
-import { drawLine, embedFontFor, isRtlText, lineWidth } from "@/lib/unicode-pdf-text";
+import { drawLine, embedFontsFor, isRtlText, lineWidth } from "@/lib/unicode-pdf-text";
 
 const AI_SERVICE = process.env.AI_SERVICE_URL || "http://localhost:8001";
 
@@ -151,8 +151,7 @@ export async function translatePdfDocument(
     // text itself (its script), not from the language name.
     const pdfDoc = await PDFDocument.load(strippedBytes, { ignoreEncryption: true });
     const sample = pageTranslatedLines.flat().join(" ");
-    const font: PDFFont =
-        (await embedFontFor(pdfDoc, sample)) ?? (await pdfDoc.embedStandardFont(StandardFonts.Helvetica));
+    const fonts = await embedFontsFor(pdfDoc, sample);
     const isRtlLang = isRtl(targetLanguage) || isRtlText(sample);
     const docPages = pdfDoc.getPages();
 
@@ -182,7 +181,7 @@ export async function translatePdfDocument(
 
             let textWidth: number;
             try {
-                textWidth = lineWidth(font, text, fontSize);
+                textWidth = lineWidth(fonts, text, fontSize);
             } catch {
                 // If character cannot be measured in font, skip drawing that line to avoid crash
                 continue;
@@ -194,7 +193,7 @@ export async function translatePdfDocument(
             if (textWidth > maxAllowedWidth && maxAllowedWidth > 10) {
                 fontSize = Math.max(minFontSize, (maxAllowedWidth / textWidth) * fontSize);
                 try {
-                    textWidth = lineWidth(font, text, fontSize);
+                    textWidth = lineWidth(fonts, text, fontSize);
                 } catch {
                     continue;
                 }
@@ -217,7 +216,7 @@ export async function translatePdfDocument(
             const b = parseInt(hexColor.slice(4, 6), 16) / 255;
 
             try {
-                drawLine(docPage, font, text, {
+                drawLine(docPage, fonts, text, {
                     x: Math.max(0, xPos),
                     y: Math.max(0, yPos),
                     size: fontSize,

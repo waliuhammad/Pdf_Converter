@@ -5,12 +5,15 @@ import { upstreamBusy } from "../modules/shared/upstream";
 import { Router } from "express";
 import multer from "multer";
 import path from "path";
+import os from "os";
 
 const router = Router();
 
 const storage = multer.diskStorage({
+  // The system temp folder: on Vercel (and most serverless hosts) it is the
+  // only writable place; "uploads/" next to the code is read-only there.
   destination: (req, file, cb) => {
-    cb(null, "uploads/");
+    cb(null, os.tmpdir());
   },
 
   filename: (req, file, cb) => {

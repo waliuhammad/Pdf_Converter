@@ -25,9 +25,9 @@ import { NextResponse } from "next/server";
  * large PDF and they compress well below this. If it proves too tight the
  * number belongs in Remote Config, not in a bigger constant here.
  */
-export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
-
-export const MAX_UPLOAD_LABEL = "25 MB";
+// Set per deployment (NEXT_PUBLIC_MAX_UPLOAD_MB); see lib/upload-limit.ts.
+export { MAX_UPLOAD_BYTES, MAX_UPLOAD_LABEL } from "@/lib/upload-limit";
+import { MAX_UPLOAD_BYTES, MAX_UPLOAD_LABEL } from "@/lib/upload-limit";
 
 /** What each family of tools will accept, by extension and by MIME type. */
 export const ACCEPT = {

@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Upload, X, FileText, ShieldCheck } from "lucide-react";
+import { MAX_UPLOAD_LABEL, tooLargeMessage } from "@/lib/upload-limit";
 
 /**
  * Standardized upload area used across all PDF tools.
@@ -24,6 +25,26 @@ export function UploadCard({
 }) {
     const inputRef = useRef<HTMLInputElement>(null);
     const [dragging, setDragging] = useState(false);
+    const [tooLarge, setTooLarge] = useState<string | null>(null);
+
+    /**
+     * Files over the size limit are stopped here, with a message, before any
+     * page uploads them. On hosts that cap request bodies (Vercel: 4.5 MB) an
+     * oversized upload never reaches the tool's route, so the server's own
+     * check could not explain the failure.
+     */
+    const accept_ = (list: FileList | null) => {
+        if (!list) return onFiles(list);
+        const files = Array.from(list);
+        const problems = files.map(tooLargeMessage).filter((m): m is string => m !== null);
+        setTooLarge(problems[0] ?? null);
+        if (problems.length === 0) return onFiles(list);
+        const ok = files.filter((f) => tooLargeMessage(f) === null);
+        if (ok.length === 0) return;
+        const kept = new DataTransfer();
+        ok.forEach((f) => kept.items.add(f));
+        onFiles(kept.files);
+    };
 
     const open = () => {
         if (!disabled) inputRef.current?.click();
@@ -49,7 +70,7 @@ export function UploadCard({
             onDrop={(e) => {
                 e.preventDefault();
                 setDragging(false);
-                if (!disabled) onFiles(e.dataTransfer.files);
+                if (!disabled) accept_(e.dataTransfer.files);
             }}
             className={`group mx-auto w-full max-w-[640px] rounded-2xl border-2 border-dashed p-8 sm:p-12 text-center transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                 disabled
@@ -66,7 +87,7 @@ export function UploadCard({
                 multiple={multiple}
                 hidden
                 onChange={(e) => {
-                    onFiles(e.target.files);
+                    accept_(e.target.files);
                     // Let the same file be picked twice in a row.
                     e.target.value = "";
                 }}
@@ -78,6 +99,7 @@ export function UploadCard({
 
             <p className="text-base sm:text-lg font-bold text-foreground">{title}</p>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1.5">{hint}</p>
+            <p className="text-[11px] text-muted-foreground mt-1">Up to {MAX_UPLOAD_LABEL} per file</p>
 
             <div className="mt-5">
                 <span className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-xs transition-all group-hover:bg-primary/90">
@@ -85,6 +107,11 @@ export function UploadCard({
                     Choose Files
                 </span>
             </div>
+            {tooLarge && (
+                <p role="alert" className="mt-4 text-xs sm:text-sm font-medium text-red-600 dark:text-red-400">
+                    {tooLarge}
+                </p>
+            )}
         </div>
     );
 }
