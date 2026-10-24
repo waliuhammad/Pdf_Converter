@@ -29,7 +29,7 @@ import type { HLine, VLine } from "@/lib/pdf-graphics";
  */
 
 /** 2.5 x 72 dpi = 180 dpi: sharp on screen and acceptable in print. */
-const SCALE = 2.5;
+export const SCALE = 2.5;
 
 export interface RenderedPage {
     png: Buffer;

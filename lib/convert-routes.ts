@@ -4,12 +4,14 @@ import { readFormData } from "@/lib/api";
 import { LibreOfficeMissingError, officeToPdf } from "@/lib/office-to-pdf";
 import { extractPageCells } from "@/lib/pdf-text";
 import { readTextLayout, stripPdfText } from "@/lib/pdf-layout";
+import { ocrPageImage } from "@/lib/ocr-layout";
 import { extractPageGraphics } from "@/lib/pdf-graphics";
 import {
     pagesToDocx,
     pagesToPptx,
     pagesToXlsx,
     renderPdfPages,
+    SCALE,
     type RenderedPage,
 } from "@/lib/pdf-to-office";
 import { contentDisposition, rejectBadUpload, type AcceptKind } from "@/lib/uploads";
@@ -161,6 +163,21 @@ async function editablePages(bytes: Uint8Array, targetLanguage?: string): Promis
         ]);
         if (artwork.length !== layout.length) throw new Error("page count mismatch");
         let pages: RenderedPage[] = artwork.map((page, i) => ({ ...page, lines: layout[i].lines }));
+
+        // Scanned pages have no text to find: read them with OCR so the Word
+        // file is still editable. Pages with real text are left alone.
+        pages = await Promise.all(
+            pages.map(async (page) => {
+                if ((page.lines?.length ?? 0) > 0) return page;
+                try {
+                    const { lines, background } = await ocrPageImage(page.png, SCALE);
+                    return lines.length ? { ...page, png: background, lines } : page;
+                } catch (err) {
+                    console.warn("OCR of a scanned page failed; keeping it as an image:", err);
+                    return page;
+                }
+            })
+        );
 
         if (targetLanguage) {
             pages = await translatePagesLines(pages, targetLanguage);

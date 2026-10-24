@@ -14,6 +14,8 @@ const nextConfig: NextConfig = {
     "pdfjs-dist",
     "canvas",
     "libreoffice-convert",
+    // Its OCR worker script is loaded from its own folder at runtime.
+    "tesseract.js",
   ],
 };
 
