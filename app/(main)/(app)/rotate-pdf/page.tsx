@@ -10,6 +10,7 @@ import { Download, FileText, Loader2, Plus, RotateCcw, RotateCw, Trash2, Undo2 }
 import { errorMessage as messageFrom, errorName } from "@/lib/errors";
 import { loadPdfjs } from "@/lib/pdf-libs";
 import { downloadBlob } from "@/lib/download";
+import { ResultPdfPreview } from "@/components/tools/result-pdf-preview";
 import { useCancellableRun, wasCancelled } from "@/hooks/useCancellableRun";
 
 /** Matches the route's limit. */
@@ -70,6 +71,8 @@ export default function RotatePdfPage(): JSX.Element {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [downloaded, setDownloaded] = useState<string | null>(null);
+  const [resultBlob, setResultBlob] = useState<Blob | null>(null);
+  const [resultFilename, setResultFilename] = useState<string>("");
   const nextId = useRef(1);
   const addInput = useRef<HTMLInputElement>(null);
   // Bumped when everything is cleared, so previews still rendering for the
@@ -195,6 +198,8 @@ export default function RotatePdfPage(): JSX.Element {
     generation.current++;
     setDocs([]);
     setLoading(false);
+    setResultBlob(null);
+    setResultFilename("");
     touched();
   };
 
@@ -233,8 +238,15 @@ export default function RotatePdfPage(): JSX.Element {
           ? `${ready[0].file.name.replace(/\.pdf$/i, "")}_rotated.pdf`
           : "rotated_pdfs.zip";
       const name = nameFromResponse(res, fallback);
-      downloadBlob(blob, name);
-      setDownloaded(name);
+      const isZip = blob.type.includes("zip") || name.endsWith(".zip");
+      if (isZip) {
+        downloadBlob(blob, name);
+        setDownloaded(name);
+      } else {
+        setResultBlob(blob);
+        setResultFilename(name);
+        setDownloaded(name);
+      }
     } catch (err) {
       if (wasCancelled(err, signal)) return;
       setError(messageFrom(err, "An error occurred during rotation."));
@@ -412,10 +424,19 @@ export default function RotatePdfPage(): JSX.Element {
               {error}
             </div>
           )}
-          {downloaded && (
+          {downloaded && !resultBlob && (
             <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/30 text-green-700 dark:text-green-400 text-[13px] font-semibold text-center truncate">
               Downloaded {downloaded}
             </div>
+          )}
+          {/* Single-PDF result preview */}
+          {resultBlob && (
+            <ResultPdfPreview
+              blob={resultBlob}
+              filename={resultFilename}
+              label="Rotated PDF Preview"
+              onDownload={() => downloadBlob(resultBlob, resultFilename)}
+            />
           )}
 
           <div className="flex flex-col-reverse sm:flex-row gap-2.5">

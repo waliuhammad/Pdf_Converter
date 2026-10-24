@@ -30,6 +30,7 @@ import type * as PdfjsLib from "pdfjs-dist";
 import { loadPdfjs } from "@/lib/pdf-libs";
 import { SecureNote, UploadCard } from "@/components/tools/upload-card";
 import { downloadBlob } from "@/lib/download";
+import { ResultPdfPreview } from "@/components/tools/result-pdf-preview";
 import { useCancellableRun, wasCancelled } from "@/hooks/useCancellableRun";
 
 type Position =
@@ -124,6 +125,8 @@ export default function WatermarkPdfPage() {
   const [processing, setProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState(false);
+  const [resultBlob, setResultBlob] = useState<Blob | null>(null);
+  const [resultFilename, setResultFilename] = useState<string>("");
 
   const [numPages, setNumPages] = useState<number>(0);
   const [pdfDoc, setPdfDoc] = useState<PdfjsLib.PDFDocumentProxy | null>(null);
@@ -151,6 +154,8 @@ export default function WatermarkPdfPage() {
     setRawFile(f);
     setErrorMessage(null);
     setSuccessMessage(false);
+    setResultBlob(null);
+    setResultFilename("");
     setRenderedPages(null);
 
     try {
@@ -290,8 +295,11 @@ export default function WatermarkPdfPage() {
       }
 
       const blob = await response.blob();
+      if (signal.aborted) return;
       const originalNameWithoutExt = rawFile.name.replace(/\.[^/.]+$/, "");
-      downloadBlob(blob, `${originalNameWithoutExt}_watermarked.pdf`);
+      const name = `${originalNameWithoutExt}_watermarked.pdf`;
+      setResultBlob(blob);
+      setResultFilename(name);
       setSuccessMessage(true);
     } catch (err) {
       if (wasCancelled(err)) return;
@@ -700,11 +708,13 @@ export default function WatermarkPdfPage() {
                 </div>
               </div>
 
-              {successMessage && (
-                <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 text-[13px] font-semibold flex items-start gap-2">
-                  <CheckCircle2 size={16} className="shrink-0 mt-0.5" />
-                  <span>Watermark applied and downloaded.</span>
-                </div>
+              {successMessage && resultBlob && (
+                <ResultPdfPreview
+                  blob={resultBlob}
+                  filename={resultFilename}
+                  label="Watermarked PDF Preview"
+                  onDownload={() => downloadBlob(resultBlob, resultFilename)}
+                />
               )}
 
               <button
@@ -721,7 +731,7 @@ export default function WatermarkPdfPage() {
                 ) : (
                   <>
                     <Download className="shrink-0" size={18} />
-                    Add watermark &amp; download
+                    {successMessage ? "Apply watermark again" : "Add watermark & download"}
                   </>
                 )}
               </button>

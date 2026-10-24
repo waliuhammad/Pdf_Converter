@@ -5,6 +5,7 @@ import { FileText, Trash2, Download, Eye, EyeOff, LockOpen, Loader2 } from "luci
 import { SecureNote, UploadCard } from "@/components/tools/upload-card";
 import { errorMessage } from "@/lib/errors";
 import { downloadBlob } from "@/lib/download";
+import { ResultPdfPreview } from "@/components/tools/result-pdf-preview";
 import { useCancellableRun, wasCancelled } from "@/hooks/useCancellableRun";
 
 export default function UnlockPdfPage() {
@@ -15,6 +16,8 @@ export default function UnlockPdfPage() {
     const [processing, setProcessing] = useState(false);
     const [done, setDone] = useState(false);
     const [error, setError] = useState("");
+    const [resultBlob, setResultBlob] = useState<Blob | null>(null);
+    const [resultFilename, setResultFilename] = useState<string>("");
 
     const formatSize = (bytes: number) => {
         if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
@@ -42,6 +45,8 @@ export default function UnlockPdfPage() {
         setDone(false);
         setError("");
         setPassword("");
+        setResultBlob(null);
+        setResultFilename("");
     };
 
     const handleUnlock = async (e: React.FormEvent) => {
@@ -74,13 +79,16 @@ export default function UnlockPdfPage() {
             }
 
             const blob = await res.blob();
-            downloadBlob(blob, `${file.name.replace(/\.[^/.]+$/, "")}-unlocked.pdf`);
+            if (signal.aborted) return;
+            const name = `${file.name.replace(/\.[^/.]+$/, "")}-unlocked.pdf`;
+            setResultBlob(blob);
+            setResultFilename(name);
             setDone(true);
         } catch (err) {
       if (wasCancelled(err, signal)) return;
             setError(errorMessage(err, "An unexpected error occurred."));
         } finally {
-            setProcessing(false);
+            if (!signal.aborted) setProcessing(false);
         }
     };
 
@@ -175,6 +183,16 @@ export default function UnlockPdfPage() {
                         </div>
                     )}
 
+                    {/* Result preview */}
+                    {resultBlob && (
+                        <ResultPdfPreview
+                            blob={resultBlob}
+                            filename={resultFilename}
+                            label="Unlocked PDF Preview"
+                            onDownload={() => downloadBlob(resultBlob, resultFilename)}
+                        />
+                    )}
+
                     {/* Actions */}
                     <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-3 sm:gap-4 pt-1 sm:pt-2">
                         <button
@@ -197,7 +215,7 @@ export default function UnlockPdfPage() {
                             ) : (
                                 <>
                                     <Download className="shrink-0" size={18} />
-                                    {done ? "Download Unlocked PDF Again" : "Unlock and Download PDF"}
+                                    {done ? "Unlock & Download Again" : "Unlock and Download PDF"}
                                 </>
                             )}
                         </button>

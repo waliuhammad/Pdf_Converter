@@ -12,6 +12,7 @@ import {
 import { loadXlsx } from "@/lib/pdf-libs";
 import { errorMessage } from "@/lib/errors";
 import { downloadBlob } from "@/lib/download";
+import { ResultPdfPreview } from "@/components/tools/result-pdf-preview";
 
 /** A cell as xlsx hands it back from sheet_to_json with header:1. */
 type CellValue = string | number | boolean | null;
@@ -28,6 +29,8 @@ export default function ExcelToPdf(): JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
+  const [resultBlob, setResultBlob] = useState<Blob | null>(null);
+  const [resultFilename, setResultFilename] = useState<string>("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -87,6 +90,8 @@ export default function ExcelToPdf(): JSX.Element {
     setFileName("");
     setFile(null);
     setError(null);
+    setResultBlob(null);
+    setResultFilename("");
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -107,6 +112,7 @@ export default function ExcelToPdf(): JSX.Element {
 
     setLoading(true);
     setError(null);
+    setResultBlob(null);
 
     try {
       const formData = new FormData();
@@ -118,7 +124,10 @@ export default function ExcelToPdf(): JSX.Element {
         throw new Error(data.error || data.message || "Failed to generate PDF.");
       }
 
-      downloadBlob(await res.blob(), `${fileName.replace(/\.[^/.]+$/, "") || "spreadsheet"}.pdf`);
+      const blob = await res.blob();
+      const name = `${fileName.replace(/\.[^/.]+$/, "") || "spreadsheet"}.pdf`;
+      setResultBlob(blob);
+      setResultFilename(name);
     } catch (err) {
       setError(errorMessage(err, "Failed to generate PDF."));
     } finally {
@@ -283,6 +292,16 @@ export default function ExcelToPdf(): JSX.Element {
           </div>
         )}
 
+        {/* Result Preview */}
+        {resultBlob && (
+          <ResultPdfPreview
+            blob={resultBlob}
+            filename={resultFilename}
+            label="Converted PDF Preview"
+            onDownload={() => downloadBlob(resultBlob, resultFilename)}
+          />
+        )}
+
         {/* Convert Button */}
         {sheets.length > 0 && (
           <button
@@ -295,7 +314,7 @@ export default function ExcelToPdf(): JSX.Element {
             <span className="text-center">
               {loading
                 ? "Generating PDF..."
-                : "Convert to PDF"}
+                : resultBlob ? "Convert Again" : "Convert to PDF"}
             </span>
           </button>
         )}

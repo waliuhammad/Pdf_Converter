@@ -11,12 +11,12 @@ export async function extractTextWithOCR(
   });
 
   // The upload is done once; only the generate call moves between models.
-  const response = await withModelFallback((model) => ai.models.generateContent({
-    model,
-
-    contents: createUserContent([
-      createPartFromUri(uploadedFile.uri!, uploadedFile.mimeType!),
-      `
+  const response = await withModelFallback((model) =>
+    ai.models.generateContent({
+      model,
+      contents: createUserContent([
+        createPartFromUri(uploadedFile.uri!, uploadedFile.mimeType!),
+        `
 You are a professional OCR engine.
 
 Extract ALL visible text exactly as it appears in the document.
@@ -36,9 +36,10 @@ Rules:
 - Do NOT explain anything.
 - Return only the extracted text.
 `,
-    ]),
-  }));
-const extractedText = response.text ?? "";
+      ]),
+    })
+  );
+  const extractedText = response.text ?? "";
 
 return {
   text: extractedText,

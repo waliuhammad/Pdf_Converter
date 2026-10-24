@@ -6,7 +6,7 @@ import { rejectBadUpload } from "@/lib/uploads";
 
 // Gemini translates the whole document — measured about 8s,
 // so the platform default is not enough.
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 const AI_SERVICE =
   process.env.AI_SERVICE_URL || "http://localhost:8001";
@@ -42,6 +42,32 @@ export const POST = metered(async (req: NextRequest) => {
     const badUpload = rejectBadUpload(upload, "pdf");
     if (badUpload) return badUpload;
 
+    const outputFormat = ((formData.get("outputFormat") || formData.get("format") || "text") as string).toLowerCase();
+    const language = (formData.get("language") as string) || "English";
+
+    // If PDF output format is requested, generate translated PDF
+    if (outputFormat === "pdf") {
+      const { translatePdfDocument } = await import("@/lib/pdf-translate");
+      const { contentDisposition } = await import("@/lib/uploads");
+
+      const fileBytes = new Uint8Array(await upload.arrayBuffer());
+      const translatedBytes = await translatePdfDocument(fileBytes, language);
+
+      const baseName = upload.name.replace(/\.[^/.]+$/, "") || "translated";
+      const cleanLang = language.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+      const downloadName = `${baseName}_${cleanLang}.pdf`;
+
+      return new NextResponse(Buffer.from(translatedBytes), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": contentDisposition(downloadName),
+          "X-Download-Filename": encodeURIComponent(downloadName),
+        },
+      });
+    }
+
+    // Otherwise keep the current flow exactly as it is (Text mode)
     const response = await fetch(`${AI_SERVICE}/api/translate`, {
       method: "POST",
       body: formData,

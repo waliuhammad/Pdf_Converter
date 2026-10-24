@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { Reveal } from "@/components/reveal";
-import Link from "next/link";
 
 import ToolCard from "./tools/tool-card";
 import SearchTool from "./tools/search-tools";

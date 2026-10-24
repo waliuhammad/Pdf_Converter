@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { FileText, Trash2, Loader2, Download } from "lucide-react";
 import { SecureNote, UploadCard } from "@/components/tools/upload-card";
 import { downloadBlob } from "@/lib/download";
+import { ResultPdfPreview } from "@/components/tools/result-pdf-preview";
 import { useCancellableRun, wasCancelled } from "@/hooks/useCancellableRun";
 
 export default function WordToPdfPage() {
@@ -11,6 +12,8 @@ export default function WordToPdfPage() {
   const { begin, cancel } = useCancellableRun();
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [resultBlob, setResultBlob] = useState<Blob | null>(null);
+  const [resultFilename, setResultFilename] = useState<string>("");
 
   const formatSize = (bytes: number) => {
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
@@ -28,6 +31,7 @@ export default function WordToPdfPage() {
     ) {
       setFile(selectedFile);
       setError(null);
+      setResultBlob(null);
     } else {
       setError("Please upload a valid Word document (.docx or .doc).");
     }
@@ -38,6 +42,7 @@ export default function WordToPdfPage() {
     cancel();
     setFile(null);
     setError(null);
+    setResultBlob(null);
   };
 
   const handleConvert = async () => {
@@ -46,6 +51,7 @@ export default function WordToPdfPage() {
 
     setLoading(true);
     setError(null);
+    setResultBlob(null);
 
     try {
       const formData = new FormData();
@@ -67,7 +73,10 @@ export default function WordToPdfPage() {
       }
 
       const blob = await res.blob();
-      downloadBlob(blob, `${file.name.replace(/\.[^/.]+$/, "")}.pdf`);
+      if (signal.aborted) return;
+      const name = `${file.name.replace(/\.[^/.]+$/, "")}.pdf`;
+      setResultBlob(blob);
+      setResultFilename(name);
     } catch (err: unknown) {
       if (wasCancelled(err, signal)) return;
       if (err instanceof Error) {
@@ -76,7 +85,7 @@ export default function WordToPdfPage() {
         setError("An error occurred during conversion.");
       }
     } finally {
-      setLoading(false);
+      if (!signal.aborted) setLoading(false);
     }
   };
 
@@ -142,6 +151,16 @@ export default function WordToPdfPage() {
             </div>
           )}
 
+          {/* Result preview */}
+          {resultBlob && (
+            <ResultPdfPreview
+              blob={resultBlob}
+              filename={resultFilename}
+              label="Converted PDF Preview"
+              onDownload={() => downloadBlob(resultBlob, resultFilename)}
+            />
+          )}
+
           {/* Actions */}
           <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-3 sm:gap-4 pt-1 sm:pt-2">
             <button
@@ -162,7 +181,7 @@ export default function WordToPdfPage() {
               ) : (
                 <Download className="w-[18px] h-[18px] sm:w-5 sm:h-5" />
               )}
-              {loading ? "Converting..." : "Convert to PDF (.pdf)"}
+              {loading ? "Converting..." : resultBlob ? "Convert Again" : "Convert to PDF (.pdf)"}
             </button>
           </div>
         </div>

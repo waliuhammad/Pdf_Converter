@@ -1,18 +1,51 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { FileText, X, FileArchive, Download, Loader2, CheckCircle2, Plus, ArrowDownAZ } from "lucide-react";
+import { FileText, X, FileArchive, Download, Loader2, CheckCircle2, Plus, ArrowDownAZ, Zap, Gauge, Feather } from "lucide-react";
 import { SecureNote, UploadCard } from "@/components/tools/upload-card";
 import { errorMessage as messageFrom } from "@/lib/errors";
 import { downloadBlob } from "@/lib/download";
+import { ResultPdfPreview } from "@/components/tools/result-pdf-preview";
 import { useCancellableRun, wasCancelled } from "@/hooks/useCancellableRun";
 
 type Level = "extreme" | "recommended" | "less";
 
-const LEVELS: { id: Level; title: string; detail: string }[] = [
-  { id: "extreme", title: "Extreme compression", detail: "Smallest file, lower image quality" },
-  { id: "recommended", title: "Recommended compression", detail: "Good quality, good compression" },
-  { id: "less", title: "Less compression", detail: "High quality, smaller saving" },
+const LEVELS: {
+  id: Level;
+  title: string;
+  detail: string;
+  badge: string;
+  icon: React.ElementType;
+  accent: string;
+  badgeClass: string;
+}[] = [
+  {
+    id: "less",
+    title: "Low Compression",
+    detail: "Maximum image quality preserved. File size reduces slightly.",
+    badge: "Best Quality",
+    icon: Feather,
+    accent: "border-emerald-500 bg-emerald-500/10",
+    badgeClass: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  },
+  {
+    id: "recommended",
+    title: "Average Compression",
+    detail: "Balanced quality and size. Images stay sharp and clear.",
+    badge: "Recommended",
+    icon: Gauge,
+    accent: "border-blue-500 bg-blue-500/10",
+    badgeClass: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+  },
+  {
+    id: "extreme",
+    title: "High Compression",
+    detail: "Smallest file size. Some image quality trade-off.",
+    badge: "Smallest Size",
+    icon: Zap,
+    accent: "border-orange-500 bg-orange-500/10",
+    badgeClass: "bg-orange-500/15 text-orange-600 dark:text-orange-400",
+  },
 ];
 
 const MAX_FILES = 10;
@@ -123,7 +156,7 @@ export default function CompressPdfPage() {
       const name = files.length === 1 ? files[0].file.name : "compressed_pdfs.zip";
       setResults(parsed);
       setOutput({ blob, name });
-      downloadBlob(blob, name);
+      // Don't auto-download; let the user preview then choose to download.
     } catch (err) {
       if (wasCancelled(err, signal)) return;
       setErrorMessage(messageFrom(err, "An error occurred while connecting to the server."));
@@ -246,12 +279,13 @@ export default function CompressPdfPage() {
           {/* Options + action */}
           <div className="lg:col-span-5 bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
             <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground pb-3 border-b border-border">
-              Compression level
+              Compression Level
             </p>
 
-            <div role="radiogroup" aria-label="Compression level" className="space-y-2">
+            <div role="radiogroup" aria-label="Compression level" className="space-y-2.5">
               {LEVELS.map((opt) => {
                 const selected = level === opt.id;
+                const Icon = opt.icon;
                 return (
                   <button
                     key={opt.id}
@@ -263,26 +297,49 @@ export default function CompressPdfPage() {
                       setLevel(opt.id);
                       resetResult();
                     }}
-                    className={`w-full text-left p-3 rounded-xl border transition-colors flex items-start gap-3 disabled:opacity-60 ${
+                    className={`w-full text-left p-3.5 rounded-xl border-2 transition-all duration-200 flex items-start gap-3 disabled:opacity-60 ${
                       selected
-                        ? "border-primary bg-accent text-accent-foreground"
-                        : "border-border bg-background text-foreground hover:bg-accent/60"
+                        ? opt.accent
+                        : "border-border bg-background text-foreground hover:bg-accent/50 hover:border-muted-foreground/40"
                     }`}
                   >
+                    <div
+                      className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                        selected
+                          ? opt.accent
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      <Icon size={18} />
+                    </div>
+                    <span className="flex-1 min-w-0">
+                      <span className="flex items-center gap-2">
+                        <span className="block text-sm font-bold text-foreground">{opt.title}</span>
+                        <span className={`hidden sm:inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                          selected ? opt.badgeClass : "bg-muted text-muted-foreground"
+                        }`}>
+                          {opt.badge}
+                        </span>
+                      </span>
+                      <span className="block text-xs text-muted-foreground mt-0.5 leading-relaxed">{opt.detail}</span>
+                    </span>
                     <span
-                      className={`mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
-                        selected ? "border-primary" : "border-muted-foreground"
+                      className={`mt-1 w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ${
+                        selected ? "border-primary" : "border-muted-foreground/50"
                       }`}
                     >
                       {selected && <span className="w-2 h-2 rounded-full bg-primary" />}
                     </span>
-                    <span>
-                      <span className="block text-sm font-bold">{opt.title}</span>
-                      <span className="block text-xs text-muted-foreground mt-0.5">{opt.detail}</span>
-                    </span>
                   </button>
                 );
               })}
+            </div>
+
+            <div className="rounded-xl border border-border bg-background/60 px-3.5 py-2.5 flex items-start gap-2">
+              <CheckCircle2 size={14} className="text-emerald-500 mt-0.5 shrink-0" />
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                <strong className="text-foreground">Images are never blurred.</strong> All levels preserve your PDF&apos;s visual content — only file overhead and metadata are aggressively reduced.
+              </p>
             </div>
 
             {errorMessage && (
@@ -308,6 +365,16 @@ export default function CompressPdfPage() {
                   )}
                 </p>
               </div>
+            )}
+
+            {/* Result preview — single PDF only (ZIP files open as download) */}
+            {output && files.length === 1 && (
+              <ResultPdfPreview
+                blob={output.blob}
+                filename={output.name}
+                label="Compressed PDF Preview"
+                onDownload={() => downloadBlob(output.blob, output.name)}
+              />
             )}
 
             <div className="flex flex-col gap-2.5 pt-1">

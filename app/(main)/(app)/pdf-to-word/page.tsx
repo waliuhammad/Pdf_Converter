@@ -17,7 +17,9 @@ import {
   Loader2,
   Trash2,
   CheckCircle2,
+  Languages,
 } from "lucide-react";
+import LanguageSelect from "@/components/language-select";
 import type * as PdfjsLib from "pdfjs-dist";
 import { loadPdfjs } from "@/lib/pdf-libs";
 import { downloadBlob } from "@/lib/download";
@@ -29,6 +31,9 @@ export default function PdfToWordPage() {
   const [processing, setProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState(false);
+  const [targetLanguage, setTargetLanguage] = useState("Original Language");
+
+  const isTranslating = Boolean(targetLanguage && targetLanguage !== "Original Language");
 
   // Preview State
   const [numPages, setNumPages] = useState<number>(0);
@@ -133,6 +138,7 @@ export default function PdfToWordPage() {
     setPdfDoc(null);
     setNumPages(0);
     setRenderedPages(null);
+    setTargetLanguage("Original Language");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -142,14 +148,20 @@ export default function PdfToWordPage() {
 
     setProcessing(true);
     setErrorMessage(null);
+    setSuccessMessage(false);
 
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
+      if (isTranslating) {
+        formData.append("targetLanguage", targetLanguage);
+      }
 
       const response = await fetch("/api/pdf-to-word", {
         method: "POST",
-        body: formData, signal });
+        body: formData,
+        signal,
+      });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -160,10 +172,12 @@ export default function PdfToWordPage() {
 
       const blob = await response.blob();
       const originalNameWithoutExt = selectedFile.name.replace(/\.[^/.]+$/, "");
-      downloadBlob(blob, `${originalNameWithoutExt}.docx`);
+      const langSuffix = isTranslating ? `_${targetLanguage.toLowerCase().replace(/[^a-z0-9]+/g, "-")}` : "";
+      downloadBlob(blob, `${originalNameWithoutExt}${langSuffix}.docx`);
 
       setSuccessMessage(true);
-    } catch {
+    } catch (err) {
+      if (wasCancelled(err, signal)) return;
       setErrorMessage("An unexpected error occurred during conversion.");
     } finally {
       setProcessing(false);
@@ -250,10 +264,46 @@ export default function PdfToWordPage() {
             </div>
           </div>
 
+          {/* Translation Option Card */}
+          <div className="bg-card border border-card rounded-2xl p-4 sm:p-5 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 text-primary border border-primary/20">
+                  <Languages className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--primary)]" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-fg text-[13px] sm:text-sm font-bold">Document Language</p>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                      Optional
+                    </span>
+                  </div>
+                  <p className="text-[11px] sm:text-xs text-muted mt-0.5 leading-relaxed">
+                    {isTranslating
+                      ? `Will translate editable text into ${targetLanguage} while preserving the original layout.`
+                      : "Keep original language or select a language to translate the editable Word document into."}
+                  </p>
+                </div>
+              </div>
+              <div className="shrink-0 self-start sm:self-center">
+                <LanguageSelect
+                  value={targetLanguage}
+                  onChange={setTargetLanguage}
+                  includeOriginal={true}
+                  originalLabel="Original Language"
+                />
+              </div>
+            </div>
+          </div>
+
           {successMessage && (
             <div className="p-3.5 sm:p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 text-[13px] sm:text-sm font-semibold flex items-start sm:items-center gap-2">
               <CheckCircle2 className="w-4 h-4 sm:w-[18px] sm:h-[18px] shrink-0 mt-0.5 sm:mt-0" />
-              <span>Conversion complete. Your Word document has been downloaded.</span>
+              <span>
+                {isTranslating
+                  ? `Conversion and translation to ${targetLanguage} complete! Your editable Word document has been downloaded.`
+                  : "Conversion complete. Your Word document has been downloaded."}
+              </span>
             </div>
           )}
 
@@ -283,7 +333,9 @@ export default function PdfToWordPage() {
               ) : (
                 <Download className="w-[18px] h-[18px] sm:w-5 sm:h-5" />
               )}
-              {processing ? "Converting to Word..." : "Convert to Word (.docx)"}
+              {processing
+                ? (isTranslating ? `Translating & Converting to ${targetLanguage}...` : "Converting to Word...")
+                : (isTranslating ? `Translate & Convert to ${targetLanguage} (.docx)` : "Convert to Word (.docx)")}
             </button>
           </div>
         </div>

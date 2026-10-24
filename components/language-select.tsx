@@ -8,9 +8,17 @@ interface LanguageSelectProps {
     value: string;
     onChange: (language: string) => void;
     className?: string;
+    includeOriginal?: boolean;
+    originalLabel?: string;
 }
 
-export default function LanguageSelect({ value, onChange, className = "" }: LanguageSelectProps) {
+export default function LanguageSelect({
+    value,
+    onChange,
+    className = "",
+    includeOriginal = false,
+    originalLabel = "Original Language",
+}: LanguageSelectProps) {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState("");
     const containerRef = useRef<HTMLDivElement>(null);
@@ -35,16 +43,24 @@ export default function LanguageSelect({ value, onChange, className = "" }: Lang
         }
     }, [open]);
 
+    const allLanguages = useMemo(() => {
+        if (!includeOriginal) return LANGUAGES;
+        return [
+            { code: "original", name: originalLabel, native: "Keep original text" },
+            ...LANGUAGES,
+        ];
+    }, [includeOriginal, originalLabel]);
+
     const filtered = useMemo(() => {
         const q = query.trim().toLowerCase();
-        if (!q) return LANGUAGES;
-        return LANGUAGES.filter(
+        if (!q) return allLanguages;
+        return allLanguages.filter(
             (lang) =>
                 lang.name.toLowerCase().includes(q) ||
                 lang.native.toLowerCase().includes(q) ||
                 lang.code.toLowerCase().includes(q)
         );
-    }, [query]);
+    }, [query, allLanguages]);
 
     const handleSelect = (name: string) => {
         onChange(name);

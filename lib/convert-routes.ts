@@ -20,23 +20,96 @@ import { contentDisposition, rejectBadUpload, type AcceptKind } from "@/lib/uplo
  * is then one line: which kind of file in, which format out.
  */
 
+const AI_SERVICE = process.env.AI_SERVICE_URL || "http://localhost:8001";
+
+async function translatePagesLines(pages: RenderedPage[], targetLanguage: string): Promise<RenderedPage[]> {
+    const allLines: string[] = [];
+    const lineMap: { pageIdx: number; lineIdx: number }[] = [];
+
+    pages.forEach((page, pageIdx) => {
+        (page.lines ?? []).forEach((line, lineIdx) => {
+            allLines.push(line.text);
+            lineMap.push({ pageIdx, lineIdx });
+        });
+    });
+
+    if (allLines.length === 0) {
+        console.warn("No text lines found in PDF to translate.");
+        return pages;
+    }
+
+    try {
+        const response = await fetch(`${AI_SERVICE}/api/translate/lines`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                language: targetLanguage,
+                lines: allLines,
+            }),
+            signal: AbortSignal.timeout(90000),
+        });
+
+        if (!response.ok) {
+            console.error("AI service translation returned error status:", response.status);
+            return pages;
+        }
+
+        const data = await response.json();
+        if (data.success && Array.isArray(data.translatedLines) && data.translatedLines.length > 0) {
+            const updatedPages = pages.map((page) => ({
+                ...page,
+                lines: page.lines ? page.lines.map((l) => ({ ...l })) : undefined,
+            }));
+
+            data.translatedLines.forEach((translatedText: string, i: number) => {
+                const mapItem = lineMap[i];
+                if (mapItem && typeof translatedText === "string") {
+                    const targetPage = updatedPages[mapItem.pageIdx];
+                    const targetLine = targetPage?.lines?.[mapItem.lineIdx];
+                    if (targetLine) {
+                        targetLine.text = translatedText;
+                    }
+                }
+            });
+
+            return updatedPages;
+        }
+    } catch (err) {
+        console.error("Failed to translate pages lines:", err);
+    }
+
+    return pages;
+}
+
 function baseName(file: File): string {
     return file.name.replace(/\.[^/.]+$/, "") || "document";
 }
 
-async function readUpload(req: NextRequest, kind: AcceptKind): Promise<File | NextResponse> {
+async function readUpload(req: NextRequest, kind: AcceptKind): Promise<{ file: File; targetLanguage?: string } | NextResponse> {
     const formData = await readFormData(req);
     const file = formData?.get("file");
     if (!(file instanceof File)) {
         return NextResponse.json({ error: "No file provided." }, { status: 400 });
     }
-    return rejectBadUpload(file, kind) ?? file;
+    const rejected = rejectBadUpload(file, kind);
+    if (rejected) return rejected;
+
+    const rawLang = (formData?.get("targetLanguage") || formData?.get("language")) as string | null;
+    const targetLanguage =
+        rawLang && rawLang.trim() && !rawLang.toLowerCase().includes("original")
+            ? rawLang.trim()
+            : undefined;
+
+    return { file, targetLanguage };
 }
 
 /** Word / Excel / PowerPoint in, PDF out — rendered by LibreOffice. */
 export async function officeToPdfRoute(req: NextRequest, kind: AcceptKind): Promise<Response> {
-    const file = await readUpload(req, kind);
-    if (file instanceof NextResponse) return file;
+    const upload = await readUpload(req, kind);
+    if (upload instanceof NextResponse) return upload;
+    const { file } = upload;
 
     const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
 
@@ -80,14 +153,20 @@ const OUTPUT = {
  * font pdf.js cannot read — falls back to the page rendered whole: still an
  * exact copy, just not editable, rather than no file at all.
  */
-async function editablePages(bytes: Uint8Array): Promise<RenderedPage[]> {
+async function editablePages(bytes: Uint8Array, targetLanguage?: string): Promise<RenderedPage[]> {
     try {
         const [artwork, layout] = await Promise.all([
             stripPdfText(bytes.slice()).then((stripped) => renderPdfPages(stripped)),
             readTextLayout(bytes.slice()),
         ]);
         if (artwork.length !== layout.length) throw new Error("page count mismatch");
-        return artwork.map((page, i) => ({ ...page, lines: layout[i].lines }));
+        let pages: RenderedPage[] = artwork.map((page, i) => ({ ...page, lines: layout[i].lines }));
+
+        if (targetLanguage) {
+            pages = await translatePagesLines(pages, targetLanguage);
+        }
+
+        return pages;
     } catch (error) {
         console.warn("Editable conversion fell back to page images:", error);
         return renderPdfPages(bytes.slice());
@@ -99,8 +178,9 @@ export async function pdfToOfficeRoute(
     req: NextRequest,
     format: keyof typeof OUTPUT
 ): Promise<Response> {
-    const file = await readUpload(req, "pdf");
-    if (file instanceof NextResponse) return file;
+    const upload = await readUpload(req, "pdf");
+    if (upload instanceof NextResponse) return upload;
+    const { file, targetLanguage } = upload;
 
     const bytes = new Uint8Array(await file.arrayBuffer());
 
@@ -128,7 +208,7 @@ export async function pdfToOfficeRoute(
                 }))
             );
         } else {
-            const pages = await editablePages(bytes);
+            const pages = await editablePages(bytes, targetLanguage);
             if (pages.length === 0) throw new Error("The PDF has no pages.");
             output = format === "docx" ? await pagesToDocx(pages) : await pagesToPptx(pages, baseName(file));
         }
@@ -140,10 +220,12 @@ export async function pdfToOfficeRoute(
         );
     }
 
+    const langSuffix = targetLanguage ? `_${targetLanguage.toLowerCase().replace(/[^a-z0-9]+/g, "-")}` : "";
+
     return new NextResponse(Buffer.from(output), {
         headers: {
             "Content-Type": OUTPUT[format],
-            "Content-Disposition": contentDisposition(`${baseName(file)}.${format}`),
+            "Content-Disposition": contentDisposition(`${baseName(file)}${langSuffix}.${format}`),
         },
     });
 }

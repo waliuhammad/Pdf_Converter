@@ -12,6 +12,7 @@ import { loadPdfjs } from "@/lib/pdf-libs";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { errorMessage as messageFrom, errorName } from "@/lib/errors";
 import { downloadBlob } from "@/lib/download";
+import { ResultPdfPreview } from "@/components/tools/result-pdf-preview";
 import { useCancellableRun, wasCancelled } from "@/hooks/useCancellableRun";
 import {
   parsePageSelection,
@@ -77,6 +78,8 @@ export default function SplitPdfPage() {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [downloaded, setDownloaded] = useState<string | null>(null);
+  const [resultBlob, setResultBlob] = useState<Blob | null>(null);
+  const [resultFilename, setResultFilename] = useState<string>("");
 
   const options: SplitOptions = useMemo(() => {
     if (tab === "range") {
@@ -243,8 +246,16 @@ export default function SplitPdfPage() {
       const blob = await res.blob();
       if (signal.aborted) return;
       const name = splitDownloadName(file.name, plan);
-      downloadBlob(blob, name);
-      setDownloaded(name);
+      const isZip = blob.type.includes("zip") || name.endsWith(".zip");
+      if (isZip) {
+        // ZIP: auto-download since we can't embed it in the viewer.
+        downloadBlob(blob, name);
+        setDownloaded(name);
+      } else {
+        setResultBlob(blob);
+        setResultFilename(name);
+        setDownloaded(name);
+      }
     } catch (err) {
       if (wasCancelled(err, signal)) return;
       setError(messageFrom(err, "An unexpected error occurred while connecting to the server."));
@@ -544,10 +555,19 @@ export default function SplitPdfPage() {
                   {error}
                 </div>
               )}
-              {downloaded && (
+              {downloaded && !resultBlob && (
                 <div className="p-2.5 rounded-xl bg-green-500/10 border border-green-500/30 text-green-700 dark:text-green-400 text-xs font-semibold text-center truncate">
                   Downloaded {downloaded}
                 </div>
+              )}
+              {/* Single-PDF result preview */}
+              {resultBlob && (
+                <ResultPdfPreview
+                  blob={resultBlob}
+                  filename={resultFilename}
+                  label="Split PDF Preview"
+                  onDownload={() => downloadBlob(resultBlob, resultFilename)}
+                />
               )}
 
               <div className="flex flex-col-reverse sm:flex-row gap-2.5 pt-1">

@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { UploadCard, FileChip, SecureNote } from "@/components/tools/upload-card";
 import { Presentation, Download, Loader2 } from "lucide-react";
 import { downloadBlob } from "@/lib/download";
+import { ResultPdfPreview } from "@/components/tools/result-pdf-preview";
 import { useCancellableRun, wasCancelled } from "@/hooks/useCancellableRun";
 
 export default function PptToPdfPage() {
@@ -11,6 +12,8 @@ export default function PptToPdfPage() {
   const { begin, cancel } = useCancellableRun();
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [resultBlob, setResultBlob] = useState<Blob | null>(null);
+  const [resultFilename, setResultFilename] = useState<string>("");
 
   const formatSize = (bytes: number) => {
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
@@ -30,6 +33,7 @@ export default function PptToPdfPage() {
 
       setFile(selectedFile);
       setError(null);
+      setResultBlob(null);
     }
   };
 
@@ -38,6 +42,7 @@ export default function PptToPdfPage() {
     cancel();
     setFile(null);
     setError(null);
+    setResultBlob(null);
   };
 
   const handleConvert = async (e: React.FormEvent) => {
@@ -50,6 +55,7 @@ export default function PptToPdfPage() {
 
     setLoading(true);
     setError(null);
+    setResultBlob(null);
 
     try {
       const formData = new FormData();
@@ -72,7 +78,10 @@ export default function PptToPdfPage() {
       }
 
       const blob = await response.blob();
-      downloadBlob(blob, `${file.name.replace(/\.[^/.]+$/, "")}.pdf`);
+      if (signal.aborted) return;
+      const name = `${file.name.replace(/\.[^/.]+$/, "")}.pdf`;
+      setResultBlob(blob);
+      setResultFilename(name);
     } catch (err: unknown) {
       if (wasCancelled(err, signal)) return;
       if (err instanceof Error) {
@@ -81,7 +90,7 @@ export default function PptToPdfPage() {
         setError("An unexpected error occurred.");
       }
     } finally {
-      setLoading(false);
+      if (!signal.aborted) setLoading(false);
     }
   };
 
@@ -118,6 +127,16 @@ export default function PptToPdfPage() {
           </div>
         )}
 
+        {/* Result preview */}
+        {resultBlob && (
+          <ResultPdfPreview
+            blob={resultBlob}
+            filename={resultFilename}
+            label="Converted PDF Preview"
+            onDownload={() => downloadBlob(resultBlob, resultFilename)}
+          />
+        )}
+
         {file && (
           <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-3 sm:gap-4 pt-1 sm:pt-2">
             <button
@@ -137,7 +156,7 @@ export default function PptToPdfPage() {
               ) : (
                 <Download className="w-[18px] h-[18px] sm:w-5 sm:h-5" />
               )}
-              {loading ? "Converting presentation..." : "Convert to PDF"}
+              {loading ? "Converting presentation..." : resultBlob ? "Convert Again" : "Convert to PDF"}
             </button>
           </div>
         )}

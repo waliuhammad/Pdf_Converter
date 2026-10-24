@@ -22,6 +22,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SecureNote, UploadCard } from "@/components/tools/upload-card";
 import { downloadBlob } from "@/lib/download";
+import { ResultPdfPreview } from "@/components/tools/result-pdf-preview";
 import { loadPdfLib } from "@/lib/pdf-libs";
 import { useCancellableRun, wasCancelled } from "@/hooks/useCancellableRun";
 
@@ -49,6 +50,8 @@ export default function MergePdfPage() {
   const [activePreviewIndex, setActivePreviewIndex] = useState(0);
   const [processing, setProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [resultBlob, setResultBlob] = useState<Blob | null>(null);
+  const [resultFilename, setResultFilename] = useState<string>("");
 
   const [draggedFileIndex, setDraggedFileIndex] = useState<number | null>(null);
   const [dragOverFileIndex, setDragOverFileIndex] = useState<number | null>(null);
@@ -297,6 +300,8 @@ export default function MergePdfPage() {
     setPagesList([]);
     setActivePreviewIndex(0);
     setErrorMessage(null);
+    setResultBlob(null);
+    setResultFilename("");
   };
 
   const totalOriginalSize = sourceFiles.reduce((acc, f) => acc + f.sizeBytes, 0);
@@ -351,7 +356,8 @@ export default function MergePdfPage() {
 
       const blob = await response.blob();
       if (signal.aborted) return;
-      downloadBlob(blob, "merged.pdf");
+      setResultBlob(blob);
+      setResultFilename("merged.pdf");
     } catch (err) {
       if (wasCancelled(err, signal)) return;
       setErrorMessage("An error occurred while merging your PDF files.");
@@ -715,6 +721,16 @@ export default function MergePdfPage() {
               </div>
             )}
 
+            {/* Merged PDF result preview */}
+            {resultBlob && (
+              <ResultPdfPreview
+                blob={resultBlob}
+                filename={resultFilename}
+                label="Merged PDF Preview"
+                onDownload={() => downloadBlob(resultBlob, resultFilename)}
+              />
+            )}
+
             <div className="flex flex-col sm:flex-row-reverse items-stretch gap-2.5 sm:gap-3 pt-2">
               <button
                 type="button"
@@ -723,7 +739,7 @@ export default function MergePdfPage() {
                 className="flex-1 py-3 px-5 rounded-xl border border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] font-bold text-sm shadow-lg disabled:opacity-40 flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
                 {processing ? <Loader2 className="animate-spin" size={18} /> : <Download size={18} />}
-                {processing ? "Merging PDFs..." : `Merge & Download (${pagesList.length} ${pagesList.length === 1 ? "Page" : "Pages"})`}
+                {processing ? "Merging PDFs..." : resultBlob ? "Merge Again" : `Merge & Download (${pagesList.length} ${pagesList.length === 1 ? "Page" : "Pages"})`}
               </button>
 
               <button

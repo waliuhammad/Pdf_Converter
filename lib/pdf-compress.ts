@@ -50,9 +50,12 @@ interface LevelSettings {
 }
 
 const SETTINGS: Record<CompressionLevel, LevelSettings> = {
-  extreme: { dpi: 72, jpegQuality: 40, minGain: 0.98, stripMetadata: true },
-  recommended: { dpi: 144, jpegQuality: 65, minGain: 0.95, stripMetadata: true },
-  less: { dpi: 220, jpegQuality: 85, minGain: 0.9, stripMetadata: false },
+  // "Low Compression" in the UI — maximum image fidelity
+  less: { dpi: 200, jpegQuality: 88, minGain: 0.85, stripMetadata: false },
+  // "Average Compression" in the UI — balanced quality and size
+  recommended: { dpi: 150, jpegQuality: 72, minGain: 0.90, stripMetadata: true },
+  // "High Compression" in the UI — smallest file, still sharp enough for reading
+  extreme: { dpi: 100, jpegQuality: 55, minGain: 0.92, stripMetadata: true },
 };
 
 export interface CompressResult {

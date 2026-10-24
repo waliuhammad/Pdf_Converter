@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { SecureNote, UploadCard } from "@/components/tools/upload-card";
 import { loadPdfjs } from "@/lib/pdf-libs";
 import { downloadBlob } from "@/lib/download";
@@ -81,6 +81,16 @@ export default function PdfToJpgPage() {
   const [loadingInfo, setLoadingInfo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  // Single-image preview (JPG only; ZIP is auto-downloaded)
+  const [resultImageUrl, setResultImageUrl] = useState<string | null>(null);
+  const [resultFilename, setResultFilename] = useState<string | null>(null);
+
+  // Revoke the object URL when a new one is created.
+  useEffect(() => {
+    return () => {
+      if (resultImageUrl) URL.revokeObjectURL(resultImageUrl);
+    };
+  }, [resultImageUrl]);
 
   const handleFileChange = async (fileList: FileList | null) => {
     const selected = fileList?.[0];
@@ -88,6 +98,8 @@ export default function PdfToJpgPage() {
 
     setError(null);
     setSuccessMessage(null);
+    setResultImageUrl(null);
+    setResultFilename(null);
 
     if (selected.type !== "application/pdf" && !selected.name.toLowerCase().endsWith(".pdf")) {
       setError("Invalid file format. Please upload a valid PDF document.");
@@ -151,13 +163,18 @@ export default function PdfToJpgPage() {
       const base = file.name.replace(/\.[^/.]+$/, "");
       const isZip = (response.headers.get("Content-Type") ?? "").includes("zip");
       const filename = filenameFromResponse(response, isZip ? `${base}_jpg.zip` : `${base}.jpg`);
-      downloadBlob(blob, filename);
 
-      setSuccessMessage(
-        isZip
-          ? "Done! Your JPG images were downloaded in a ZIP file."
-          : "Done! Your JPG image has been downloaded."
-      );
+      if (isZip) {
+        // ZIP: auto-download since we can't embed it in the viewer.
+        downloadBlob(blob, filename);
+        setSuccessMessage("Done! Your JPG images were downloaded in a ZIP file.");
+      } else {
+        // Single JPG: show inline preview.
+        if (resultImageUrl) URL.revokeObjectURL(resultImageUrl);
+        setResultImageUrl(URL.createObjectURL(blob));
+        setResultFilename(filename);
+        setSuccessMessage(null);
+      }
     } catch {
       setError("Could not reach the server. Please check your connection and try again.");
     } finally {
@@ -352,6 +369,32 @@ export default function PdfToJpgPage() {
               <p className="text-center text-xs text-muted-foreground -mt-2">
                 One image downloads as a JPG; several come together in a ZIP.
               </p>
+              {/* Single-image preview */}
+              {resultImageUrl && resultFilename && (
+                <div className="rounded-2xl border border-foreground/15 bg-[var(--background-secondary)] shadow-md overflow-hidden">
+                  <div className="flex items-center gap-2 px-4 py-3 border-b border-foreground/10">
+                    <FileImage className="text-primary" size={16} />
+                    <span className="text-sm font-bold">JPG Preview</span>
+                  </div>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={resultImageUrl}
+                    alt="Converted page"
+                    className="w-full h-auto max-h-[480px] object-contain bg-muted"
+                  />
+                  <div className="px-4 py-3 border-t border-foreground/10 flex items-center justify-between gap-3 bg-[var(--background-secondary)]">
+                    <p className="text-xs text-foreground/60 truncate max-w-[60%]">{resultFilename}</p>
+                    <a
+                      href={resultImageUrl}
+                      download={resultFilename}
+                      className="flex items-center gap-2 py-2 px-4 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover:bg-[var(--primary-hover)] transition-colors shadow-sm shrink-0"
+                    >
+                      <Download size={15} />
+                      Download
+                    </a>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
