@@ -13,17 +13,19 @@
    Dark mode uses deep #0B1220 canvas with #131D33 cards and readable contrast.
    Cards and components have ~12px rounded corners. */
 :root {
+  /* Light mode has a soft blue tint on page backgrounds, sections, muted
+     areas and borders; cards and inputs stay white so they stand out. */
   color-scheme: light;
 
   --radius: 0.75rem;
 
-  --background: #F8FAFC;
-  --background-secondary: #F1F5F9;
+  --background: #F3F7FF;
+  --background-secondary: #EAF1FE;
   --foreground: #0F172A;
 
   --card: #FFFFFF;
   --card-foreground: #0F172A;
-  --card-border: #E2E8F0;
+  --card-border: #DCE6F6;
 
   --popover: #FFFFFF;
   --popover-foreground: #0F172A;
@@ -32,10 +34,10 @@
   --primary-hover: #1D4ED8;
   --primary-foreground: #FFFFFF;
 
-  --secondary: #F1F5F9;
+  --secondary: #EAF1FE;
   --secondary-foreground: #0F172A;
 
-  --muted: #F1F5F9;
+  --muted: #EDF2FC;
   --muted-foreground: #475569;
 
   --accent: #EFF6FF;
@@ -44,7 +46,7 @@
   --destructive: #EF4444;
   --destructive-foreground: #FFFFFF;
 
-  --border: #E2E8F0;
+  --border: #DCE6F6;
   --input: #E2E8F0;
   --ring: #2563EB;
 

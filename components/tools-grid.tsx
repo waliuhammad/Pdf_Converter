@@ -1,5 +1,6 @@
 "use client";
 
+import { HeroBackdrop } from "@/components/hero-backdrop";
 import { useMemo, useState } from "react";
 import { Reveal } from "@/components/reveal";
 
@@ -30,9 +31,10 @@ export function ToolsGrid() {
     return (
         <section
             id="tools"
-            className="bg-background px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-12 sm:pb-16 text-foreground"
+            className="relative overflow-hidden bg-background px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-12 sm:pb-16 text-foreground"
         >
-            <div className="mx-auto max-w-7xl">
+            <HeroBackdrop />
+            <div className="relative mx-auto max-w-7xl">
                 {/* Compact Hero Section */}
                 <div className="mx-auto max-w-3xl text-center mb-6 sm:mb-8">
                     <Reveal>
