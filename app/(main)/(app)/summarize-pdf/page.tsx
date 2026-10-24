@@ -1,6 +1,7 @@
 "use client";
 
 import { useState} from "react";
+import { ExportButtons } from "@/components/tools/export-buttons";
 import { SecureNote, UploadCard } from "@/components/tools/upload-card";
 import { FileText, X, Copy, Sparkles } from "lucide-react";
 import { errorMessage } from "@/lib/errors";
@@ -56,11 +57,20 @@ export default function SummarizePdfPage() {
 
         const aiSummary = data.result.summary;
 
+        // The model writes its points as Markdown ("* point", "- point",
+        // "**bold**"); the page draws its own bullet, so those marks are
+        // removed — otherwise every point read "• * point".
+        const clean = (line: string) =>
+            line
+                .trim()
+                .replace(/^([*\-•]|\d+[.)])\s+/, "")
+                .replace(/\*\*(.+?)\*\*/g, "$1")
+                .trim();
         const resultSummary =
             Array.isArray(aiSummary)
-                ? aiSummary
+                ? aiSummary.map(String).map(clean).filter(Boolean)
                 : typeof aiSummary === "string"
-                ? aiSummary.split("\n").filter(Boolean)
+                ? aiSummary.split("\n").map(clean).filter(Boolean)
                 : ["No summary returned."];
 
         setSummary(resultSummary);
@@ -139,6 +149,14 @@ export default function SummarizePdfPage() {
                                     </li>
                                 ))}
                             </ul>
+                            <ExportButtons
+                                data={{
+                                    title: "AI Summary",
+                                    sourceName: fileMeta.name,
+                                    suffix: "summary",
+                                    content: { bullets: summary },
+                                }}
+                            />
                         </div>
                     )}
 

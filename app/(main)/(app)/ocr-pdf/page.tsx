@@ -1,6 +1,7 @@
 "use client";
 
 import { useState} from "react";
+import { ExportButtons } from "@/components/tools/export-buttons";
 import { SecureNote, UploadCard } from "@/components/tools/upload-card";
 import { FileText, X, Copy, ScanText } from "lucide-react";
 import { errorMessage } from "@/lib/errors";
@@ -55,8 +56,12 @@ export default function OcrPdfPage() {
                 throw new Error(data.message || "Failed to extract text from document.");
             }
 
-            const resultText = data.text || data.extractedText || JSON.stringify(data, null, 2);
-            setExtractedText(resultText);
+            // The AI service answers { success, message, result: { text } }. Only
+            // the top-level fields were read, so the box showed the raw JSON of
+            // the whole response instead of the extracted text.
+            const resultText: string | undefined = data.result?.text ?? data.text ?? data.extractedText;
+            if (typeof resultText !== "string") throw new Error("No text came back from the scan.");
+            setExtractedText(resultText.trim() || "No text was found in this document.");
         } catch (err) {
       if (wasCancelled(err, signal)) return;
             setError(errorMessage(err, "Something went wrong connecting to the server."));
@@ -129,6 +134,14 @@ export default function OcrPdfPage() {
                                     {extractedText}
                                 </pre>
                             </div>
+                            <ExportButtons
+                                data={{
+                                    title: "Extracted Text",
+                                    sourceName: fileMeta.name,
+                                    suffix: "ocr",
+                                    content: { text: extractedText },
+                                }}
+                            />
                         </div>
                     )}
 
