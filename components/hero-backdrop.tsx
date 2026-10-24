@@ -1,10 +1,10 @@
 /**
  * Animated backdrop behind the home hero: an aurora — large, heavily blurred
- * glows in the theme's primary colour, indigo, cyan, fuchsia, violet and teal,
- * drifting over a faint grid.
+ * glows in the theme's primary colour, indigo, cyan, fuchsia, violet, teal,
+ * rose and amber, drifting over a faint grid while the whole palette slowly
+ * cycles through the colour wheel.
  *
- * Pure CSS (keyframes in globals.css): each glow only animates transform, so it
- * runs on the compositor with no JavaScript, and it stops by itself for
+ * Pure CSS (keyframes in globals.css), no JavaScript, and it stops by itself for
  * visitors who prefer reduced motion. Decorative: behind the content, not
  * interactive, hidden from screen readers.
  */
@@ -13,7 +13,7 @@ export function HeroBackdrop() {
         <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[520px] overflow-hidden">
             {/* The glows, faded out towards the bottom so they melt into the page */}
             <div
-                className="absolute inset-0 opacity-90 dark:opacity-100"
+                className="animate-aurora-hue absolute inset-0 opacity-90 dark:opacity-100"
                 style={{
                     maskImage: "linear-gradient(to bottom, black 45%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, transparent 100%)",
@@ -25,6 +25,8 @@ export function HeroBackdrop() {
                 <div className="animate-aurora-d absolute left-[-4%] top-[90px] h-[280px] w-[420px] rounded-full bg-fuchsia-300/40 blur-[100px] dark:bg-fuchsia-500/30" />
                 <div className="animate-aurora-e absolute right-[22%] top-[-120px] h-[300px] w-[400px] rounded-full bg-violet-400/35 blur-[100px] dark:bg-violet-500/35" />
                 <div className="animate-aurora-f absolute right-[-6%] top-[100px] h-[260px] w-[400px] rounded-full bg-emerald-300/35 blur-[100px] dark:bg-teal-400/20" />
+                <div className="animate-aurora-b absolute left-[24%] top-[120px] h-[240px] w-[360px] rounded-full bg-rose-300/35 blur-[100px] [animation-delay:-2s] dark:bg-rose-500/25" />
+                <div className="animate-aurora-d absolute right-[34%] top-[20px] h-[240px] w-[340px] rounded-full bg-amber-200/40 blur-[100px] [animation-delay:-3s] dark:bg-amber-400/20" />
             </div>
             {/* Faint grid, faded towards the edges */}
             <div
