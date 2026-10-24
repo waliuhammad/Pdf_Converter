@@ -2,21 +2,20 @@
 
 import { useState } from "react";
 import { Download } from "lucide-react";
-import { downloadAsPdf, downloadAsTxt, needsUnicodeFont, type TextExport } from "@/lib/text-export";
+import { downloadAsPdf, downloadAsTxt, type TextExport } from "@/lib/text-export";
 
 /** "Download TXT" / "Download PDF" under an AI result (summary, OCR text). */
 export function ExportButtons({ data }: { data: TextExport }) {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const nonLatin = needsUnicodeFont(data);
 
     const savePdf = async () => {
         setSaving(true);
         setError(null);
         try {
             await downloadAsPdf(data);
-        } catch {
-            setError("Could not create the PDF. Try the TXT download instead.");
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Could not create the PDF. Try the TXT download instead.");
         } finally {
             setSaving(false);
         }
@@ -43,11 +42,6 @@ export function ExportButtons({ data }: { data: TextExport }) {
                     {saving ? "Creating PDF..." : "Download PDF"}
                 </button>
             </div>
-            {nonLatin && (
-                <p className="text-xs text-muted-foreground">
-                    This text uses characters the PDF download cannot show. Use Download TXT to keep every character.
-                </p>
-            )}
             {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
         </div>
     );

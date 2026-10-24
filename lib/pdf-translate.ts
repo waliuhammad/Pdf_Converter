@@ -1,10 +1,7 @@
 import "server-only";
-import fs from "fs";
 import { PDFDocument, rgb, StandardFonts, type PDFFont } from "pdf-lib";
-import fontkit from "@pdf-lib/fontkit";
 import { readTextLayout, stripPdfText, type PageText, type TextLine } from "@/lib/pdf-layout";
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { ArabicShaper } = require("arabic-persian-reshaper");
+import { drawLine, embedFontFor, isRtlText, lineWidth } from "@/lib/unicode-pdf-text";
 
 const AI_SERVICE = process.env.AI_SERVICE_URL || "http://localhost:8001";
 
@@ -26,107 +23,6 @@ export function isRtl(language: string): boolean {
         if (l.includes(rtl)) return true;
     }
     return false;
-}
-
-/**
- * Reshape cursive Arabic / Urdu characters into their correct contextual forms
- * (isolated, initial, medial, final) and re-order for Left-to-Right PDF text painters.
- */
-function reshapeRtlText(text: string): string {
-    if (!/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text)) {
-        return text;
-    }
-
-    try {
-        const shaped = ArabicShaper.convertArabic(text);
-        const tokens: { text: string; isRtl: boolean }[] = [];
-        const regex = /([\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+|[^\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+)/g;
-        let match: RegExpExecArray | null;
-        while ((match = regex.exec(shaped)) !== null) {
-            const isArabic = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(match[0]);
-            tokens.push({ text: match[0], isRtl: isArabic });
-        }
-
-        return tokens
-            .reverse()
-            .map((tok) => (tok.isRtl ? tok.text.split("").reverse().join("") : tok.text))
-            .join("");
-    } catch {
-        return text;
-    }
-}
-
-/**
- * Locate a system Unicode TrueType font that supports the target script.
- */
-function findFontFileForLanguage(language: string): string | null {
-    const l = language.trim().toLowerCase();
-
-    const candidates: string[] = [];
-
-    if (isRtl(language)) {
-        candidates.push(
-            "C:\\Windows\\Fonts\\tahoma.ttf",
-            "C:\\Windows\\Fonts\\segoeui.ttf",
-            "C:\\Windows\\Fonts\\arial.ttf",
-            "/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf",
-            "/usr/share/fonts/opentype/noto/NotoSansArabic-Regular.otf",
-            "/System/Library/Fonts/GeezaPro.ttc"
-        );
-    } else if (
-        l.includes("hindi") ||
-        l.includes("marathi") ||
-        l.includes("sanskrit") ||
-        l.includes("nepali") ||
-        l.includes("bengali") ||
-        l.includes("tamil") ||
-        l.includes("telugu") ||
-        l.includes("kannada") ||
-        l.includes("gujarati") ||
-        l.includes("punjabi") ||
-        l.includes("malayalam")
-    ) {
-        candidates.push(
-            "C:\\Windows\\Fonts\\nirmala.ttf",
-            "C:\\Windows\\Fonts\\arial.ttf",
-            "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf",
-            "/System/Library/Fonts/KohinoorBangla.ttc"
-        );
-    } else if (l.includes("chinese") || l.includes("mandarin") || l.includes("taiwanese")) {
-        candidates.push(
-            "C:\\Windows\\Fonts\\msyh.ttc",
-            "C:\\Windows\\Fonts\\simsun.ttc",
-            "C:\\Windows\\Fonts\\arial.ttf",
-            "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc"
-        );
-    } else if (l.includes("japanese")) {
-        candidates.push(
-            "C:\\Windows\\Fonts\\msgothic.ttc",
-            "C:\\Windows\\Fonts\\meiryo.ttc",
-            "C:\\Windows\\Fonts\\arial.ttf"
-        );
-    } else if (l.includes("korean")) {
-        candidates.push(
-            "C:\\Windows\\Fonts\\malgun.ttf",
-            "C:\\Windows\\Fonts\\arial.ttf"
-        );
-    }
-
-    // Default Latin / Cyrillic / Greek / General Unicode fallback candidates
-    candidates.push(
-        "C:\\Windows\\Fonts\\arial.ttf",
-        "C:\\Windows\\Fonts\\segoeui.ttf",
-        "C:\\Windows\\Fonts\\tahoma.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
-        "/System/Library/Fonts/Helvetica.ttc"
-    );
-
-    for (const candidate of candidates) {
-        if (fs.existsSync(candidate)) return candidate;
-    }
-
-    return null;
 }
 
 /**
@@ -251,26 +147,13 @@ export async function translatePdfDocument(
         strippedBytes = pdfBytes;
     }
 
-    // 5. Load the stripped PDF in pdf-lib and embed font
+    // 5. Load the stripped PDF and embed a font chosen from the translated
+    // text itself (its script), not from the language name.
     const pdfDoc = await PDFDocument.load(strippedBytes, { ignoreEncryption: true });
-    pdfDoc.registerFontkit(fontkit);
-
-    let font: PDFFont;
-    const fontFilePath = findFontFileForLanguage(targetLanguage);
-
-    if (fontFilePath && fs.existsSync(fontFilePath)) {
-        try {
-            const fontBytes = fs.readFileSync(fontFilePath);
-            font = await pdfDoc.embedFont(fontBytes, { subset: true });
-        } catch (fontErr) {
-            console.warn(`Could not embed font from ${fontFilePath}:`, fontErr);
-            font = await pdfDoc.embedStandardFont(StandardFonts.Helvetica);
-        }
-    } else {
-        font = await pdfDoc.embedStandardFont(StandardFonts.Helvetica);
-    }
-
-    const isRtlLang = isRtl(targetLanguage);
+    const sample = pageTranslatedLines.flat().join(" ");
+    const font: PDFFont =
+        (await embedFontFor(pdfDoc, sample)) ?? (await pdfDoc.embedStandardFont(StandardFonts.Helvetica));
+    const isRtlLang = isRtl(targetLanguage) || isRtlText(sample);
     const docPages = pdfDoc.getPages();
 
     // 6. Draw translated text back onto each page inside the exact bounding boxes
@@ -288,10 +171,10 @@ export async function translatePdfDocument(
             let text = translatedLines[lineIdx] ?? origLine.text;
             if (!text || !text.trim()) continue;
 
-            // Handle RTL shaping & character re-ordering for Arabic / Urdu
-            if (isRtlLang) {
-                text = reshapeRtlText(text);
-            }
+            // No pre-shaping or reversing here: drawLine hands the text to
+            // fontkit in reading order, which joins Arabic-script letters, and
+            // keeps digits / Latin words inside RTL text the right way round.
+            text = text.replace(/\s+/g, " ").trim();
 
             // Calculate auto-shrunk font size so it fits the bounding box without overflowing
             let fontSize = origLine.size && origLine.size > 0 ? origLine.size : 12;
@@ -299,7 +182,7 @@ export async function translatePdfDocument(
 
             let textWidth: number;
             try {
-                textWidth = font.widthOfTextAtSize(text, fontSize);
+                textWidth = lineWidth(font, text, fontSize);
             } catch {
                 // If character cannot be measured in font, skip drawing that line to avoid crash
                 continue;
@@ -311,7 +194,7 @@ export async function translatePdfDocument(
             if (textWidth > maxAllowedWidth && maxAllowedWidth > 10) {
                 fontSize = Math.max(minFontSize, (maxAllowedWidth / textWidth) * fontSize);
                 try {
-                    textWidth = font.widthOfTextAtSize(text, fontSize);
+                    textWidth = lineWidth(font, text, fontSize);
                 } catch {
                     continue;
                 }
@@ -319,7 +202,7 @@ export async function translatePdfDocument(
 
             // Align text: if RTL, right-align within the original bounding box
             let xPos = origLine.x;
-            if (isRtlLang) {
+            if (isRtlLang && isRtlText(text)) {
                 const rightBoundary = origLine.x + origLine.width;
                 xPos = Math.max(10, Math.min(pageWidth - textWidth - 10, rightBoundary - textWidth));
             }
@@ -334,16 +217,11 @@ export async function translatePdfDocument(
             const b = parseInt(hexColor.slice(4, 6), 16) / 255;
 
             try {
-                docPage.drawText(text, {
+                drawLine(docPage, font, text, {
                     x: Math.max(0, xPos),
                     y: Math.max(0, yPos),
                     size: fontSize,
-                    font,
-                    color: rgb(
-                        isNaN(r) ? 0 : r,
-                        isNaN(g) ? 0 : g,
-                        isNaN(b) ? 0 : b
-                    ),
+                    color: rgb(isNaN(r) ? 0 : r, isNaN(g) ? 0 : g, isNaN(b) ? 0 : b),
                 });
             } catch (drawErr) {
                 console.warn("Could not draw text run:", drawErr);

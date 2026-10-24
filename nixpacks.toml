@@ -5,4 +5,4 @@
 # fonts and images intact (lib/office-to-pdf.ts). "..." keeps Nixpacks' own
 # default packages alongside it.
 [phases.setup]
-aptPkgs = ["...", "libreoffice-writer", "libreoffice-calc", "libreoffice-impress", "fonts-dejavu", "fonts-liberation"]
+aptPkgs = ["...", "libreoffice-writer", "libreoffice-calc", "libreoffice-impress", "fonts-dejavu", "fonts-liberation", "fonts-noto-core"]

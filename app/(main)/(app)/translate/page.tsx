@@ -7,6 +7,7 @@ import LanguageSelect from "@/components/language-select";
 import { errorMessage } from "@/lib/errors";
 import { useCancellableRun, wasCancelled } from "@/hooks/useCancellableRun";
 import { downloadBlob } from "@/lib/download";
+import { ExportButtons } from "@/components/tools/export-buttons";
 
 export default function PdfTranslatorPage() {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -280,6 +281,17 @@ export default function PdfTranslatorPage() {
                                 </div>
                             )}
                         </div>
+
+                        {outputFormat === "text" && translatedText && selectedFile && (
+                            <ExportButtons
+                                data={{
+                                    title: `Translation (${targetLang})`,
+                                    sourceName: selectedFile.name,
+                                    suffix: targetLang.toLowerCase().replace(/[^a-z0-9]+/g, "_"),
+                                    content: { text: translatedText },
+                                }}
+                            />
+                        )}
 
                         <div className="pt-3 border-t border-border mt-3 flex justify-end">
                             <span className="text-xs text-muted">Powered by AI</span>

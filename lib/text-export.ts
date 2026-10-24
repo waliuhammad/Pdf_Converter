@@ -51,7 +51,32 @@ export function needsUnicodeFont(e: TextExport): boolean {
     return /[^\x09\x0A\x0D\x20-\xFF‘-„•…–—′″−▪●]/.test(bodyLines(e).join("\n"));
 }
 
+/**
+ * Text in other scripts (Urdu, Arabic, Hindi, Chinese…) is made into a PDF on
+ * the server, which embeds a real font and joins the letters properly; the
+ * browser's standard PDF fonts cannot draw it.
+ */
+async function downloadViaServer(e: TextExport): Promise<void> {
+    const res = await fetch("/api/text-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            title: e.title,
+            sourceName: e.sourceName,
+            fileName: `${baseName(e)}.pdf`,
+            ...("bullets" in e.content ? { bullets: e.content.bullets } : { text: e.content.text }),
+        }),
+    });
+    if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Could not create the PDF.");
+    }
+    downloadBlob(await res.blob(), `${baseName(e)}.pdf`);
+}
+
 export async function downloadAsPdf(e: TextExport): Promise<void> {
+    if (needsUnicodeFont(e)) return downloadViaServer(e);
+
     const { jsPDF } = await loadJsPdf();
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const margin = 56;

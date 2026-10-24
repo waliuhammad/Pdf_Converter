@@ -37,6 +37,7 @@ FROM node:22-bookworm AS runner
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libreoffice \
     fonts-liberation \
+    fonts-noto-core \
     libcairo2 \
     libpango-1.0-0 \
     libjpeg62-turbo \
