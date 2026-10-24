@@ -38,11 +38,7 @@ export function ResultPdfPreview({
   className = "",
 }: ResultPdfPreviewProps) {
   // Create an object URL from the blob; revoke when blob changes.
-  const blobUrl = useMemo(
-    () => (blob ? URL.createObjectURL(blob) : null),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [blob]
-  );
+  const blobUrl = useMemo(() => (blob ? URL.createObjectURL(blob) : null), [blob]);
   useEffect(() => {
     return () => {
       if (blobUrl) URL.revokeObjectURL(blobUrl);
@@ -55,12 +51,15 @@ export function ResultPdfPreview({
   const [totalPages, setTotalPages] = useState<number | null>(null);
   const [iframeLoaded, setIframeLoaded] = useState(false);
 
-  // Reset when source changes.
-  useEffect(() => {
+  // Reset when the source changes. Done while rendering rather than in an
+  // effect, so the new file never renders once with the old page number first.
+  const [shownUrl, setShownUrl] = useState(pdfUrl);
+  if (pdfUrl !== shownUrl) {
+    setShownUrl(pdfUrl);
     setPage(1);
     setTotalPages(null);
     setIframeLoaded(false);
-  }, [pdfUrl]);
+  }
 
   // Detect page count from the blob via pdfjs (best-effort).
   useEffect(() => {
