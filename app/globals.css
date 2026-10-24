@@ -385,6 +385,26 @@ body {
   50%      { transform: translate(-28px, -22px) scale(1); opacity: 1; }
 }
 
+/* The aurora behind the home hero (components/hero-backdrop.tsx): three blurred
+   glows wandering on different periods, so the light keeps shifting without
+   ever visibly repeating. Transform only, so it stays on the compositor. */
+@keyframes aurora-a {
+  0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  33%      { transform: translate(120px, 40px) scale(1.15) rotate(8deg); }
+  66%      { transform: translate(40px, 90px) scale(0.95) rotate(-6deg); }
+}
+
+@keyframes aurora-b {
+  0%, 100% { transform: translate(0, 0) scale(1.05); }
+  50%      { transform: translate(-140px, 70px) scale(0.9); }
+}
+
+@keyframes aurora-c {
+  0%, 100% { transform: translate(0, 0) scale(0.95); }
+  40%      { transform: translate(-110px, -50px) scale(1.2); }
+  75%      { transform: translate(90px, -20px) scale(1); }
+}
+
 /* A highlight sweeping across the progress bar, so the upload card reads as
    in-progress rather than frozen mid-upload. */
 @keyframes shimmer {
@@ -413,6 +433,10 @@ body {
 .animate-drift-a { animation: drift-a 18s ease-in-out infinite; }
 .animate-drift-b { animation: drift-b 22s ease-in-out infinite; }
 
+.animate-aurora-a { animation: aurora-a 22s ease-in-out infinite; }
+.animate-aurora-b { animation: aurora-b 17s ease-in-out infinite; }
+.animate-aurora-c { animation: aurora-c 26s ease-in-out infinite; }
+
 .animate-shimmer { animation: shimmer 2.2s ease-in-out infinite; }
 .animate-icon-pulse { animation: icon-pulse 2.8s ease-in-out infinite; }
 
@@ -434,6 +458,9 @@ body {
   .animate-float-c,
   .animate-drift-a,
   .animate-drift-b,
+  .animate-aurora-a,
+  .animate-aurora-b,
+  .animate-aurora-c,
   .animate-shimmer,
   .animate-icon-pulse { animation: none; }
 }
