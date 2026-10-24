@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
+    "vercel-build": "echo Skipping tsc - Vercel compiles src/app.ts itself",
     "start": "tsx src/server.ts"
   },
   "keywords": [],
