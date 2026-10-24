@@ -1,5 +1,6 @@
 "use client";
 
+import { planTesterEnabled } from "@/lib/plan-tester";
 import React, {
     createContext,
     useCallback,
@@ -95,12 +96,10 @@ export function TestPlanProvider({
 }: {
     children: React.ReactNode;
 }) {
-    const enablePlanTester =
-        process.env.NEXT_PUBLIC_ENABLE_PLAN_TESTER ?? "true";
-
-    const isTestMode =
-        process.env.NODE_ENV !== "production" &&
-        enablePlanTester !== "false";
+    // Same rule as the server (lib/dev-plan.ts): only while the switcher is
+    // switched on, so a choice left over from earlier cannot quietly replace
+    // the user's real plan with nothing on screen to show it.
+    const isTestMode = planTesterEnabled();
 
     const stored = useSyncExternalStore(subscribe, readStoredPlan, serverSnapshot);
 

@@ -75,6 +75,38 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 }
 
 /**
+ * Follow a user's profile live: `onChange` runs now and again whenever the
+ * record changes in the Realtime Database.
+ *
+ * getUserProfile reads once, at sign-in, so a plan changed in the console (or
+ * by a confirmed payment) did not reach an open page until the user reloaded
+ * or signed in again. Returns the unsubscribe function.
+ */
+export async function subscribeUserProfile(
+    uid: string,
+    onChange: (profile: UserProfile | null) => void
+): Promise<() => void> {
+    try {
+        const [{ ref, onValue }, db] = await Promise.all([
+            import("firebase/database"),
+            getDb(),
+        ]);
+        return onValue(
+            ref(db, `users/${uid}`),
+            (snap) => onChange(snap.exists() ? (snap.val() as UserProfile) : null),
+            (err) => {
+                reportDatabaseError("Could not follow the user profile", err);
+                onChange(null);
+            }
+        );
+    } catch (err) {
+        reportDatabaseError("Could not follow the user profile", err);
+        onChange(null);
+        return () => {};
+    }
+}
+
+/**
  * Updates the display name on the Firebase Auth record first — that is what the
  * sidebar and dashboard actually read — then mirrors it to the user document.
  *

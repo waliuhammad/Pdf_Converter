@@ -6,9 +6,12 @@ import {
     useContext,
     useEffect,
     useMemo,
+    useRef,
     useState,
 } from "react";
 import { useTestPlanOptional } from "@/components/dev/TestPlanProvider";
+import { useAuth } from "@/hooks/useAuth";
+import { resolvePlan } from "@/lib/firebase/users";
 
 export interface PlanUsage {
     used: number;
@@ -97,6 +100,19 @@ export function PlanUsageProvider({
         window.addEventListener("focus", onFocus);
         return () => window.removeEventListener("focus", onFocus);
     }, [load]);
+
+    // The profile is followed live (useAuth), so when the plan or its expiry
+    // changes in the database the allowance is fetched again — otherwise the
+    // meter kept showing the old plan's limit until the page was reloaded.
+    const { profile } = useAuth();
+    const planKey = profile ? `${resolvePlan(profile)}:${profile.planExpiresAt ?? ""}` : null;
+    const lastPlanKey = useRef<string | null>(null);
+    useEffect(() => {
+        if (planKey === null) return;
+        const changed = lastPlanKey.current !== null && lastPlanKey.current !== planKey;
+        lastPlanKey.current = planKey;
+        if (changed) load();
+    }, [planKey, load]);
 
     const value = useMemo<PlanUsageValue>(
         () => ({

@@ -14,6 +14,8 @@ import {
 import { StatCard } from "@/components/dashboard/stat-card";
 import { useAuth } from "@/hooks/useAuth";
 import { useLibrary } from "@/lib/store";
+import { resolvePlan } from "@/lib/firebase/users";
+import { getPlan } from "@/lib/plans";
 import { formatRelativeTime, formatStorageUsed } from "@/lib/utils";
 
 const quickActions = [
@@ -48,7 +50,9 @@ export default function DashboardPage() {
 
     const displayName =
         profile?.fullName || user?.displayName || user?.email?.split("@")[0] || "there";
-    const planLabel = profile?.plan === "paid" ? t("dashboard.paidPlan") : t("dashboard.freePlan");
+    // From the plan itself: this compared against "paid", the value used before
+    // plans had names, so Pro and Business users were labelled "Free Plan".
+    const planLabel = `${getPlan(resolvePlan(profile)).name} Plan`;
 
     return (
         <div>
