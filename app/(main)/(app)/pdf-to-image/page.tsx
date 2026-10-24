@@ -74,6 +74,11 @@ export default function PdfToJpgPage() {
   const [numPages, setNumPages] = useState<number>(0);
   const [mode, setMode] = useState<Mode>("pages");
   const [quality, setQuality] = useState<Quality>("normal");
+  // How each page sits in its image (Page to JPG only): its own size, or on
+  // an A4 / US Letter sheet, with an optional white margin.
+  const [pageSize, setPageSize] = useState<"fit" | "a4" | "letter">("fit");
+  const [orientation, setOrientation] = useState<"auto" | "portrait" | "landscape">("auto");
+  const [margin, setMargin] = useState<"none" | "small" | "big">("none");
   const [scope, setScope] = useState<Scope>("all");
   const [pageNumber, setPageNumber] = useState<string>("1");
 
@@ -150,6 +155,11 @@ export default function PdfToJpgPage() {
       formData.append("file", file);
       formData.append("mode", mode);
       formData.append("quality", quality);
+      if (mode === "pages") {
+        formData.append("pageSize", pageSize);
+        formData.append("orientation", orientation);
+        formData.append("margin", margin);
+      }
       if (scope === "single") formData.append("pageNumber", String(parsedPage));
 
       const response = await fetch("/api/pdf-to-image", { method: "POST", body: formData });
@@ -304,6 +314,46 @@ export default function PdfToJpgPage() {
                 )}
               </div>
 
+              {mode === "pages" && (
+                <div className="space-y-3">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Page layout
+                  </label>
+                  <LayoutChoice
+                    label="Page size"
+                    value={pageSize}
+                    onChange={setPageSize}
+                    options={[
+                      { id: "fit", label: "Fit image", hint: "Each page at its own size" },
+                      { id: "a4", label: "A4", hint: "210 × 297 mm" },
+                      { id: "letter", label: "US Letter", hint: "8.5 × 11 in" },
+                    ]}
+                  />
+                  {pageSize !== "fit" && (
+                    <LayoutChoice
+                      label="Orientation"
+                      value={orientation}
+                      onChange={setOrientation}
+                      options={[
+                        { id: "auto", label: "Auto", hint: "Match each page" },
+                        { id: "portrait", label: "Portrait" },
+                        { id: "landscape", label: "Landscape" },
+                      ]}
+                    />
+                  )}
+                  <LayoutChoice
+                    label="Margin"
+                    value={margin}
+                    onChange={setMargin}
+                    options={[
+                      { id: "none", label: "No margin" },
+                      { id: "small", label: "Small" },
+                      { id: "big", label: "Big" },
+                    ]}
+                  />
+                </div>
+              )}
+
               <div className="space-y-2">
                 <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   Pages
@@ -402,5 +452,50 @@ export default function PdfToJpgPage() {
         <SecureNote />
       </div>
     </main>
+  );
+}
+
+/** One row of layout buttons (page size, orientation or margin). */
+function LayoutChoice<T extends string>({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: T;
+  onChange: (value: T) => void;
+  options: { id: T; label: string; hint?: string }[];
+}) {
+  return (
+    <div className="space-y-1.5">
+      <span className="block text-xs font-semibold text-foreground">{label}</span>
+      <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label={label}>
+        {options.map((o) => {
+          const active = value === o.id;
+          return (
+            <button
+              key={o.id}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => onChange(o.id)}
+              className={`py-2 px-2 rounded-xl border text-xs sm:text-sm font-semibold transition-all text-center ${
+                active
+                  ? "bg-primary border-primary text-primary-foreground"
+                  : "bg-card border-border text-foreground hover:border-primary/50"
+              }`}
+            >
+              <span className="block">{o.label}</span>
+              {o.hint && (
+                <span className={`block text-[10px] sm:text-xs font-normal mt-0.5 ${active ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                  {o.hint}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }

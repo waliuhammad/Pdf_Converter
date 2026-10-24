@@ -32,6 +32,7 @@ import {
 } from "pdf-lib";
 import { inflateSync } from "zlib";
 import { withOwnPdfWorker } from "@/lib/pdf-worker-isolation";
+import { MARGINS, PAGE_SIZES, type MarginSize, type PageSize } from "@/lib/images-to-pdf";
 
 export type JpgQuality = "normal" | "high";
 
@@ -40,6 +41,22 @@ export const QUALITY_SETTINGS: Record<JpgQuality, { dpi: number; jpeg: number }>
   normal: { dpi: 150, jpeg: 82 },
   high: { dpi: 300, jpeg: 92 },
 };
+
+/**
+ * How each page sits in its image, the same choices JPG to PDF offers.
+ *
+ * "fit" keeps the page's own size (plus the margin); A4 and US Letter put the
+ * page on a white sheet of that paper, scaled to fit inside the margins and
+ * centred. "auto" orientation turns the sheet to match each page, so a
+ * landscape page is not shrunk onto a portrait sheet.
+ */
+export interface PageLayout {
+  pageSize: PageSize;
+  orientation: "auto" | "portrait" | "landscape";
+  margin: MarginSize;
+}
+
+export const DEFAULT_LAYOUT: PageLayout = { pageSize: "fit", orientation: "auto", margin: "none" };
 
 export interface JpgFile {
   name: string;
@@ -60,7 +77,8 @@ export async function renderPagesToJpg(
   pdf: Uint8Array,
   baseName: string,
   quality: JpgQuality,
-  pages?: number[]
+  pages?: number[],
+  layout: PageLayout = DEFAULT_LAYOUT
 ): Promise<JpgFile[]> {
   const { dpi, jpeg } = QUALITY_SETTINGS[quality];
 
@@ -80,7 +98,8 @@ export async function renderPagesToJpg(
   const out: JpgFile[] = [];
   for (const page of rendered) {
     if (page.kind !== "content" || !page.content) continue;
-    const data = await sharp(page.content)
+    const laidOut = await layOutPage(page.content, page.width, page.height, dpi, layout);
+    const data = await sharp(laidOut)
       // A page with no painted background renders transparent; JPEG has no
       // alpha, so it is laid on white as a printed page would be.
       .flatten({ background: "#ffffff" })
@@ -90,6 +109,49 @@ export async function renderPagesToJpg(
     out.push({ name: `${baseName}_page-${page.pageNumber}.jpg`, data });
   }
   return out;
+}
+
+/**
+ * Place a rendered page (PNG, `width`×`height` px at `dpi`) according to the
+ * layout, returning PNG bytes. "fit" with no margin returns the page as is.
+ */
+async function layOutPage(
+  png: Buffer,
+  width: number,
+  height: number,
+  dpi: number,
+  layout: PageLayout
+): Promise<Buffer> {
+  const marginPx = Math.round((MARGINS[layout.margin] / 72) * dpi);
+  if (layout.pageSize === "fit" && marginPx === 0) return png;
+
+  let sheetW: number;
+  let sheetH: number;
+  if (layout.pageSize === "fit") {
+    sheetW = width + 2 * marginPx;
+    sheetH = height + 2 * marginPx;
+  } else {
+    const [w, h] = PAGE_SIZES[layout.pageSize];
+    const landscape =
+      layout.orientation === "landscape" || (layout.orientation === "auto" && width > height);
+    sheetW = Math.round(((landscape ? h : w) / 72) * dpi);
+    sheetH = Math.round(((landscape ? w : h) / 72) * dpi);
+  }
+
+  const boxW = Math.max(1, sheetW - 2 * marginPx);
+  const boxH = Math.max(1, sheetH - 2 * marginPx);
+  const fitted =
+    layout.pageSize === "fit"
+      ? png
+      : await sharp(png).resize({ width: boxW, height: boxH, fit: "inside", kernel: "lanczos3" }).png().toBuffer();
+  const meta = await sharp(fitted).metadata();
+  const left = Math.round((sheetW - (meta.width ?? boxW)) / 2);
+  const top = Math.round((sheetH - (meta.height ?? boxH)) / 2);
+
+  return sharp({ create: { width: sheetW, height: sheetH, channels: 3, background: "#ffffff" } })
+    .composite([{ input: fitted, left, top }])
+    .png()
+    .toBuffer();
 }
 
 /* ------------------------------------------------------------------------ */

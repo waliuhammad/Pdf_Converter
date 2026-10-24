@@ -24,8 +24,8 @@ export interface PdfImageInput {
   kind: "jpg" | "png";
 }
 
-/** Portrait sizes in points. */
-const PAGE_SIZES: Record<Exclude<PageSize, "fit">, [number, number]> = {
+/** Portrait sizes in points. Shared with PDF to JPG, which lays pages on the same sheets. */
+export const PAGE_SIZES: Record<Exclude<PageSize, "fit">, [number, number]> = {
   a4: [595.28, 841.89],
   letter: [612, 792],
 };

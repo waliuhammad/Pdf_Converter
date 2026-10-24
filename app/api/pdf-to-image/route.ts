@@ -5,11 +5,13 @@ import { readFormData } from "@/lib/api";
 import { metered } from "@/lib/metered";
 import { rejectBadUpload, contentDisposition } from "@/lib/uploads";
 import {
+  DEFAULT_LAYOUT,
   baseNameOf,
   extractImagesAsJpg,
   renderPagesToJpg,
   type JpgFile,
   type JpgQuality,
+  type PageLayout,
 } from "@/lib/pdf-to-jpg";
 
 // Renders every page to a bitmap, so the platform default is not enough.
@@ -86,7 +88,7 @@ export const POST = metered(async (req: NextRequest) => {
         return NextResponse.json({ error }, { status: 422 });
       }
     } else {
-      files = await renderPagesToJpg(bytes, baseName, quality, pages);
+      files = await renderPagesToJpg(bytes, baseName, quality, pages, readLayout(formData));
       if (files.length === 0) {
         return NextResponse.json({ error: "No pages could be rendered." }, { status: 422 });
       }
@@ -115,3 +117,17 @@ export const POST = metered(async (req: NextRequest) => {
     return NextResponse.json({ error: "Could not convert this PDF to JPG." }, { status: 500 });
   }
 });
+
+
+/** Page size, orientation and margin for "Page to JPG"; anything unknown falls back to the default. */
+function readLayout(formData: FormData): PageLayout {
+  const pick = <T extends string>(name: string, allowed: readonly T[], fallback: T): T => {
+    const value = formData.get(name);
+    return typeof value === "string" && (allowed as readonly string[]).includes(value) ? (value as T) : fallback;
+  };
+  return {
+    pageSize: pick("pageSize", ["fit", "a4", "letter"] as const, DEFAULT_LAYOUT.pageSize),
+    orientation: pick("orientation", ["auto", "portrait", "landscape"] as const, DEFAULT_LAYOUT.orientation),
+    margin: pick("margin", ["none", "small", "big"] as const, DEFAULT_LAYOUT.margin),
+  };
+}
