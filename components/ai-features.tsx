@@ -44,24 +44,24 @@ const features = [
 
 export function AIFeatures() {
     return (
-        <section className="dark relative overflow-hidden py-14 sm:py-20 px-4 sm:px-6 lg:px-8 bg-[#070d18] text-slate-100">
+        <section className="relative overflow-hidden py-14 sm:py-20 px-4 sm:px-6 lg:px-8 bg-[var(--background-secondary)] text-foreground">
             {/* Ambient Background Glows */}
-            <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-96 w-[700px] rounded-full bg-blue-600/15 blur-[120px]" />
-            <div className="pointer-events-none absolute -bottom-40 right-10 h-72 w-72 rounded-full bg-sky-500/10 blur-[100px]" />
+            <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-96 w-[700px] rounded-full bg-primary/15 blur-[120px]" />
+            <div className="pointer-events-none absolute -bottom-40 right-10 h-72 w-72 rounded-full bg-primary/10 blur-[100px]" />
 
             <div className="relative mx-auto max-w-7xl">
                 <Reveal>
                     <div className="text-center">
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-950/60 px-3.5 py-1 text-xs font-semibold text-blue-400 shadow-xs">
-                            <Sparkles size={14} className="text-blue-400" />
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary shadow-xs">
+                            <Sparkles size={14} className="text-primary" />
                             AI Powered Features
                         </span>
 
-                        <h2 className="mt-3 sm:mt-4 text-2xl sm:text-3xl font-extrabold text-white md:text-4xl tracking-tight">
+                        <h2 className="mt-3 sm:mt-4 text-2xl sm:text-3xl font-extrabold text-foreground md:text-4xl tracking-tight">
                             Supercharge your PDFs with AI
                         </h2>
 
-                        <p className="mx-auto mt-2 max-w-xl text-sm sm:text-base text-slate-400 leading-relaxed">
+                        <p className="mx-auto mt-2 max-w-xl text-sm sm:text-base text-muted-foreground leading-relaxed">
                             Save hours with intelligent document analysis, summaries, translations, and AI-powered workflows.
                         </p>
                     </div>
@@ -70,30 +70,30 @@ export function AIFeatures() {
                 <div className="mt-8 sm:mt-10 grid gap-3.5 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                     {features.map((feature, index) => {
                         return (
-                            <Link key={feature.title} href={`/${feature.slug}`} className="block h-full outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-2xl">
+                            <Link key={feature.title} href={`/${feature.slug}`} className="block h-full outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-2xl">
                                 <Reveal delay={index * 50} className="h-full">
-                                    <div className="group relative flex flex-col justify-between h-full overflow-hidden rounded-2xl border border-[#1a253c] bg-[#0d1527] p-5.5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-950/40">
+                                    <div className="group relative flex flex-col justify-between h-full overflow-hidden rounded-2xl border border-border bg-card p-5.5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/10">
                                         <div>
                                             <div className="flex items-center justify-between mb-4">
                                                 <div className="group/icon relative flex h-14 w-16 shrink-0 items-center justify-start transition-transform duration-300 group-hover:scale-105">
                                                     {feature.illustration}
                                                 </div>
 
-                                                <span className="rounded-md border border-blue-500/30 bg-blue-950/60 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-400 shadow-xs">
+                                                <span className="rounded-md border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary shadow-xs">
                                                     {feature.badge}
                                                 </span>
                                             </div>
 
-                                            <h3 className="text-base font-semibold text-white group-hover:text-blue-400 transition-colors">
+                                            <h3 className="text-base font-semibold text-foreground group-hover:text-primary transition-colors">
                                                 {feature.title}
                                             </h3>
 
-                                            <p className="mt-1.5 text-xs sm:text-sm text-slate-400 leading-relaxed">
+                                            <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground leading-relaxed">
                                                 {feature.description}
                                             </p>
                                         </div>
 
-                                        <div className="flex mt-5 items-center gap-1 text-xs font-semibold text-blue-400 transition-all group-hover:gap-1.5 group-hover:text-blue-300">
+                                        <div className="flex mt-5 items-center gap-1 text-xs font-semibold text-primary transition-all group-hover:gap-1.5 group-hover:opacity-80">
                                             <span>Learn More</span>
                                             <ArrowRight size={14} />
                                         </div>
@@ -105,9 +105,9 @@ export function AIFeatures() {
                                                 absolute
                                                 inset-0
                                                 bg-gradient-to-br
-                                                from-blue-500/10
+                                                from-primary/10
                                                 via-transparent
-                                                to-blue-500/5
+                                                to-primary/5
                                                 opacity-0
                                                 transition-opacity
                                                 duration-300
@@ -131,16 +131,16 @@ export function AIFeatures() {
                                 gap-2
                                 rounded-xl
                                 bg-primary
-                                hover:bg-primary-hover
+                                hover:bg-[var(--primary-hover)]
                                 px-6
                                 py-2.5
                                 text-sm
                                 font-semibold
-                                text-white
+                                text-primary-foreground
                                 shadow-lg
-                                shadow-blue-600/25
+                                shadow-primary/25
                                 transition-all
-                                hover:shadow-blue-600/40
+                                hover:shadow-primary/40
                                 active:scale-98
                             "
                         >
