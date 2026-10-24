@@ -4,8 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { isToolPath } from "@/lib/tool-paths";
 import { useState, useEffect } from "react";
-import { Menu, X, FileText } from "lucide-react";
+import { Menu, X, FileText, LayoutDashboard } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useAuth } from "@/hooks/useAuth";
 
 /** Root-relative, not bare hashes. This navbar renders on the content pages
  *  (/terms, /privacy, /about, …) as well as the landing page, and a bare
@@ -29,6 +30,9 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
   const [activeHash, setActiveHash] = useState("");
   const pathname = usePathname();
+  // Signed-in visitors get a way back to their dashboard instead of being
+  // offered "Login" and "Start free" for an account they already have.
+  const { user, loading } = useAuth();
 
   /**
    * Which link to underline.
@@ -195,19 +199,35 @@ export function Navbar() {
         <div className="hidden items-center gap-3 lg:flex">
           <ThemeToggle />
 
-          <Link
-            href="/login"
-            className="px-3 py-2 text-sm font-semibold text-foreground transition-colors hover:text-primary"
-          >
-            Login
-          </Link>
+          {loading ? (
+            // Holds the space while sign-in is checked, so neither state
+            // flashes and the bar does not jump when the answer arrives.
+            <div className="h-9 w-[168px]" aria-hidden="true" />
+          ) : user ? (
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4.5 py-2 text-sm font-semibold text-primary-foreground shadow-xs transition-all hover:bg-primary/90 hover:shadow-sm active:scale-98"
+            >
+              <LayoutDashboard size={16} />
+              Dashboard
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="px-3 py-2 text-sm font-semibold text-foreground transition-colors hover:text-primary"
+              >
+                Login
+              </Link>
 
-          <Link
-            href="/register"
-            className="rounded-xl bg-primary px-4.5 py-2 text-sm font-semibold text-primary-foreground shadow-xs transition-all hover:bg-primary/90 hover:shadow-sm active:scale-98"
-          >
-            Start free
-          </Link>
+              <Link
+                href="/register"
+                className="rounded-xl bg-primary px-4.5 py-2 text-sm font-semibold text-primary-foreground shadow-xs transition-all hover:bg-primary/90 hover:shadow-sm active:scale-98"
+              >
+                Start free
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile controls */}
@@ -252,21 +272,34 @@ export function Navbar() {
             })}
 
             <div className="mt-4 flex flex-col gap-2 pt-2 border-t border-border">
-              <Link
-                href="/login"
-                onClick={() => setOpen(false)}
-                className="rounded-xl border border-border py-2.5 text-center text-sm font-medium text-foreground transition hover:border-primary hover:text-primary"
-              >
-                Login
-              </Link>
+              {loading ? null : user ? (
+                <Link
+                  href="/dashboard"
+                  onClick={() => setOpen(false)}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-center text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+                >
+                  <LayoutDashboard size={16} />
+                  Dashboard
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    onClick={() => setOpen(false)}
+                    className="rounded-xl border border-border py-2.5 text-center text-sm font-medium text-foreground transition hover:border-primary hover:text-primary"
+                  >
+                    Login
+                  </Link>
 
-              <Link
-                href="/register"
-                onClick={() => setOpen(false)}
-                className="rounded-xl bg-primary py-2.5 text-center text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
-              >
-                Start free
-              </Link>
+                  <Link
+                    href="/register"
+                    onClick={() => setOpen(false)}
+                    className="rounded-xl bg-primary py-2.5 text-center text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+                  >
+                    Start free
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
