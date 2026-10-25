@@ -5,6 +5,7 @@ import { LibreOfficeMissingError, officeToPdf } from "@/lib/office-to-pdf";
 import { extractPageCells } from "@/lib/pdf-text";
 import { readTextLayout, stripPdfText } from "@/lib/pdf-layout";
 import { ocrPageImage } from "@/lib/ocr-layout";
+import { colourLinesFromRender } from "@/lib/text-colour";
 import { extractPageGraphics } from "@/lib/pdf-graphics";
 import {
     pagesToDocx,
@@ -157,12 +158,21 @@ const OUTPUT = {
  */
 async function editablePages(bytes: Uint8Array, targetLanguage?: string): Promise<RenderedPage[]> {
     try {
-        const [artwork, layout] = await Promise.all([
+        const [artwork, layout, full] = await Promise.all([
             stripPdfText(bytes.slice()).then((stripped) => renderPdfPages(stripped)),
             readTextLayout(bytes.slice()),
+            // The page as drawn, to read each line's real colour against the artwork.
+            renderPdfPages(bytes.slice()).catch(() => null),
         ]);
         if (artwork.length !== layout.length) throw new Error("page count mismatch");
-        let pages: RenderedPage[] = artwork.map((page, i) => ({ ...page, lines: layout[i].lines }));
+        let pages: RenderedPage[] = await Promise.all(
+            artwork.map(async (page, i) => {
+                const lines = layout[i].lines;
+                const whole = full?.[i]?.png;
+                if (!whole || lines.length === 0) return { ...page, lines };
+                return { ...page, lines: await colourLinesFromRender(lines, whole, page.png, SCALE).catch(() => lines) };
+            })
+        );
 
         // Scanned pages have no text to find: read them with OCR so the Word
         // file is still editable. Pages with real text are left alone.

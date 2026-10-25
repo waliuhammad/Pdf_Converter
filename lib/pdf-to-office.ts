@@ -76,6 +76,21 @@ function xmlEscape(text: string): string {
 // ---------------------------------------------------------------- Word
 
 /**
+ * A line cut into letter and space stretches, each with the spacing to add
+ * after every character in it (points), so Word and PowerPoint draw the line
+ * as wide as the PDF: letters get the letter spacing, spaces get the word
+ * spacing on top. A line with no extra spacing is one stretch.
+ */
+export function spacedSegments(line: TextLine): { text: string; extra: number }[] {
+    const s = line.spacing;
+    if (!s) return [{ text: line.text, extra: 0 }];
+    return (line.text.match(/ +|[^ ]+/g) ?? []).map((text) => ({
+        text,
+        extra: text.startsWith(" ") ? s.letters + s.spaces : s.letters,
+    }));
+}
+
+/**
  * One line of text as a borderless, transparent text box pinned to the page
  * at the line's position. It grows to fit and never wraps, so editing the
  * words keeps them on one line where they were. Wrapped in
@@ -89,8 +104,13 @@ function docxTextBox(line: TextLine, id: number): string {
     const cy = Math.round(line.size * 1.3 * EMU_PER_PT);
     const halfPoints = Math.max(2, Math.round(line.size * 2));
     const font = xmlEscape(line.font);
-    const rPr = `<w:rPr><w:rFonts w:ascii="${font}" w:hAnsi="${font}" w:cs="${font}"/>${line.bold ? "<w:b/>" : ""}${line.italic ? "<w:i/>" : ""}<w:color w:val="${line.color}"/><w:sz w:val="${halfPoints}"/><w:szCs w:val="${halfPoints}"/></w:rPr>`;
-    return `<w:r><mc:AlternateContent><mc:Choice Requires="wps"><w:drawing><wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="${id}" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1"><wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="page"><wp:posOffset>${x}</wp:posOffset></wp:positionH><wp:positionV relativeFrom="page"><wp:posOffset>${y}</wp:posOffset></wp:positionV><wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/><wp:docPr id="${id}" name="Text ${id}"/><wp:cNvGraphicFramePr/><a:graphic><a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"><wps:wsp><wps:cNvSpPr txBox="1"/><wps:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln></wps:spPr><wps:txbx><w:txbxContent><w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/></w:pPr><w:r>${rPr}<w:t xml:space="preserve">${xmlEscape(line.text)}</w:t></w:r></w:p></w:txbxContent></wps:txbx><wps:bodyPr rot="0" vert="horz" wrap="none" lIns="0" tIns="0" rIns="0" bIns="0" anchor="t" anchorCtr="0"><a:spAutoFit/></wps:bodyPr></wps:wsp></a:graphicData></a:graphic></wp:anchor></w:drawing></mc:Choice><mc:Fallback/></mc:AlternateContent></w:r>`;
+    // Character spacing is in twentieths of a point, added after each character.
+    const rPr = (extra: number) =>
+        `<w:rPr><w:rFonts w:ascii="${font}" w:hAnsi="${font}" w:cs="${font}"/>${line.bold ? "<w:b/>" : ""}${line.italic ? "<w:i/>" : ""}<w:color w:val="${line.color}"/>${Math.round(extra * 20) !== 0 ? `<w:spacing w:val="${Math.round(extra * 20)}"/>` : ""}<w:sz w:val="${halfPoints}"/><w:szCs w:val="${halfPoints}"/></w:rPr>`;
+    const runs = spacedSegments(line)
+        .map((s) => `<w:r>${rPr(s.extra)}<w:t xml:space="preserve">${xmlEscape(s.text)}</w:t></w:r>`)
+        .join("");
+    return `<w:r><mc:AlternateContent><mc:Choice Requires="wps"><w:drawing><wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="${id}" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1"><wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="page"><wp:posOffset>${x}</wp:posOffset></wp:positionH><wp:positionV relativeFrom="page"><wp:posOffset>${y}</wp:posOffset></wp:positionV><wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/><wp:docPr id="${id}" name="Text ${id}"/><wp:cNvGraphicFramePr/><a:graphic><a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"><wps:wsp><wps:cNvSpPr txBox="1"/><wps:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln></wps:spPr><wps:txbx><w:txbxContent><w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/></w:pPr>${runs}</w:p></w:txbxContent></wps:txbx><wps:bodyPr rot="0" vert="horz" wrap="none" lIns="0" tIns="0" rIns="0" bIns="0" anchor="t" anchorCtr="0"><a:spAutoFit/></wps:bodyPr></wps:wsp></a:graphicData></a:graphic></wp:anchor></w:drawing></mc:Choice><mc:Fallback/></mc:AlternateContent></w:r>`;
 }
 
 /**
@@ -176,7 +196,11 @@ export async function pagesToPptx(pages: RenderedPage[], title: string): Promise
 
         // Each line as an editable text box at the same place, same style.
         for (const line of page.lines ?? []) {
-            slide.addText(line.text, {
+            const segments = spacedSegments(line).map((s) => ({
+                text: s.text,
+                options: s.extra ? { charSpacing: s.extra * scale } : {},
+            }));
+            slide.addText(segments, {
                 x: offsetX + (line.x / 72) * scale,
                 y: offsetY + (line.top / 72) * scale,
                 w: ((line.width * 1.15 + line.size) / 72) * scale,

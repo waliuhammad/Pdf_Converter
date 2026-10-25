@@ -173,6 +173,13 @@ export interface TextLine {
     italic: boolean;
     /** "RRGGBB". */
     color: string;
+    /**
+     * Extra space, in points, after each letter and after each space, so the
+     * line comes out as wide as in the PDF: letter-spaced headings, justified
+     * paragraphs, table cells padded with spacing. Absent when the PDF draws
+     * the text at its natural width.
+     */
+    spacing?: { letters: number; spaces: number };
 }
 
 export interface PageText {
@@ -216,14 +223,85 @@ interface Run {
     bold: boolean;
     italic: boolean;
     color: string;
+    /** Width of the text at the font's own advances, with no added spacing (page points). */
+    natural?: number;
+    /** Space the PDF adds after each letter, in page points. */
+    letterSpacing?: number;
+    /** Natural width of a space in this font and size, in page points. */
+    spaceWidth?: number;
+    /** The PDF draws a space glyph right after this string: the next one is the same sentence. */
+    spaceAfter?: boolean;
+}
+
+const squash = (s: string) => s.replace(/\s+/g, "");
+
+/** One drawn glyph, from the operator list. */
+interface DrawnGlyph {
+    unicode: string;
+    isSpace: boolean;
+    /** The glyph's own advance, in ems. */
+    em: number;
+    /** Letter spacing in force (Tc), in ems. */
+    tcEm: number;
+    color: string;
 }
 
 /**
- * Text with position, font and colour for every page.
+ * Every glyph the page draws, in order, with its own width and colour.
  *
- * Position, size and font come from pdf.js's text content. Colour is not part
- * of that, so it is read from the drawing instructions: the fill colour in
- * force at each text-showing operator, matched to the text runs in order.
+ * pdf.js's text content says where a string starts and how wide it is, but
+ * not how much of that width is the letters and how much is spacing the PDF
+ * added between them — by letter spacing, by TJ shifts, or (as Chrome does)
+ * by moving to each glyph separately. The letters' own widths are what Word
+ * will draw, so the difference is the spacing Word has to add to land the
+ * line at the same width.
+ */
+function drawnGlyphs(ops: { fnArray: number[]; argsArray: unknown[][] }, OPS: Record<string, number>): DrawnGlyph[] {
+    const out: DrawnGlyph[] = [];
+    let fill = "000000";
+    let fontSize = 12;
+    let tc = 0;
+    const stack: { fill: string; tc: number; fontSize: number }[] = [];
+
+    const show = (items: unknown[]) => {
+        for (const g of items) {
+            if (!g || typeof g !== "object") continue;
+            const glyph = g as { unicode?: string; width?: number; isSpace?: boolean };
+            out.push({
+                unicode: glyph.unicode ?? "",
+                isSpace: Boolean(glyph.isSpace) || glyph.unicode === " ",
+                em: (glyph.width ?? 0) / 1000,
+                tcEm: tc / fontSize,
+                color: fill,
+            });
+        }
+    };
+
+    for (let i = 0; i < ops.fnArray.length; i++) {
+        const fn = ops.fnArray[i];
+        const args = ops.argsArray[i] ?? [];
+        // pdf.js passes the colour as three 0-255 values (or, in some builds,
+        // one "#rrggbb" string).
+        if (fn === OPS.setFillRGBColor) fill = hex(typeof args[0] === "string" ? args[0] : (args as number[]));
+        else if (fn === OPS.setFont) fontSize = Math.abs(Number(args[1])) || fontSize;
+        else if (fn === OPS.setCharSpacing) tc = Number(args[0]) || 0;
+        else if (fn === OPS.save) stack.push({ fill, tc, fontSize });
+        else if (fn === OPS.restore) ({ fill, tc, fontSize } = stack.pop() ?? { fill, tc, fontSize });
+        else if (fn === OPS.showText || fn === OPS.showSpacedText || fn === OPS.nextLineShowText) show(args[0] as unknown[]);
+        else if (fn === OPS.nextLineSetSpacingShowText) {
+            tc = Number(args[1]) || 0;
+            show(args[2] as unknown[]);
+        }
+    }
+    return out;
+}
+
+/**
+ * Text with position, font, colour and spacing for every page.
+ *
+ * Position, size and font come from pdf.js's text content. Each string is then
+ * matched to the glyphs the page draws (drawnGlyphs), which give its colour,
+ * its true text and how much spacing the PDF put between its letters.
  */
 export async function readTextLayout(bytes: Uint8Array): Promise<PageText[]> {
     const pdfjs = await import("pdfjs-dist/legacy/build/pdf.js");
@@ -238,55 +316,79 @@ export async function readTextLayout(bytes: Uint8Array): Promise<PageText[]> {
             const page = await doc.getPage(p);
             const viewport = page.getViewport({ scale: 1 });
 
-            // Colour per text-showing operator, in drawing order.
             const ops = await page.getOperatorList();
-            let fill = "000000";
-            const drawn: { text: string; color: string }[] = [];
-            for (let i = 0; i < ops.fnArray.length; i++) {
-                const fn = ops.fnArray[i];
-                const args = ops.argsArray[i];
-                // pdf.js passes the colour as three 0-255 values (or, in some
-                // builds, one "#rrggbb" string).
-                if (fn === OPS.setFillRGBColor) fill = hex(typeof args[0] === "string" ? args[0] : args);
-                else if (fn === OPS.showText || fn === OPS.showSpacedText) {
-                    const glyphs = (args[0] as unknown[]).filter((g) => g && typeof g === "object") as { unicode?: string }[];
-                    drawn.push({ text: glyphs.map((g) => g.unicode ?? "").join(""), color: fill });
+            const glyphs = drawnGlyphs(ops, OPS as unknown as Record<string, number>);
+            // The drawn text with spaces removed, and for each of its
+            // characters the glyph it came from, so a string from the text
+            // content can be found in it.
+            let stream = "";
+            const owner: number[] = [];
+            glyphs.forEach((g, k) => {
+                for (const ch of squash(g.unicode)) {
+                    stream += ch;
+                    owner.push(k);
                 }
-            }
+            });
 
             const content = await page.getTextContent();
             const runs: Run[] = [];
             let cursor = 0;
-            const squash = (s: string) => s.replace(/\s+/g, "");
 
             for (const item of content.items) {
                 if (!("str" in item) || item.str === "") continue;
 
-                // Find the drawing op this run came from to learn its colour.
                 const target = squash(item.str);
-                let color = "000000";
-                if (target) {
-                    for (let k = cursor; k < drawn.length; k++) {
-                        const op = squash(drawn[k].text);
-                        if (op && (op.includes(target) || target.includes(op))) {
-                            color = drawn[k].color;
-                            cursor = k;
-                            break;
-                        }
-                    }
-                } else if (runs.length > 0) {
-                    color = runs[runs.length - 1].color;
+                let color = runs.length > 0 ? runs[runs.length - 1].color : "000000";
+                let text = item.str;
+                let natural: number | undefined;
+                let letterSpacing: number | undefined;
+                let spaceWidth: number | undefined;
+                let spaceAfter = false;
+                const size = Math.hypot((item.transform as number[])[0], (item.transform as number[])[1]) || 12;
+
+                // Strings come in drawing order, so look just ahead of the last
+                // match; a string not found nearby (ligatures, unusual
+                // encodings) keeps pdf.js's text and gets no spacing.
+                const at = target ? stream.indexOf(target, cursor) : -1;
+                if (at !== -1 && at - cursor < 4000) {
+                    cursor = at + target.length;
+                    const first = owner[at];
+                    const last = owner[at + target.length - 1];
+                    const span = glyphs.slice(first, last + 1);
+                    color = span[0].color;
+                    spaceAfter = Boolean(glyphs[last + 1]?.isSpace);
+
+                    natural = span.reduce((sum, g) => sum + g.em, 0) * size;
+                    const space = [...span, glyphs[last + 1]].find((g) => g?.isSpace && g.em > 0);
+                    if (space) spaceWidth = space.em * size;
+                    const letters = span.filter((g) => !g.isSpace).length;
+                    if (span[0].tcEm) letterSpacing = span[0].tcEm * size;
+                    else if (letters > 1 && letters === span.length) letterSpacing = (item.width - natural) / (letters - 1);
+
+                    // pdf.js puts a space wherever glyphs sit apart, so a
+                    // heading spread with letter spacing came out as
+                    // "C E R T I F I C A T E". When the spaces it added sit
+                    // between most letters they are letter spacing, and the
+                    // string is rebuilt from the glyphs; a few added spaces
+                    // are word gaps the PDF drew without a space glyph, and
+                    // stay.
+                    const drawnText = span.map((g) => g.unicode).join("");
+                    const added = item.str.length - drawnText.length;
+                    if (letters >= 2 && added >= (letters - 1) * 0.7) text = drawnText;
                 }
 
-                const [a, b, , d, e, f] = item.transform as number[];
-                const size = Math.hypot(a, b) || Math.abs(d) || 12;
+                const [, , , , e, f] = item.transform as number[];
                 const font = page.commonObjs.has(item.fontName)
                     ? (page.commonObjs.get(item.fontName) as { name?: string; bold?: boolean; black?: boolean; italic?: boolean })
                     : null;
                 const realName = font?.name ?? "";
 
                 runs.push({
-                    text: item.str,
+                    text,
+                    natural,
+                    letterSpacing,
+                    spaceWidth,
+                    spaceAfter,
                     x: e,
                     baseline: f,
                     width: item.width,
@@ -312,17 +414,50 @@ export async function readTextLayout(bytes: Uint8Array): Promise<PageText[]> {
 }
 
 /**
- * Runs on the same baseline, in the same style, with no big gap between them
- * become one line, so editing a sentence means editing one box rather than a
- * box per word. A large gap (columns, a table) keeps them separate so they
- * stay in their own positions.
+ * How far below the top of its line Office draws a font's baseline, in ems
+ * (the font's Windows ascent). A fixed 0.8 put Calibri text about 0.15 em too
+ * low, which on a statement is visibly off the table rules.
+ */
+function ascentOf(font: string): number {
+    if (/calibri|cambria|candara|consolas|constantia|corbel/i.test(font)) return 0.952;
+    if (/verdana|tahoma|segoe/i.test(font)) return 1.0;
+    if (/arial|helvetica/i.test(font)) return 0.905;
+    if (/georgia/i.test(font)) return 0.917;
+    if (/times/i.test(font)) return 0.891;
+    if (/courier/i.test(font)) return 0.833;
+    return 0.9;
+}
+
+/**
+ * Runs on the same baseline, in the same style, with no more than a word space
+ * between them become one line, so editing a sentence means editing one box
+ * rather than a box per word. Anything wider — table columns, right-aligned
+ * amounts, a label and its value — stays a separate box at its own position.
+ *
+ * pdf.js reports the gap between two strings as a whitespace item as wide as
+ * the gap. Counting those as text glued every column of a bank statement into
+ * one line ("01/10/2026 POS PURCHASE … REF100230"), and the joined line then
+ * ran on at Word's own spacing instead of landing in the next column. So
+ * whitespace items are not text here: only real glyphs decide where a line
+ * ends, and a gap becomes a single space when it is a word space.
  */
 function groupIntoLines(runs: Run[], pageHeight: number): TextLine[] {
-    const sorted = [...runs].sort((r, s) => Math.round(s.baseline) - Math.round(r.baseline) || r.x - s.x);
-    const lines: (Run & { end: number })[] = [];
+    const sorted = [...runs]
+        .filter((r) => r.text.trim() !== "")
+        .sort((r, s) => Math.round(s.baseline) - Math.round(r.baseline) || r.x - s.x);
+    // letterSum / letterCount: the runs' letter spacing, averaged over their letters.
+    type Line = Run & { end: number; addedSpaces: number; measured: boolean; letterSum: number; letterCount: number };
+    const lines: Line[] = [];
 
     for (const run of sorted) {
         const last = lines[lines.length - 1];
+        const gap = last ? run.x - last.end : 0;
+        // Letter-spaced text has its word gaps widened by the same spacing.
+        // A justified line stretches its word gaps well past that, but then
+        // the PDF draws a space glyph after the word, which table cells and
+        // separate labels do not have.
+        const wordGap =
+            (last?.spaceAfter ? run.size * 3 : run.size * 0.6) + 2 * Math.max(0, run.letterSpacing ?? 0);
         const sameLine =
             last &&
             Math.abs(last.baseline - run.baseline) < run.size * 0.4 &&
@@ -331,30 +466,87 @@ function groupIntoLines(runs: Run[], pageHeight: number): TextLine[] {
             last.italic === run.italic &&
             last.color === run.color &&
             Math.abs(last.size - run.size) < 1.0 &&
-            run.x - last.end < run.size * 1.5 &&
-            run.x >= last.x;
+            gap < wordGap &&
+            gap > -run.size * 0.3;
 
         if (sameLine) {
-            const gap = run.x - last.end;
-            const needsSpace = gap > run.size * 999 && !/\s$/.test(last.text) && !/^\s/.test(run.text);
+            // About a fifth of an em is a word space; less is letter spacing
+            // or kerning inside a word drawn in pieces.
+            const needsSpace =
+                gap > run.size * 0.18 + Math.max(0, run.letterSpacing ?? 0) && !/\s$/.test(last.text) && !/^\s/.test(run.text);
             last.text += (needsSpace ? " " : "") + run.text;
+            if (needsSpace) last.addedSpaces++;
+            last.measured = last.measured && run.natural !== undefined;
+            last.natural = (last.natural ?? 0) + (run.natural ?? 0);
+            last.spaceWidth ??= run.spaceWidth;
+            last.spaceAfter = run.spaceAfter;
+            if (run.letterSpacing !== undefined) {
+                last.letterSum += run.letterSpacing * run.text.length;
+                last.letterCount += run.text.length;
+            }
             last.end = Math.max(last.end, run.x + run.width);
             last.width = last.end - last.x;
         } else {
-            lines.push({ ...run, end: run.x + run.width });
+            lines.push({
+                ...run,
+                end: run.x + run.width,
+                addedSpaces: 0,
+                measured: run.natural !== undefined,
+                letterSum: (run.letterSpacing ?? 0) * run.text.length,
+                letterCount: run.letterSpacing !== undefined ? run.text.length : 0,
+            });
         }
     }
 
-    return lines.map((l) => ({
-        text: l.text.replace(/\s+$/, ""),
-        x: l.x,
-        // The baseline sits about 0.8 em below the top of the line box.
-        top: pageHeight - l.baseline - l.size * 0.8,
-        width: l.width,
-        size: l.size,
-        font: l.font,
-        bold: l.bold,
-        italic: l.italic,
-        color: l.color,
-    }));
+    return lines.map((l) => {
+        const text = l.text.replace(/\s+$/, "");
+        return {
+            text,
+            x: l.x,
+            // Word and PowerPoint put the baseline one font ascent below the top
+            // of a zero-margin text box, so the box starts that far above it.
+            top: pageHeight - l.baseline - l.size * ascentOf(l.font),
+            width: l.width,
+            size: l.size,
+            font: l.font,
+            bold: l.bold,
+            italic: l.italic,
+            color: l.color,
+            spacing: l.measured
+                ? lineSpacing({ ...l, letterSpacing: l.letterCount ? l.letterSum / l.letterCount : 0 }, text)
+                : undefined,
+        };
+    });
+}
+
+/**
+ * The character spacing that makes Word draw a line as wide as the PDF does.
+ *
+ * Word spreads the extra after every character of a run. Letter spacing (the
+ * PDF's Tc) goes after every character; whatever width is left over — a
+ * justified line's stretched word gaps, a column padded with word spacing —
+ * goes after the spaces, which is where the PDF put it. With no spaces it is
+ * spread over the letters. This only holds when Word has the same font as the
+ * PDF; with a substitute the widths differ anyway, and nothing is added when
+ * the result looks implausible.
+ */
+function lineSpacing(
+    l: { natural?: number; letterSpacing?: number; spaceWidth?: number; addedSpaces: number; width: number; size: number },
+    text: string
+): TextLine["spacing"] {
+    const spaces = (text.match(/ /g) ?? []).length;
+    const letters = [...text].length - spaces;
+    if (letters === 0 || l.natural === undefined) return undefined;
+
+    // Spaces added between strings were not part of any string's own width.
+    const natural = l.natural + l.addedSpaces * (l.spaceWidth ?? l.size * 0.25);
+    let perLetter = l.letterSpacing ?? 0;
+    let perSpace = 0;
+    const rest = l.width - natural - (letters + spaces) * perLetter;
+    if (spaces > 0) perSpace = rest / spaces;
+    else perLetter += rest / letters;
+
+    if (Math.abs(perLetter) < 0.05 && Math.abs(perSpace) < 0.15) return undefined;
+    if (perLetter > l.size || perLetter < -l.size * 0.2 || perSpace > l.size * 3 || perSpace < -l.size * 0.25) return undefined;
+    return { letters: perLetter, spaces: perSpace };
 }
