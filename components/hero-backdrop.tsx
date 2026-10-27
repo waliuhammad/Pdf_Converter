@@ -1,8 +1,7 @@
 /**
  * Animated backdrop behind the home hero: an aurora — large, heavily blurred
- * glows in the theme's primary colour, indigo, cyan, fuchsia, violet, teal,
- * rose and amber, drifting over a faint grid while the whole palette slowly
- * cycles through the colour wheel.
+ * glows in shades of blue (the theme's primary, blue, sky and a deep navy),
+ * drifting over a faint grid.
  *
  * Pure CSS (keyframes in globals.css), no JavaScript, and it stops by itself for
  * visitors who prefer reduced motion. Decorative: behind the content, not
@@ -13,20 +12,20 @@ export function HeroBackdrop() {
         <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[520px] overflow-hidden">
             {/* The glows, faded out towards the bottom so they melt into the page */}
             <div
-                className="animate-aurora-hue absolute inset-0 opacity-90 dark:opacity-100"
+                className="absolute inset-0 opacity-90 dark:opacity-100"
                 style={{
                     maskImage: "linear-gradient(to bottom, black 45%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, transparent 100%)",
                 }}
             >
                 <div className="animate-aurora-a absolute left-[8%] top-[-140px] h-[380px] w-[520px] rounded-full bg-primary/35 blur-[100px] dark:bg-primary/50" />
-                <div className="animate-aurora-b absolute right-[6%] top-[-80px] h-[340px] w-[480px] rounded-full bg-indigo-400/30 blur-[100px] dark:bg-indigo-500/45" />
-                <div className="animate-aurora-c absolute left-[38%] top-[60px] h-[300px] w-[460px] rounded-full bg-cyan-300/30 blur-[110px] dark:bg-cyan-400/25" />
-                <div className="animate-aurora-d absolute left-[-4%] top-[90px] h-[280px] w-[420px] rounded-full bg-fuchsia-300/40 blur-[100px] dark:bg-fuchsia-500/30" />
-                <div className="animate-aurora-e absolute right-[22%] top-[-120px] h-[300px] w-[400px] rounded-full bg-violet-400/35 blur-[100px] dark:bg-violet-500/35" />
-                <div className="animate-aurora-f absolute right-[-6%] top-[100px] h-[260px] w-[400px] rounded-full bg-emerald-300/35 blur-[100px] dark:bg-teal-400/20" />
-                <div className="animate-aurora-b absolute left-[24%] top-[120px] h-[240px] w-[360px] rounded-full bg-rose-300/35 blur-[100px] [animation-delay:-2s] dark:bg-rose-500/25" />
-                <div className="animate-aurora-d absolute right-[34%] top-[20px] h-[240px] w-[340px] rounded-full bg-amber-200/40 blur-[100px] [animation-delay:-3s] dark:bg-amber-400/20" />
+                <div className="animate-aurora-b absolute right-[6%] top-[-80px] h-[340px] w-[480px] rounded-full bg-blue-400/30 blur-[100px] dark:bg-blue-500/45" />
+                <div className="animate-aurora-c absolute left-[38%] top-[60px] h-[300px] w-[460px] rounded-full bg-sky-300/35 blur-[110px] dark:bg-sky-400/25" />
+                <div className="animate-aurora-d absolute left-[-4%] top-[90px] h-[280px] w-[420px] rounded-full bg-blue-300/40 blur-[100px] dark:bg-blue-700/40" />
+                <div className="animate-aurora-e absolute right-[22%] top-[-120px] h-[300px] w-[400px] rounded-full bg-sky-400/30 blur-[100px] dark:bg-sky-500/30" />
+                <div className="animate-aurora-f absolute right-[-6%] top-[100px] h-[260px] w-[400px] rounded-full bg-blue-200/45 blur-[100px] dark:bg-blue-400/25" />
+                <div className="animate-aurora-b absolute left-[24%] top-[120px] h-[240px] w-[360px] rounded-full bg-sky-200/45 blur-[100px] [animation-delay:-2s] dark:bg-blue-800/45" />
+                <div className="animate-aurora-d absolute right-[34%] top-[20px] h-[240px] w-[340px] rounded-full bg-blue-500/25 blur-[100px] [animation-delay:-3s] dark:bg-sky-600/30" />
             </div>
             {/* Faint grid, faded towards the edges */}
             <div

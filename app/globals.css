@@ -421,12 +421,6 @@ body {
   50%      { transform: translate(-150px, -40px) scale(1.15); }
 }
 
-/* Shifts every glow's colour round the wheel, so the aurora keeps changing
-   colour as well as moving. */
-@keyframes aurora-hue {
-  from { filter: hue-rotate(0deg); }
-  to   { filter: hue-rotate(360deg); }
-}
 
 /* A highlight sweeping across the progress bar, so the upload card reads as
    in-progress rather than frozen mid-upload. */
@@ -462,7 +456,6 @@ body {
 .animate-aurora-d { animation: aurora-d 5s ease-in-out infinite; }
 .animate-aurora-e { animation: aurora-e 6.5s ease-in-out infinite; }
 .animate-aurora-f { animation: aurora-f 5.5s ease-in-out infinite; }
-.animate-aurora-hue { animation: aurora-hue 12s linear infinite; }
 
 .animate-shimmer { animation: shimmer 2.2s ease-in-out infinite; }
 .animate-icon-pulse { animation: icon-pulse 2.8s ease-in-out infinite; }
@@ -491,7 +484,6 @@ body {
   .animate-aurora-d,
   .animate-aurora-e,
   .animate-aurora-f,
-  .animate-aurora-hue,
   .animate-shimmer,
   .animate-icon-pulse { animation: none; }
 }
