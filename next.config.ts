@@ -1,7 +1,16 @@
 import type { NextConfig } from "next";
 
-// Wherever npm puts it: nested under pdf-to-png-converter today.
-const CANVAS = ["./node_modules/pdf-to-png-converter/node_modules/@napi-rs/**/*", "./node_modules/@napi-rs/**/*"];
+// The page renderer's runtime files: pdf.js's native canvas (@napi-rs/canvas
+// and its platform binary), its worker script, and the standard fonts,
+// character maps, colour profiles and wasm decoders it reads from disk. Wherever
+// npm puts them — nested under pdf-to-png-converter today.
+const RENDERER = [
+  "./node_modules/pdf-to-png-converter/node_modules/@napi-rs/**/*",
+  "./node_modules/@napi-rs/**/*",
+  "./node_modules/pdf-to-png-converter/node_modules/pdfjs-dist/legacy/build/**/*",
+  "./node_modules/pdf-to-png-converter/node_modules/pdfjs-dist/{standard_fonts,cmaps,iccs,wasm}/**/*",
+  "./node_modules/pdfjs-dist/{standard_fonts,cmaps}/**/*",
+];
 
 const nextConfig: NextConfig = {
   /**
@@ -29,14 +38,15 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/text-pdf": ["./assets/fonts/**/*"],
     "/api/translate": ["./assets/fonts/**/*"],
-    // pdf.js loads its canvas (@napi-rs/canvas and the platform binary) with
-    // a require the tracer cannot follow, so on Vercel the renderer had no
-    // canvas: "DOMMatrix is not defined", and PDF to Word / Image failed.
-    "/api/pdf-to-word": CANVAS,
-    "/api/pdf-to-ppt": CANVAS,
-    "/api/pdf-to-excel": CANVAS,
-    "/api/pdf-to-image": CANVAS,
-    "/api/diag": CANVAS,
+    // pdf.js loads these with requires and file reads the tracer cannot
+    // follow, so on Vercel the renderer failed ("DOMMatrix is not defined",
+    // then "Cannot find module .../pdf.worker.mjs") and PDF to Word / Image
+    // returned errors.
+    "/api/pdf-to-word": RENDERER,
+    "/api/pdf-to-ppt": RENDERER,
+    "/api/pdf-to-excel": RENDERER,
+    "/api/pdf-to-image": RENDERER,
+    "/api/diag": RENDERER,
   },
 };
 
