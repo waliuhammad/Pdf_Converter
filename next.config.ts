@@ -36,6 +36,7 @@ const nextConfig: NextConfig = {
     "/api/pdf-to-ppt": CANVAS,
     "/api/pdf-to-excel": CANVAS,
     "/api/pdf-to-image": CANVAS,
+    "/api/diag": CANVAS,
   },
 };
 
