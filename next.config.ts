@@ -46,7 +46,6 @@ const nextConfig: NextConfig = {
     "/api/pdf-to-ppt": RENDERER,
     "/api/pdf-to-excel": RENDERER,
     "/api/pdf-to-image": RENDERER,
-    "/api/diag": RENDERER,
   },
 };
 
