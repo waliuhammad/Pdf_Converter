@@ -11,6 +11,8 @@ export async function extractTextWithOCR(
   });
 
   // The upload is done once; only the generate call moves between models.
+  // Removed again as soon as the text is back, success or not, rather than
+  // left for the Files API's 48-hour expiry: it is someone's document.
   const response = await withModelFallback((model) =>
     ai.models.generateContent({
       model,
@@ -38,7 +40,13 @@ Rules:
 `,
       ]),
     })
-  );
+  ).finally(() => {
+    if (uploadedFile.name) {
+      ai.files.delete({ name: uploadedFile.name }).catch((err) =>
+        console.error("Could not delete the uploaded OCR file:", err)
+      );
+    }
+  });
   const extractedText = response.text ?? "";
 
 return {

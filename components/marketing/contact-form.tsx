@@ -8,6 +8,8 @@ export function ContactForm() {
     const [email, setEmail] = useState("");
     const [subject, setSubject] = useState("");
     const [message, setMessage] = useState("");
+    // Honeypot: hidden from people, filled in by form-spamming bots.
+    const [website, setWebsite] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [sent, setSent] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -26,7 +28,7 @@ export function ContactForm() {
             const res = await fetch("/api/contact", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name, email, subject, message }),
+                body: JSON.stringify({ name, email, subject, message, website }),
             });
 
             const data = await res.json().catch(() => null);
@@ -85,6 +87,8 @@ export function ContactForm() {
                         onChange={(e) => { setName(e.target.value); setError(null); }}
                         className={inputClass}
                         autoComplete="name"
+                        required
+                        maxLength={200}
                     />
                 </div>
                 <div>
@@ -99,6 +103,8 @@ export function ContactForm() {
                         className={inputClass}
                         placeholder="you@example.com"
                         autoComplete="email"
+                        required
+                        maxLength={320}
                     />
                 </div>
             </div>
@@ -111,6 +117,7 @@ export function ContactForm() {
                     id="subject"
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
+                    maxLength={300}
                     className={inputClass}
                 />
             </div>
@@ -122,14 +129,27 @@ export function ContactForm() {
                 <textarea
                     id="message"
                     rows={6}
+                    required
+                    maxLength={5000}
                     value={message}
                     onChange={(e) => { setMessage(e.target.value); setError(null); }}
                     className={`${inputClass} resize-y`}
                 />
             </div>
 
+            <div className="hidden" aria-hidden="true">
+                <label htmlFor="website">Website</label>
+                <input
+                    id="website"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={website}
+                    onChange={(e) => setWebsite(e.target.value)}
+                />
+            </div>
+
             {error && (
-                <p className="flex items-start gap-1.5 text-sm text-red-600">
+                <p role="alert" className="flex items-start gap-1.5 text-sm text-red-600">
                     <AlertCircle size={15} className="shrink-0 mt-0.5" />
                     <span>{error}</span>
                 </p>

@@ -1,12 +1,18 @@
 import type { Metadata } from "next";
+import { ToolGuide } from "@/components/tools/tool-guide";
 
 // The page itself is a client component and so cannot export metadata.
 export const metadata: Metadata = {
     title: "PDF to Word",
-    description: "Convert PDF into editable Word files. Part of PDFAI, usable without an account.",
+    description: "Convert PDF into editable Word files. Part of PDFAI, free with an account.",
     alternates: { canonical: "/pdf-to-word" },
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-    return children;
+    return (
+        <>
+            {children}
+            <ToolGuide href="/pdf-to-word" />
+        </>
+    );
 }

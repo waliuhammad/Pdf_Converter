@@ -3,6 +3,7 @@ import DevPlanSwitcher from "@/components/dev/DevPlanSwitcher";
 import { TestPlanProvider } from "@/components/dev/TestPlanProvider";
 import type { Metadata } from "next";
 import { getSiteUrl } from "@/lib/site-url";
+import { getAdsensePublisherId } from "@/lib/adsense";
 import { Inter, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "../components/theme-provider";
 import { LocaleProvider } from "@/components/locale-provider";
@@ -20,6 +21,7 @@ const geistMono = Geist_Mono({
 });
 
 const siteUrl = getSiteUrl();
+const adsensePublisherId = getAdsensePublisherId();
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -34,6 +36,10 @@ export const metadata: Metadata = {
     type: "website",
     url: siteUrl,
   },
+  // AdSense's site-ownership tag. Verification only: no ad script is loaded.
+  ...(adsensePublisherId && {
+    other: { "google-adsense-account": `ca-${adsensePublisherId}` },
+  }),
 };
 
 export default function RootLayout({

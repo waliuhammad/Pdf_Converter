@@ -1,19 +1,22 @@
 import type { Metadata } from "next";
-import { ContentPage, Section } from "@/components/marketing/content-page";
+import { AiInfoPage } from "@/components/marketing/ai-info-page";
 
 export const metadata: Metadata = {
-    title: "OCR Scanner",
-    description: "Convert scanned PDFs and images into fully editable searchable text.",
+    title: "OCR PDF",
+    description: "Extract the text from scanned and image-based PDFs with AI text recognition.",
     alternates: { canonical: "/ocrscanner-info" },
 };
 
 export default function OCRScannerInfoPage() {
     return (
-        <ContentPage title="OCR Scanner" intro="Convert scanned PDFs and images into fully editable searchable text.">
-            <Section heading="What it does">
-                <p>Our advanced OCR (Optical Character Recognition) scanner transforms static images and non-searchable scanned PDFs into fully editable, selectable text documents with high accuracy.</p>
-                <p>Extract text seamlessly from receipts, scanned certificates, or legacy documents, making your physical archives completely searchable and digital-ready in seconds.</p>
-            </Section>
-        </ContentPage>
+        <AiInfoPage
+            title="OCR PDF"
+            intro="Pull the text out of scanned or photographed PDFs, so you can copy, search and reuse it."
+            href="/ocr-pdf"
+            toolLabel="OCR PDF"
+        >
+            <p>A scanned PDF is a picture of a page: you can read it, but you can&apos;t select, copy or search its words. OCR (optical character recognition) reads those pictures and returns the text.</p>
+            <p>The text is extracted exactly as written — no summarising, translating or correcting — keeping paragraph order and line breaks, so it can be pasted into an email or document, or fed into the other AI tools.</p>
+        </AiInfoPage>
     );
 }

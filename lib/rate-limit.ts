@@ -98,3 +98,13 @@ export const SESSION_LIMIT: RateLimit = {
     limit: 20,
     windowMs: 60_000,
 };
+
+/**
+ * The public contact form. Five messages in ten minutes covers a person sending
+ * a follow-up; it stops a script filling the inbox.
+ */
+export const CONTACT_LIMIT: RateLimit = {
+    name: "contact",
+    limit: 5,
+    windowMs: 10 * 60_000,
+};

@@ -47,6 +47,23 @@ const nextConfig: NextConfig = {
     "/api/pdf-to-excel": RENDERER,
     "/api/pdf-to-image": RENDERER,
   },
+
+  // Baseline hardening for every response. No CSP yet: Firebase sign-in and
+  // the pdf.js workers load from several origins, and a wrong policy would
+  // break them silently. SAMEORIGIN still lets the PDF previews frame blobs.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

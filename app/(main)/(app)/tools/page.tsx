@@ -4,6 +4,7 @@ import { ToolsHub } from "@/components/tools/tools-hub";
 export const metadata: Metadata = {
     title: "All Tools",
     description: "Every PDF tool in one place — convert, edit, organise and secure your documents.",
+    alternates: { canonical: "/tools" },
 };
 
 /**

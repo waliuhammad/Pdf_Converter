@@ -338,7 +338,7 @@ export default function CompressPdfPage() {
             <div className="rounded-xl border border-border bg-background/60 px-3.5 py-2.5 flex items-start gap-2">
               <CheckCircle2 size={14} className="text-emerald-500 mt-0.5 shrink-0" />
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                <strong className="text-foreground">Images are never blurred.</strong> All levels preserve your PDF&apos;s visual content — only file overhead and metadata are aggressively reduced.
+                <strong className="text-foreground">Text stays sharp.</strong> Compression works on the images inside the PDF — higher levels lower their resolution and quality more — and on file overhead. If a file can&apos;t be made smaller, you get the original back.
               </p>
             </div>
 

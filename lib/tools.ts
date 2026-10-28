@@ -129,14 +129,14 @@ export const tools: Tool[] = [
     },
     {
         name: "Sign PDF",
-        description: "Add digital signatures instantly.",
+        description: "Add a typed or drawn signature to a PDF.",
         icon: PenLine,
         href: "/sign-pdf",
         category: "Edit",
     },
     {
         name: "Edit PDF",
-        description: "Edit text and images inside PDFs.",
+        description: "Add text, replace text or draw on a PDF.",
         icon: PenTool,
         href: "/edit-pdf",
         category: "Edit",

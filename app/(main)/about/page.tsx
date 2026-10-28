@@ -6,6 +6,7 @@ import { tools } from "@/lib/tools";
 export const metadata: Metadata = {
     title: "About",
     description: "What PDFAI is and how it handles your documents.",
+    alternates: { canonical: "/about" },
 };
 
 export default function AboutPage() {
@@ -31,9 +32,10 @@ export default function AboutPage() {
 
             <Section heading="How your files are handled">
                 <p>
-                    Several tools — including image to PDF, PDF to image and Excel to PDF — run
-                    entirely in your browser, so those files never leave your device. The remaining
-                    tools process files on the server to complete the conversion.
+                    Image to PDF runs entirely in your browser, so those images never leave your
+                    device. The other tools send the file over an encrypted connection to our
+                    servers, which create your result and do not keep the file. The AI features
+                    send the document&apos;s text to Google&apos;s Gemini API.
                 </p>
             </Section>
 

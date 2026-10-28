@@ -32,7 +32,7 @@ const productSecurityFeatures = [
   {
     icon: FolderLock,
     title: "Minimal retention",
-    description: "Files sent to our one-off tools are processed and then discarded. We keep a document only when you deliberately save it to your account, and you can delete it at any time.",
+    description: "Files sent to our tools are processed and then discarded — PDFAI does not store the documents you convert. Your account holds only your profile, plan and usage counts.",
   },
 ];
 
@@ -83,21 +83,21 @@ export default function SecurityPage() {
               </p>
               <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
                 <li>
-                  <strong className="text-foreground">In your browser:</strong> lightweight
-                  operations run directly on your device where possible, so the document never
-                  leaves your machine at all.
+                  <strong className="text-foreground">In your browser:</strong> Image to PDF
+                  runs directly on your device, so the images never leave your machine at all.
                 </li>
                 <li>
                   <strong className="text-foreground">On our servers:</strong> heavier
-                  operations — format conversion, OCR, and AI features such as summaries and
-                  OCR — are processed on our servers over an encrypted connection.
+                  operations — format conversion, OCR, and AI features such as summaries — are processed on our servers over an encrypted connection.
                   Working copies exist only for the duration of the operation.
                 </li>
                 <li>
-                  <strong className="text-foreground">AI processing:</strong> when you use an
+                  <strong className="text-foreground">AI processing:</strong>{" "}when you use an
                   AI feature, the relevant document text is sent to the AI provider (Google&apos;s
-                  Gemini API) over TLS, solely to produce the result you requested. Standard PDF
-                  tools never involve AI providers.
+                  Gemini API) over TLS, solely to produce the result you requested. For OCR the
+                  PDF itself is uploaded to Gemini and deleted as soon as the text is returned.
+                  Standard PDF tools never involve AI providers unless you choose a translation
+                  language.
                 </li>
               </ul>
             </div>
@@ -169,10 +169,10 @@ export default function SecurityPage() {
                 <div>
                   <h4 className="font-semibold text-foreground">Nothing kept without a reason</h4>
                   <p className="mt-1 text-muted-foreground">
-                    Files sent to one-off tools are discarded after processing completes. Content
-                    is retained only when you deliberately save a document to your
-                    account — and those you can delete yourself, individually or entirely, from
-                    your dashboard at any time.
+                    Files sent to the tools are discarded after processing completes, and any
+                    temporary working copy is deleted with them. PDFAI does not keep the
+                    documents you process. To have your account and its records deleted, contact
+                    us from the email address on the account.
                   </p>
                 </div>
               </div>

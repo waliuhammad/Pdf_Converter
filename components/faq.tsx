@@ -20,19 +20,19 @@ const faqs: FAQItem[] = [
         category: "AI",
         question: "How does AI PDF Summary work?",
         answer:
-            "Our AI reads your document and generates concise summaries, key insights and important takeaways in seconds.",
+            "The text of your PDF is sent to Google's Gemini model, which writes a summary of its main points. It works on the document's text, so a scanned PDF needs OCR first. Treat the summary as a starting point and check anything important against the original.",
     },
     {
         category: "Security",
         question: "Are my files secure?",
         answer:
-            "Yes. All uploaded files are encrypted during transfer and processing. Files are automatically removed after processing.",
+            "Files travel to our servers over an encrypted HTTPS connection and are used only to produce your result — PDFAI does not store them afterwards. Image to PDF runs entirely in your browser, so those images never leave your device. AI features send the document's text to Google's Gemini API. The Security page has the details.",
     },
     {
         category: "Pricing",
         question: "Can I use PDF AI for free?",
         answer:
-            "Yes. Our Free plan includes essential PDF tools, while Pro and Business unlock premium AI features.",
+            "Yes. Create a free account and you can use the tools within a daily allowance. Pro and Business raise that allowance — the pricing section compares the plans.",
     },
 ];
 

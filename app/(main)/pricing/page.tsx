@@ -7,6 +7,7 @@ import Footer from "@/components/footer";
 export const metadata: Metadata = {
     title: "Pricing",
     description: "Simple plans for every workflow — start free and upgrade when you need more.",
+    alternates: { canonical: "/pricing" },
 };
 
 export default function PricingPage() {

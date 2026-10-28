@@ -1,19 +1,22 @@
 import type { Metadata } from "next";
-import { ContentPage, Section } from "@/components/marketing/content-page";
+import { AiInfoPage } from "@/components/marketing/ai-info-page";
 
 export const metadata: Metadata = {
     title: "AI Summary",
-    description: "Generate concise summaries from lengthy reports, books and documents.",
+    description: "Summarise long PDF reports, papers and contracts into a few key points with AI.",
     alternates: { canonical: "/aisummary-info" },
 };
 
 export default function AISummaryInfoPage() {
     return (
-        <ContentPage title="AI Summary" intro="Generate concise summaries from lengthy reports, books and documents.">
-            <Section heading="What it does">
-                <p>Save hours of reading time. The AI Summary tool scans massive documents and instantly condenses key points, executive summaries, and action items into a clean overview.</p>
-                <p>Whether you are reviewing academic papers, extensive contracts, or industry reports, AI Summary extracts the most vital details so you can grasp the core content in seconds.</p>
-            </Section>
-        </ContentPage>
+        <AiInfoPage
+            title="AI Summary"
+            intro="Get the main points of a long PDF — a report, paper or contract — as a short list you can read in a minute."
+            href="/summarize-pdf"
+            toolLabel="AI Summary"
+        >
+            <p>AI Summary reads the text of your PDF and condenses it into up to five key points, in under 150 words. It is meant for deciding whether a document needs a full read, recalling what a report said, or getting the gist of something outside your field.</p>
+            <p>CVs and résumés get a summary shaped for them — the candidate&apos;s experience and skills rather than a generic overview.</p>
+        </AiInfoPage>
     );
 }

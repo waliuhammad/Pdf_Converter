@@ -1,10 +1,5 @@
 import Link from "next/link";
 import { FileText } from "lucide-react";
-import {
-    FaLinkedin,
-    FaGithub,
-    FaTwitter,
-} from "react-icons/fa";
 
 
 /** `href` is omitted where the destination page doesn't exist yet — those render
@@ -28,13 +23,14 @@ const companyLinks: FooterLink[] = [
     { label: "About", href: "/about" },
     { label: "Contact", href: "/contact" },
     { label: "Pricing", href: "/pricing" },
-    { label: "Blog", href: "/blog" },
+    { label: "All tools", href: "/tools" },
 ];
 
 
 const legalLinks: FooterLink[] = [
     { label: "Privacy Policy", href: "/privacy" },
     { label: "Terms of Service", href: "/terms" },
+    { label: "Cookies", href: "/privacy#cookies" },
     { label: "Security", href: "/security" },
 ];
 
@@ -137,45 +133,6 @@ export default function Footer() {
                     </p>
 
 
-                    <div className="
-                        flex
-                        justify-center
-                        md:justify-start
-                        gap-4
-                        mt-5
-                    ">
-
-                        <FaTwitter
-                            className="
-                                w-5
-                                h-5
-                                text-muted
-                                hover:text-primary
-                                cursor-pointer
-                            "
-                        />
-
-                        <FaLinkedin
-                            className="
-                                w-5
-                                h-5
-                                text-muted
-                                hover:text-primary
-                                cursor-pointer
-                            "
-                        />
-
-                        <FaGithub
-                            className="
-                                w-5
-                                h-5
-                                text-muted
-                                hover:text-primary
-                                cursor-pointer
-                            "
-                        />
-
-                    </div>
 
                 </div>
 

@@ -61,9 +61,6 @@ router.post("/ocr", upload.single("file"), async (req, res) => {
 
     const result = await extractTextWithOCR(req.file.path);
 
-    // Delete temporary uploaded file
-    await fs.unlink(req.file.path);
-
     return res.status(200).json({
       success: true,
       message: "Text extracted successfully.",
@@ -100,6 +97,9 @@ router.post("/ocr", upload.single("file"), async (req, res) => {
       success: false,
       message: "OCR failed.",
     });
+  } finally {
+    // The temporary upload goes whether OCR worked or not.
+    if (req.file) await fs.unlink(req.file.path).catch(() => {});
   }
 });
 

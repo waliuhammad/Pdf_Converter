@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb, isAdminConfigured, adminConfigProblem } from "@/lib/firebase/admin";
+import { rateLimit, CONTACT_LIMIT } from "@/lib/rate-limit";
+import { getContactEmail } from "@/lib/contact";
 
 /**
  * Receives contact-form messages and stores them in the `contactMessages`
@@ -22,8 +24,17 @@ const MAX_LENGTHS = {
 } as const;
 
 export async function POST(req: NextRequest) {
+    const tooMany = rateLimit(req, CONTACT_LIMIT);
+    if (tooMany) return tooMany;
+
     try {
         const body = await req.json().catch(() => null);
+
+        // A hidden field people never see. Bots that fill every input get a
+        // success reply, so they don't learn to skip it, and nothing is stored.
+        if (typeof body?.website === "string" && body.website.trim() !== "") {
+            return NextResponse.json({ success: true });
+        }
 
         const name = typeof body?.name === "string" ? body.name.trim() : "";
         const email = typeof body?.email === "string" ? body.email.trim() : "";
@@ -53,8 +64,14 @@ export async function POST(req: NextRequest) {
             // Configuration problems are a server-side concern; log the detail,
             // tell the visitor something they can act on.
             console.error("Contact form unavailable:", adminConfigProblem());
+            const email = getContactEmail();
             return NextResponse.json(
-                { success: false, message: "Messaging is temporarily unavailable. Please email us directly." },
+                {
+                    success: false,
+                    message: email
+                        ? `Messaging is temporarily unavailable. Please email us at ${email}.`
+                        : "Messaging is temporarily unavailable. Please try again later.",
+                },
                 { status: 503 }
             );
         }

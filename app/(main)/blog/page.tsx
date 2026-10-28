@@ -6,6 +6,9 @@ import { ContentPage } from "@/components/marketing/content-page";
 export const metadata: Metadata = {
     title: "Blog",
     description: "Product updates and writing from the PDFAI team.",
+    // An empty page has nothing for search to index. Drop this, and add the
+    // page back to the sitemap and footer, once the first post is published.
+    robots: { index: false, follow: true },
 };
 
 /** No posts exist yet, so this renders an empty state rather than sample articles. */

@@ -123,7 +123,7 @@ export function SecureNote() {
     return (
         <div className="pt-6 flex flex-wrap items-center justify-center gap-2 text-center text-muted-foreground text-xs font-medium">
             <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <span>256-bit SSL encryption • Files processed securely and deleted automatically</span>
+            <span>Encrypted HTTPS upload • Your files are not stored after processing</span>
         </div>
     );
 }
