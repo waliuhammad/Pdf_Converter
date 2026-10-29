@@ -9,6 +9,12 @@
  * The yearly column shows the per-month equivalent of the yearly charge, so
  * the two columns compare like for like: Pro bills $119.88/year, shown as
  * $9.99/month.
+ *
+ * Features must describe what the code enforces. The daily numbers are not
+ * read from here: lib/usage.ts applies Remote Config's monthly_{plan}_plan_all
+ * (10 / 50 / 100 when last checked) as ONE counter shared by every tool, so
+ * change the number below whenever that value changes in the Console, and
+ * don't list per-tool limits, queues or team features the backend doesn't have.
  */
 
 export type PlanId = "free" | "pro" | "business";
@@ -49,12 +55,11 @@ export const PLANS: Plan[] = [
         yearlyPrice: 0,
         description: "Get started with everyday PDF tasks at no cost.",
         features: [
-            "Up to 10 tasks every day",
-            "Essential PDF tools included",
-            "1 OCR scan daily",
-            "1 AI document summary daily",
-            "Smooth, quick processing",
-            "Help through community forums",
+            "Up to 10 tool uses every day",
+            "Every PDF and AI tool included",
+            "One daily allowance shared by all tools",
+            "Failed conversions don't count",
+            "Help through the contact form",
         ],
     },
     {
@@ -65,16 +70,13 @@ export const PLANS: Plan[] = [
         yearly: "$9.99",
         monthlyPrice: 12.99,
         yearlyPrice: 119.88,
-        description: "More power and higher limits for individual professionals.",
+        description: "A higher daily allowance for regular use.",
         popular: true,
         features: [
-            "Up to 50 tasks every day",
-            "30 advanced PDF tasks daily",
-            "5 OCR scans daily",
-            "5 AI document summaries daily",
-            "5 AI writing & grammar checks daily",
-            "5 AI translations daily",
-            "Quicker turnaround on every task",
+            "Up to 50 tool uses every day",
+            "Every PDF and AI tool included",
+            "One daily allowance shared by all tools",
+            "Failed conversions don't count",
             "No ads, no distractions",
             "Priority help from our support team",
         ],
@@ -87,18 +89,12 @@ export const PLANS: Plan[] = [
         yearly: "$30.99",
         monthlyPrice: 38.99,
         yearlyPrice: 371.88,
-        description: "Built for teams that handle documents together.",
+        description: "The largest daily allowance, for heavy document work.",
         features: [
-            "Up to 100 tasks every day",
-            "60 advanced PDF tasks daily",
-            "10 OCR scans daily",
-            "10 AI document summaries daily",
-            "10 AI writing & grammar checks daily",
-            "10 AI translations daily",
-            "Share and work on files as a team",
-            "Add up to 5 team members",
-            "Your tasks go to the front of the queue",
-            "Enhanced protection for your files",
+            "Up to 100 tool uses every day",
+            "Every PDF and AI tool included",
+            "One daily allowance shared by all tools",
+            "Failed conversions don't count",
             "No ads, no distractions",
             "Priority help from our support team",
         ],

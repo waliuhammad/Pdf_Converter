@@ -33,8 +33,9 @@ export const metadata: Metadata = {
   description: "Every PDF tool you need, in one place.",
   openGraph: {
     siteName: "PDF AI",
+    // No url here: set at the root, every page inherited it and told social
+    // sites it was the homepage. The canonical link carries the real address.
     type: "website",
-    url: siteUrl,
   },
   // AdSense's site-ownership tag. Verification only: no ad script is loaded.
   ...(adsensePublisherId && {

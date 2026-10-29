@@ -154,7 +154,7 @@ export default function Pricing({ heading = "h2" }: { heading?: "h1" | "h2" }) {
                                                 z-10
                                             "
                                         >
-                                            <b>Most Popular</b>
+                                            <b>Recommended</b>
                                         </div>
                                     )}
 
@@ -243,6 +243,15 @@ export default function Pricing({ heading = "h2" }: { heading?: "h1" | "h2" }) {
                         </div>
                     ))}
                 </div>
+
+                {/* How the allowance works, as lib/usage.ts and lib/metered.ts
+                    enforce it — one counter for every tool, not per feature. */}
+                <p className="mt-8 sm:mt-10 max-w-2xl mx-auto text-center text-xs sm:text-sm leading-relaxed text-muted">
+                    Every tool — conversions, edits and AI features alike — draws on the same daily
+                    allowance. Each successful use counts once; a conversion that fails isn&apos;t
+                    counted. The allowance resets at 00:00 UTC, and signed-in users can see
+                    today&apos;s count on their dashboard.
+                </p>
 
             </div>
         </section>

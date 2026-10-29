@@ -9,6 +9,7 @@ export const metadata: Metadata = {
     // An empty page has nothing for search to index. Drop this, and add the
     // page back to the sitemap and footer, once the first post is published.
     robots: { index: false, follow: true },
+    alternates: { canonical: "/blog" },
 };
 
 /** No posts exist yet, so this renders an empty state rather than sample articles. */
